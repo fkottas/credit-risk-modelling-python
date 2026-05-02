@@ -5,6 +5,7 @@ from lgd_generator import create_synthetic_lgd_dataset
 from ead_generator import create_synthetic_ead_dataset
 from bnpl_microloan_generator import create_synthetic_bnpl_microloan_dataset
 from ifrs9_cohort_generator import create_synthetic_ifrs9_cohort_dataset
+from hybrid_fraud_generator import create_hybrid_fraud_dataset
 
 
 OUTPUT_DIR = Path("data/synthetic")
@@ -17,6 +18,7 @@ def main():
         "synthetic_lgd.csv": create_synthetic_lgd_dataset(),
         "synthetic_ead.csv": create_synthetic_ead_dataset(),
         "synthetic_bnpl_microloan.csv": create_synthetic_bnpl_microloan_dataset(),
+        "hybrid_fraud_dataset.csv": create_hybrid_fraud_dataset(),
         "synthetic_ifrs9_cohort.csv": create_synthetic_ifrs9_cohort_dataset(),
     }
 
