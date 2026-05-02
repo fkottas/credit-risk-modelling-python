@@ -1,0 +1,13 @@
+project:
+  name: credit-risk-modelling-python
+  book_title: Credit Risk Modeling for Basel and IFRS 9 using Python
+  author: Ferdinantos Kottas
+
+paths:
+  raw_data: data/raw
+  synthetic_data: data/synthetic
+  processed_data: data/processed
+  reports: reports
+  models: models
+
+random_seed: 42
