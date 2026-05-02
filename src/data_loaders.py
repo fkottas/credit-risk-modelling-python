@@ -125,3 +125,42 @@ def load_csv(path):
     Load a local CSV file.
     """
     return pd.read_csv(path)
+
+def load_synthetic_lgd(path=None):
+    """
+    Load synthetic LGD dataset.
+    """
+    if path is None:
+        path = PROJECT_ROOT / "data" / "synthetic" / "synthetic_lgd.csv"
+
+    return pd.read_csv(path)
+
+
+def load_synthetic_ead(path=None):
+    """
+    Load synthetic EAD dataset.
+    """
+    if path is None:
+        path = PROJECT_ROOT / "data" / "synthetic" / "synthetic_ead.csv"
+
+    return pd.read_csv(path)
+
+
+def load_synthetic_bnpl_microloan(path=None):
+    """
+    Load synthetic BNPL and microloan dataset.
+    """
+    if path is None:
+        path = PROJECT_ROOT / "data" / "synthetic" / "synthetic_bnpl_microloan.csv"
+
+    return pd.read_csv(path)
+
+
+def load_synthetic_ifrs9_cohort(path=None):
+    """
+    Load synthetic IFRS 9 cohort dataset.
+    """
+    if path is None:
+        path = PROJECT_ROOT / "data" / "synthetic" / "synthetic_ifrs9_cohort.csv"
+
+    return pd.read_csv(path)
