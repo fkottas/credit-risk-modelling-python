@@ -1,0 +1,13 @@
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+statsmodels
+scipy
+openml
+ucimlrepo
+wbgapi
+pandas-datareader
+joblib
+pyyaml
