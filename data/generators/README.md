@@ -1,10 +1,19 @@
 # Dataset Generators
 
-This folder contains Python scripts used to generate synthetic datasets.
+This folder contains scripts for generating synthetic datasets used throughout the book.
 
-Examples:
-- Synthetic fraud dataset
-- Synthetic LGD dataset
-- Synthetic EAD dataset
-- Synthetic IFRS 9 cohort dataset
-- Synthetic BNPL / microloan dataset
+## Available generators
+
+- `fraud_generator.py`
+- `lgd_generator.py`
+- `ead_generator.py`
+- `bnpl_microloan_generator.py`
+- `ifrs9_cohort_generator.py`
+- `generate_all_synthetic_data.py`
+
+## Generate all datasets
+
+From the project root, run:
+
+```bash
+python data/generators/generate_all_synthetic_data.py
