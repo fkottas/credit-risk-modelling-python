@@ -87,7 +87,7 @@ Data monitoring checks schema, missingness, ranges, categories, freshness and li
 PSI compares reference and current proportions:
 
 \[
-PSI=\sum_j(a_j-e_j)\log(a_j/e_j).
+PSI=\sum_{j=1}^{J}(a_j-e_j)\log(a_j/e_j).
 \]
 
 It is sensitive to bins and sample size and does not identify cause. Thresholds must be policy-specific.

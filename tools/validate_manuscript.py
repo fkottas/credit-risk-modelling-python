@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANUSCRIPT = ROOT / "book" / "full_manuscript"
 STRUCTURE = ROOT / "book" / "structure.json"
+GUIDED_LABS = ROOT / "book" / "guided_labs"
 
 
 def chapter_sections(text: str) -> list[tuple[int, str, str]]:
@@ -29,7 +30,9 @@ def main() -> None:
     }
     files = sorted(MANUSCRIPT.glob("*.md"))
     assert files, "Expanded manuscript is missing"
-    all_text = "\n".join(path.read_text(encoding="utf-8") for path in files)
+    lab_files = sorted(GUIDED_LABS.glob("chapter_*.md"))
+    assert len(lab_files) == 72, f"Expected 72 guided laboratories, found {len(lab_files)}"
+    all_text = "\n".join(path.read_text(encoding="utf-8") for path in [*files, *lab_files])
     chapter_text = "\n".join(
         path.read_text(encoding="utf-8") for path in files if "_part_" in path.name
     )
@@ -56,8 +59,9 @@ def main() -> None:
     assert len(definitions) >= 35, "Reference ledger is not sufficiently broad"
 
     word_count = len(re.findall(r"\b[\w'-]+\b", all_text))
-    assert word_count >= 50_000, f"Manuscript has only {word_count:,} words"
-    assert all_text.count("```python") >= 70, "Expected extensive Python examples"
+    assert word_count >= 90_000, f"Manuscript has only {word_count:,} words"
+    assert all_text.count("```python") >= 140, "Expected extensive Python examples"
+    assert all_text.count(r"\[") >= 80, "Expected extensive display mathematics"
     for index, block in enumerate(
         re.findall(r"```python\n(.*?)\n```", all_text, re.DOTALL), start=1
     ):

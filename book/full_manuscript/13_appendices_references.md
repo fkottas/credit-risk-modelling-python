@@ -169,7 +169,7 @@ The original diagnostic module calculates VIF from auxiliary regressions without
 Any model that emits calibrated bad probability can use the same score scale:
 
 \[
-Score=Offset+Factor\log((1-p)/p).
+$Score=Offset+Factor\log((1-p)/p)$.
 \]
 
 This creates a comparable reporting axis for logistic regression, XGBoost, survival-derived horizon PD or another calibrated model. It does not make a tree model additive. Logistic scorecard bin points are exact decomposition; XGBoost explanations use SHAP or documented sensitivity/counterfactual methods and must not be presented as exact scorecard points.

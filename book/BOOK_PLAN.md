@@ -46,4 +46,4 @@ The expanded edition has 72 analytical chapters in twelve parts. Each chapter co
 | Basel IRB and portfolios | `creditriskbook.irb` | 06, 10 |
 | deployment, monitoring and agents | `creditriskbook.monitoring`, `agents` | 07, 12 |
 
-The Word builder uses `book/full_manuscript/` and the compact reference design. The current verified review output is 202 pages. It remains an educational review manuscript requiring legal, accounting, regulatory, technical and independent model review before publication or real use.
+The Word builder uses `book/full_manuscript/`, interleaves one mathematics-to-code laboratory after every chapter, and uses native Word equations plus original teaching figures. The current analytical review output exceeds 400 pages. It remains an educational review manuscript requiring legal, accounting, regulatory, technical and independent model review before publication or real use.

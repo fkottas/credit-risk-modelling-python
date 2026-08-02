@@ -17,10 +17,13 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+from math2docx import add_math
 
 ROOT = Path(__file__).resolve().parents[1]
 MANUSCRIPT = ROOT / "book" / "full_manuscript"
 STRUCTURE = ROOT / "book" / "structure.json"
+GUIDED_LABS = ROOT / "book" / "guided_labs"
+FIGURES = ROOT / "book" / "figures"
 BLUE, DARK_BLUE, INK = "2E74B5", "1F4D78", "203748"
 SUBTITLE, GOLD, MUTED = "2B5163", "8B6F28", "667788"
 TABLE_FILL, LIGHT_FILL, CALLOUT_FILL = "E8EEF5", "F2F4F7", "F4F6F9"
@@ -115,17 +118,18 @@ def add_hyperlink(paragraph, text: str, url: str) -> None:
     paragraph._p.append(hyperlink)
 
 
-INLINE = re.compile(r"(\*\*.*?\*\*|\*[^*]+\*|`.*?`|https?://[^\s)]+[\w/#])")
+INLINE = re.compile(r"(\$[^$\n]+\$|\*\*.*?\*\*|\*[^*]+\*|`.*?`|https?://[^\s)]+[\w/#])")
 
 
 def add_inline(paragraph, text: str, *, size: float | None = None) -> None:
-    text = readable_equation(text)
     position = 0
     for match in INLINE.finditer(text):
         if match.start() > position:
             set_run_font(paragraph.add_run(text[position : match.start()]), size=size)
         token = match.group(0)
-        if token.startswith("**"):
+        if token.startswith("$"):
+            add_math(paragraph, token[1:-1], is_italic=False)
+        elif token.startswith("**"):
             set_run_font(paragraph.add_run(token[2:-2]), size=size, bold=True)
         elif token.startswith("*"):
             set_run_font(paragraph.add_run(token[1:-1]), size=size, italic=True)
@@ -269,7 +273,7 @@ def configure_page(doc: Document) -> None:
 
 
 def add_cover(doc: Document) -> None:
-    doc.add_paragraph().paragraph_format.space_after = Pt(78)
+    doc.add_paragraph().paragraph_format.space_after = Pt(28)
     kicker = doc.add_paragraph()
     kicker.alignment, kicker.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(18)
     set_run_font(kicker.add_run("APPLIED CREDIT RISK AND AI"), size=10.5, color=GOLD, bold=True)
@@ -292,9 +296,16 @@ def add_cover(doc: Document) -> None:
             Pt(2),
         )
         set_run_font(paragraph.add_run(text), size=15, color=SUBTITLE)
+    cover_art = FIGURES / "cover-intelligent-credit-risk.png"
+    if cover_art.exists():
+        picture = doc.add_paragraph()
+        picture.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        picture.paragraph_format.space_before = Pt(8)
+        picture.paragraph_format.space_after = Pt(8)
+        picture.add_run().add_picture(str(cover_art), width=Inches(3.35))
     strapline = doc.add_paragraph()
     strapline.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    strapline.paragraph_format.space_before, strapline.paragraph_format.space_after = Pt(22), Pt(82)
+    strapline.paragraph_format.space_before, strapline.paragraph_format.space_after = Pt(4), Pt(18)
     set_run_font(
         strapline.add_run("Seventy-two analytical chapters with tested Python"),
         size=10.5,
@@ -446,6 +457,21 @@ def add_callout(doc: Document, text: str) -> None:
     add_inline(cell.paragraphs[0], text)
 
 
+def add_figure(doc: Document, source: str, caption: str) -> None:
+    path = ROOT / source
+    if not path.exists():
+        raise FileNotFoundError(f"Figure does not exist: {path}")
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(8)
+    paragraph.paragraph_format.space_after = Pt(3)
+    paragraph.add_run().add_picture(str(path), width=Inches(6.15))
+    label = doc.add_paragraph()
+    label.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    label.paragraph_format.space_after = Pt(8)
+    set_run_font(label.add_run(caption), size=9.5, color=MUTED, italic=True)
+
+
 def _replace_braced_command(text: str, command: str, formatter) -> str:
     """Replace simple or nested TeX braced commands without a TeX dependency."""
 
@@ -528,12 +554,7 @@ def add_equation(doc: Document, value: str) -> None:
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.space_before = Pt(4)
     paragraph.paragraph_format.space_after = Pt(8)
-    set_run_font(
-        paragraph.add_run(readable_equation(value)),
-        name="Cambria Math",
-        size=10.5,
-        color=INK,
-    )
+    add_math(paragraph, " ".join(line.strip() for line in value.splitlines()), is_italic=False)
 
 
 def markdown_blocks(text: str):
@@ -569,6 +590,13 @@ def markdown_blocks(text: str):
                 code_lines.append(lines[i])
                 i += 1
             yield "code", "\n".join(code_lines)
+        elif re.match(r"^!\[[^]]*\]\([^)]+\)$", line.strip()):
+            item = flush()
+            if item:
+                yield item
+            match = re.match(r"^!\[([^]]*)\]\(([^)]+)\)$", line.strip())
+            assert match is not None
+            yield "figure", (match.group(2), match.group(1))
         elif line.startswith("# "):
             item = flush()
             if item:
@@ -626,6 +654,13 @@ def markdown_blocks(text: str):
         yield item
 
 
+def _chapter_lab_blocks(chapter_number: int):
+    path = GUIDED_LABS / f"chapter_{chapter_number:02d}.md"
+    if not path.exists():
+        raise FileNotFoundError(f"Missing guided laboratory: {path}")
+    yield from markdown_blocks(path.read_text(encoding="utf-8"))
+
+
 def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
     structure = json.loads(STRUCTURE.read_text(encoding="utf-8"))
     roman = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
@@ -635,11 +670,24 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
     }
     previous_kind = None
     current_decimal_num = decimal_num
+    current_chapter: int | None = None
     for file_index, path in enumerate(sorted(MANUSCRIPT.glob("*.md"))):
         content = path.read_text(encoding="utf-8")
         if path.name == "00_front_matter.md":
             content = content[content.index("## Preface") :]
-        for kind, value in markdown_blocks(content):
+        blocks = list(markdown_blocks(content))
+        expanded_blocks = []
+        for kind, value in blocks:
+            if kind == "h1":
+                match = re.match(r"Chapter (\d+)\b", value)
+                if match and current_chapter is not None:
+                    expanded_blocks.extend(_chapter_lab_blocks(current_chapter))
+                current_chapter = int(match.group(1)) if match else None
+            expanded_blocks.append((kind, value))
+        if current_chapter is not None and path.name.startswith("12_"):
+            expanded_blocks.extend(_chapter_lab_blocks(current_chapter))
+            current_chapter = None
+        for kind, value in expanded_blocks:
             if kind == "h1":
                 match = re.match(r"Chapter (\d+)\b", value)
                 if match and int(match.group(1)) in parts:
@@ -675,6 +723,8 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
                 add_callout(doc, value)
             elif kind == "equation":
                 add_equation(doc, value)
+            elif kind == "figure":
+                add_figure(doc, *value)
             previous_kind = kind
 
 
@@ -727,7 +777,7 @@ def main() -> None:
         type=Path,
         default=ROOT
         / "artifacts"
-        / "Intelligent_Credit_Risk_Modeling_with_Python_Expanded_Review.docx",
+        / "Intelligent_Credit_Risk_Modeling_with_Python_Analytical_Review.docx",
     )
     build(parser.parse_args().output.resolve())
 

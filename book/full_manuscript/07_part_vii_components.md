@@ -4,7 +4,7 @@
 
 Survival analysis models time until an event while recognising right censoring. If (T) is default time, survival is (S(t)=P(T>t)), cumulative PD is (1-S(t)), and conditional hazard describes event risk among accounts still at risk. For discrete periods with hazard (h_t), marginal PD is (S(t-1)h_t).
 
-Kaplan–Meier estimates survival non-parametrically as a product of one minus event share at each time. The Cox model specifies (h(t|x)=h_0(t)\exp(x'\beta)), leaving baseline hazard unspecified. Accelerated failure-time models scale survival time under a parametric distribution. Discrete-time logistic or complementary-log-log models are often convenient for monthly credit panels.
+Kaplan–Meier estimates survival non-parametrically as a product of one minus event share at each time. The Cox model specifies $h(t\mid x)=h_0(t)\exp(x^\top\beta)$, leaving baseline hazard unspecified. Accelerated failure-time models scale survival time under a parametric distribution. Discrete-time logistic or complementary-log-log models are often convenient for monthly credit panels.
 
 ```python
 import numpy as np
@@ -28,7 +28,7 @@ Check time origin, intervals, censoring, proportional hazards, baseline calibrat
 
 ## Conditional, marginal, and cumulative probabilities
 
-Conditional hazard (h_t) is default probability in period (t) given survival to its start. Survival before (t) is (\prod_{k<t}(1-h_k)). Marginal PD is that survival multiplied by (h_t). Cumulative PD through (T) is the sum of marginal PDs or one minus survival.
+Conditional hazard $h_t$ is default probability in period $t$ given survival to its start. Survival before $t$ is $\prod_{k=1}^{t-1}(1-h_k)$. Marginal PD is that survival multiplied by $h_t$. Cumulative PD through $T$ is the sum of marginal PDs or one minus survival.
 
 Using cumulative PD directly in each ECL period double-counts defaults. Using a twelve-month PD in every year without survival also overstates later marginal risk. A constant-hazard curve is a benchmark, not a forecast of cycle dynamics.
 
@@ -88,7 +88,7 @@ Separate best estimate, data deficiency, methodological uncertainty, general est
 Workout LGD compares EAD at default with discounted post-default recoveries net of direct costs. For cash flow (CF_t=Recovery_t-Cost_t), a simplified account LGD is
 
 \[
-LGD=1-\frac{\sum_t CF_t(1+EIR)^{-t}}{EAD_0}.
+LGD=1-\frac{\sum_{t=1}^{T} CF_t(1+EIR)^{-t}}{EAD_0}.
 \]
 
 The effective interest rate, time unit and inclusion of indirect costs depend on applicable purpose and policy. Collateral proceeds, guarantees, sales and cures require consistent treatment. A cured account can still have economic loss from missed interest and costs.

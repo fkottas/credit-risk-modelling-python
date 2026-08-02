@@ -7,10 +7,10 @@ Credit risk is the possibility that contractual cash flows are not received in t
 For a single exposure, let (C_t) denote the contractual cash flow at time (t), (R_t) the cash actually received, (K_t) direct recovery cost, and (d_t) an appropriate discount factor. A cash-flow loss is
 
 \[
-L=\sum_t d_t(C_t-R_t+K_t).
+L=\sum_{t=1}^{T} d_t(C_t-R_t+K_t).
 \]
 
-The familiar product (PD\times LGD\times EAD) is a useful conditional expectation of this loss only when its three components share a compatible definition, horizon, population, reference date and economic basis. Combining a twelve-month PD, lifetime EAD and workout LGD from another segment does not create a meaningful expected loss.
+The familiar product $PD\times LGD\times EAD$ is a useful conditional expectation of this loss only when its three components share a compatible definition, horizon, population, reference date and economic basis. Combining a twelve-month PD, lifetime EAD and workout LGD from another segment does not create a meaningful expected loss.
 
 ## A worked lending example
 
@@ -46,7 +46,7 @@ Reconcile contractual balances to the finance system before modelling. State whe
 
 Expected loss is the probability-weighted average loss over repeated comparable exposures. Unexpected loss concerns dispersion around that mean, especially severe portfolio outcomes. Provisions, pricing and capital have different purposes; using the same number for all three obscures risk.
 
-Let account loss be (L_i=D_i\times LGD_i\times EAD_i), where (D_i\) is a default indicator. Portfolio loss is (L=\sum_iL_i). Even if individual default probabilities are accurate, the portfolio tail depends on default dependence, concentration and the relationship between default, recovery and exposure. Under independence, idiosyncratic variation diversifies rapidly. Under a common downturn, many obligors deteriorate together and recovery values may fall at the same time.
+Let account loss be $L_i=D_i\times LGD_i\times EAD_i$, where $D_i$ is a default indicator. Portfolio loss is $L=\sum_{i=1}^{n}L_i$. Even if individual default probabilities are accurate, the portfolio tail depends on default dependence, concentration and the relationship between default, recovery and exposure. Under independence, idiosyncratic variation diversifies rapidly. Under a common downturn, many obligors deteriorate together and recovery values may fall at the same time.
 
 Suppose 1,000 equal exposures each have EAD EUR 10,000, PD 2% and LGD 40%. Expected loss is EUR 80,000. If defaults were independent, the standard deviation of default count would be about √(1000×0.02×0.98)=4.43, but a systematic factor can make a count far above 20 plausible in a severe state. The Basel asymptotic single-risk-factor framework represents this effect through asset correlation and a 99.9% conditional default probability.
 
@@ -76,7 +76,7 @@ A model-development policy should distinguish central-tendency estimation from t
 
 ## Why multiplication is not enough
 
-The identity (EL=E[D\times LGD\times EAD]) does not generally equal (E[D]\,E[LGD]\,E[EAD]). The latter factorisation assumes independence or uses parameters already defined conditionally in a compatible way. In downturns, obligors default more often, collateral values fall, recovery takes longer, and revolving borrowers may draw available limits. The three components can therefore move adversely together.
+The identity $EL=\mathbb{E}[D\times LGD\times EAD]$ does not generally equal $\mathbb{E}[D]\,\mathbb{E}[LGD]\,\mathbb{E}[EAD]$. The latter factorisation assumes independence or uses parameters already defined conditionally in a compatible way. In downturns, obligors default more often, collateral values fall, recovery takes longer, and revolving borrowers may draw available limits. The three components can therefore move adversely together.
 
 A practical scenario engine preserves account-level relationships. For scenario (s), period (t) and account (i), an ECL contribution is
 
@@ -144,7 +144,7 @@ All features must be available by the decision timestamp. Outcome windows must n
 
 Credit risk is not always a classification problem. Binary classification estimates an event probability over a fixed horizon. Regression estimates severity, utilisation, recovery amount, days past due or profit. Survival models estimate time to default under censoring. Multi-state models estimate movement among delinquency, cure, default and closure states. A model is correct only relative to its estimand and use.
 
-For binary PD, logistic regression models log odds as (\beta_0+x'\beta). A tree ensemble may improve nonlinear prediction but still needs calibration and governance. Workout LGD can require a two-stage model: probability of cure or full recovery followed by loss severity. EAD for revolving facilities may model CCF only where undrawn amount is positive. A lifetime engine may model discrete conditional hazard and derive marginal PD.
+For binary PD, logistic regression models log odds as $\beta_0+x^\top\beta$. A tree ensemble may improve nonlinear prediction but still needs calibration and governance. Workout LGD can require a two-stage model: probability of cure or full recovery followed by loss severity. EAD for revolving facilities may model CCF only where undrawn amount is positive. A lifetime engine may model discrete conditional hazard and derive marginal PD.
 
 The public UCI Credit Approval dataset illustrates a crucial warning. Its outcome is approval, not default. It can teach mixed data types and missingness, but relabelling `approved` as PD would change the meaning of the evidence. Likewise, corporate bankruptcy is related to but not identical with a bank’s regulatory default definition.
 

@@ -98,4 +98,4 @@ See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md
 
 ## Current status
 
-The expanded review branch contains 72 analytical chapters, 72 worked cases, 14 executed notebooks, a 202-page Word review manuscript, five original component datasets, and original scorecard, IFRS 9, IRB, and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.
+The expanded review branch contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 14 executed notebooks, a 400+ page Word review manuscript with native equations, multiple original teaching figures and datasets, and original scorecard, IFRS 9, IRB, and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.

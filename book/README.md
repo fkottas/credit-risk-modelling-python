@@ -8,4 +8,4 @@ The expanded review manuscript is in `book/full_manuscript/`: front matter, 72 a
 $CODEX_PRIMARY_RUNTIME_PYTHON tools/build_book_docx.py
 ```
 
-Generated review files live under the ignored `artifacts/` directory. The validated review build is 202 pages. The editable source, builder, tests, manuscript validator and notebook validator remain in Git.
+Generated review files live under the ignored `artifacts/` directory. The validated analytical review build is 400+ pages, including 72 mathematics-to-code laboratories and native Word equations. The editable source, builder, tests, manuscript validator and notebook validator remain in Git.

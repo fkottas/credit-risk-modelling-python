@@ -5,10 +5,18 @@
 For corporate exposures, the Basel function transforms PD through a systematic asset-correlation model at high confidence. In simplified notation,
 
 \[
-K=\left[LGD\,N\left(\frac{G(PD)+\sqrt{R}G(0.999)}{\sqrt{1-R}}\right)-PD\,LGD\right]MA,
+r=R^{1/2},\qquad s=(1-R)^{1/2}.
 \]
 
-where (N) is the normal CDF, (G) its inverse, (R) asset correlation and (MA) maturity adjustment. RWA is (12.5\times K\times EAD). Expected loss is separate.
+\[
+z=\frac{G(PD)+rG(0.999)}{s}.
+\]
+
+\[
+K=LGD[N(z)-PD]MA.
+\]
+
+Here $r$ is the square root of asset correlation, $s$ scales the idiosyncratic component, $z$ is the stressed systematic-factor transform, $N$ is the normal CDF, $G$ its inverse, $R$ asset correlation and $MA$ maturity adjustment. RWA is $12.5\times K\times EAD$. Expected loss is separate. Writing the transformation in stages is mathematically equivalent to the compact regulatory expression and exposes an auditable intermediate value.
 
 Corporate correlation decreases between prescribed bounds as PD increases. Eligible SME corporate treatment includes a firm-size adjustment based on annual sales within defined bounds. The project formula accepts sales as an explicit input; it does not infer eligibility.
 
@@ -131,7 +139,7 @@ Identify adverse periods through relevant economic and portfolio evidence. Apply
 
 ## Granularity and dependence
 
-IRB capital functions assume a highly granular portfolio where idiosyncratic risk diversifies. Real portfolios contain name, sector, geography and collateral concentration. Herfindahl index (HHI=\sum_iw_i^2) summarises exposure concentration but not default correlation or tail severity.
+IRB capital functions assume a highly granular portfolio where idiosyncratic risk diversifies. Real portfolios contain name, sector, geography and collateral concentration. The Herfindahl index $HHI=\sum_{i=1}^{n} w_i^2$ summarises exposure concentration but not default correlation or tail severity.
 
 The Vasicek conditional default probability at confidence (q) is
 

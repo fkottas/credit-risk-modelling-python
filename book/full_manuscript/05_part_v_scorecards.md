@@ -38,7 +38,7 @@ Review plots by development, validation and out-of-time sample using the develop
 
 Manual bins encode product knowledge, operational thresholds and stable interpretation. Examples include DPD backstops, utilisation bands, term options and documented income ranges. Manual does not mean arbitrary: each cut requires evidence, minimum counts, event support, monotonicity review and validation.
 
-Numeric bins should cover (-\infty) to (+\infty), with missing and special values explicit. Special values such as -999 must not be treated as economic numbers. Categorical grouping combines levels with similar risk and meaning; rare categories may be grouped, but protected or materially different categories should not be hidden merely to smooth bad rates. Unseen production levels require a defined `OTHER` policy.
+Numeric bins should cover $(-\infty,+\infty)$, with missing and special values explicit. Special values such as -999 must not be treated as economic numbers. Categorical grouping combines levels with similar risk and meaning; rare categories may be grouped, but protected or materially different categories should not be hidden merely to smooth bad rates. Unseen production levels require a defined `OTHER` policy.
 
 ```python
 from creditriskbook.scorecard import (
@@ -79,7 +79,7 @@ The repository implements these algorithms without a scorecard package. It first
 For adjacent bins with observed table (O_{rc}), Pearson’s statistic is
 
 \[
-\chi^2=\sum_{r,c}\frac{(O_{rc}-E_{rc})^2}{E_{rc}}.
+\chi^2=\sum_{r=1}^{R}\sum_{c=1}^{C}\frac{(O_{rc}-E_{rc})^2}{E_{rc}}.
 \]
 
 A small value means the two adjacent bins have similar class composition and are candidates for merging. This is a heuristic, not proof that the final grouping is optimal or stable.
@@ -115,16 +115,16 @@ Fit bins only on training data. Persist the complete specification. Test boundar
 For bin (j), let (G_j) and (B_j) be goods and bads. With smoothing (a>0) and (k) bins,
 
 \[
-p^G_j=\frac{G_j+a}{\sum_jG_j+ak},\qquad
-p^B_j=\frac{B_j+a}{\sum_jB_j+ak}.
+p^G_j=\frac{G_j+a}{\sum_{m=1}^{k}G_m+ak},\qquad
+p^B_j=\frac{B_j+a}{\sum_{m=1}^{k}B_m+ak}.
 \]
 
-This book defines (WOE_j=\log(p^G_j/p^B_j)). Positive WOE therefore indicates relatively more goods. Some software uses the opposite sign. Mixing conventions reverses coefficients and points; record the convention in every artifact.
+This book defines $WOE_j=\log(p^G_j/p^B_j)$. Positive WOE therefore indicates relatively more goods. Some software uses the opposite sign. Mixing conventions reverses coefficients and points; record the convention in every artifact.
 
 Information value is
 
 \[
-IV=\sum_j(p^G_j-p^B_j)WOE_j.
+IV=\sum_{j=1}^{k}(p^G_j-p^B_j)WOE_j.
 \]
 
 Smoothing prevents infinite WOE for zero-event bins but does not make them reliable. The smoothing value affects small bins and belongs in configuration.
@@ -160,7 +160,7 @@ p_i=\frac{1}{1+\exp[-(\beta_0+x_i'\beta)]}.
 The Bernoulli log-likelihood is
 
 \[
-\ell(\beta)=\sum_i\{y_i\log p_i+(1-y_i)\log(1-p_i)\}.
+\ell(\beta)=\sum_{i=1}^{n}\{y_i\log p_i+(1-y_i)\log(1-p_i)\}.
 \]
 
 Iteratively reweighted least squares is Newton’s method applied to this likelihood. At each iteration, calculate probabilities, variance weights (p_i(1-p_i)), gradient and information matrix, then update coefficients. The repository adds an L2 penalty to slopes but not the intercept, clips extreme logits for numerical stability, records convergence and retains an approximate covariance matrix.
@@ -197,9 +197,9 @@ Let good-to-bad odds be (O=(1-p)/p). A conventional linear score is
 Score=Offset+Factor\log O,
 \]
 
-where (Factor=PDO/\log2) and (Offset=BaseScore-Factor\log(BaseOdds)). If base score is 600 at good-to-bad odds 20 and PDO is 50, doubling good odds increases score by 50.
+where $Factor=PDO/\log 2$ and $Offset=BaseScore-Factor\log(BaseOdds)$. If base score is 600 at good-to-bad odds 20 and PDO is 50, doubling good odds increases score by 50.
 
-Because the logistic model uses bad log odds (z=\log[p/(1-p)]), score equals `offset - factor*z`. The intercept contributes base points and each characteristic contributes `-factor*beta*WOE`. The repository reconciles row components to total score before rounding and clipping.
+Because the logistic model uses bad log odds $z=\log[p/(1-p)]$, score equals `offset - factor*z`. The intercept contributes base points and each characteristic contributes `-factor*beta*WOE`. The repository reconciles row components to total score before rounding and clipping.
 
 ```python
 from creditriskbook.scorecard import LogisticScorecard, ScoreScale

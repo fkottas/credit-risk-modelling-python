@@ -1,0 +1,211 @@
+"""Generate original, source-free teaching figures from repository-created data."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from creditriskbook.data import load_case_dataset, load_dataset
+from creditriskbook.ifrs9 import constant_hazard_curve
+from creditriskbook.irb import irb_capital
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "book" / "figures"
+NAVY, BLUE, TEAL, GOLD, GREY = "#203748", "#2E74B5", "#1C8C8C", "#B28A38", "#667788"
+
+
+def save(fig: plt.Figure, name: str) -> None:
+    fig.tight_layout()
+    fig.savefig(OUT / name, dpi=220, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def line_figure(x, ys, labels, title, xlabel, ylabel, name):
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    for y, label, color in zip(ys, labels, (BLUE, TEAL, GOLD, NAVY), strict=False):
+        ax.plot(x, y, label=label, linewidth=2.2, color=color)
+    ax.set(title=title, xlabel=xlabel, ylabel=ylabel)
+    ax.grid(alpha=0.2)
+    ax.legend(frameon=False)
+    save(fig, name)
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    retail = load_dataset("synthetic_retail", n_rows=6_000, seed=910).frame
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    loss = retail["default_12m"] * retail["lgd"] * retail["ead"]
+    ax.hist(loss[loss > 0], bins=45, color=BLUE, alpha=0.78)
+    ax.axvline(loss.mean(), color=GOLD, linewidth=2.2, label="portfolio mean loss")
+    ax.set(
+        title="Loss distribution: expected loss and tail", xlabel="account loss", ylabel="frequency"
+    )
+    ax.legend(frameon=False)
+    save(fig, "part-01-loss-distribution.png")
+
+    grouped = retail.groupby("product", observed=True)["default_12m"].mean().sort_values()
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    grouped.plot.bar(ax=ax, color=[TEAL, BLUE, GOLD])
+    ax.set(title="Observed default rate by product", xlabel="product", ylabel="default rate")
+    ax.tick_params(axis="x", rotation=0)
+    save(fig, "part-02-product-risk.png")
+
+    stages = load_case_dataset("synthetic_ifrs9_schedule", n_rows=500, seed=912).frame
+    stage_counts = stages.drop_duplicates("account_id")["stage"].value_counts().sort_index()
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.bar(stage_counts.index.astype(str), stage_counts.values, color=[TEAL, GOLD, NAVY])
+    ax.set(title="Synthetic IFRS 9 stage distribution", xlabel="stage", ylabel="accounts")
+    save(fig, "part-03-stages.png")
+
+    damaged = retail.copy(deep=True)
+    rng = np.random.default_rng(913)
+    defect_rates = {"income": 0.12, "debt_to_income": 0.08, "employment_years": 0.05}
+    for column, rate in defect_rates.items():
+        rows = rng.choice(damaged.index, size=int(rate * len(damaged)), replace=False)
+        damaged.loc[rows, column] = np.nan
+    damaged.loc[rng.choice(damaged.index, 150, replace=False), "age"] = -5
+    damaged.loc[rng.choice(damaged.index, 210, replace=False), "debt_to_income"] = 1.8
+    variables = ["income", "debt_to_income", "employment_years", "age"]
+    missing = damaged[variables].isna().mean()
+    invalid = pd.Series(
+        {
+            "income": damaged["income"].lt(0).mean(),
+            "debt_to_income": damaged["debt_to_income"].gt(1).mean(),
+            "employment_years": damaged["employment_years"].lt(0).mean(),
+            "age": (~damaged["age"].between(18, 100)).mean(),
+        }
+    )
+    y = np.arange(len(variables))
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.barh(y, missing[variables], color=BLUE, label="missing")
+    ax.barh(y, invalid[variables], left=missing[variables], color=GOLD, label="rule breach")
+    ax.set_yticks(y, variables)
+    ax.set(
+        title="Deliberately damaged teaching copy: quality profile",
+        xlabel="share of records",
+    )
+    ax.legend(frameon=False)
+    save(fig, "part-04-data-quality.png")
+
+    bins = np.quantile(retail["debt_to_income"], np.linspace(0, 1, 7))
+    idx = np.clip(np.digitize(retail["debt_to_income"], bins[1:-1]), 0, 5)
+    rates = np.array([retail.loc[idx == i, "default_12m"].mean() for i in range(6)])
+    line_figure(
+        np.arange(1, 7),
+        [rates],
+        ["observed bad rate"],
+        "Characteristic curve",
+        "ordered bin",
+        "bad rate",
+        "part-05-characteristic.png",
+    )
+
+    score = np.asarray(1.0 / (1.0 + np.exp(4.0 - 4.0 * retail["utilisation"])))
+    cuts = np.quantile(score, np.linspace(0, 1, 11))
+    bucket = np.clip(np.digitize(score, cuts[1:-1]), 0, 9)
+    predicted = np.array([score[bucket == i].mean() for i in range(10)])
+    observed = np.array([retail.loc[bucket == i, "default_12m"].mean() for i in range(10)])
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.plot([0, 1], [0, 1], linestyle="--", color=GREY)
+    ax.plot(predicted, observed, marker="o", color=BLUE)
+    ax.set(
+        title="Calibration is distinct from discrimination",
+        xlabel="mean predicted PD",
+        ylabel="observed default rate",
+    )
+    save(fig, "part-06-calibration.png")
+
+    months = np.arange(1, 61)
+    curves = [constant_hazard_curve(p, 60).cumsum() for p in (0.01, 0.03, 0.08)]
+    line_figure(
+        months,
+        curves,
+        ["1% 12m PD", "3% 12m PD", "8% 12m PD"],
+        "Lifetime cumulative PD",
+        "month",
+        "cumulative PD",
+        "part-07-lifetime-pd.png",
+    )
+
+    scenarios = stages.assign(base=lambda x: x.marginal_pd * x.lgd * x.ead)
+    totals = [scenarios.base.sum() * m for m in (0.72, 1.0, 1.48)]
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.bar(["upside", "base", "downside"], totals, color=[TEAL, BLUE, GOLD])
+    ax.set(title="Scenario ECL before probability weighting", ylabel="undiscounted ECL")
+    save(fig, "part-08-scenario-ecl.png")
+
+    pd_grid = np.geomspace(0.0005, 0.20, 80)
+    irb = irb_capital(
+        pd_grid,
+        np.full(80, 0.45),
+        np.ones(80),
+        maturity_years=np.full(80, 2.5),
+        asset_class="corporate",
+        annual_sales_eur_millions=np.full(80, 100.0),
+    )
+    line_figure(
+        pd_grid,
+        [irb.rows["risk_weighted_assets"]],
+        ["corporate IRB"],
+        "IRB risk-weight sensitivity",
+        "PD",
+        "risk weight",
+        "part-09-irb-sensitivity.png",
+    )
+
+    cutoffs = np.linspace(0.01, 0.30, 60)
+    profit = 900 * (score[:, None] < cutoffs).mean(axis=0) - 4_500 * (
+        (score[:, None] < cutoffs) * retail["default_12m"].to_numpy()[:, None]
+    ).mean(axis=0)
+    line_figure(
+        cutoffs,
+        [profit],
+        ["illustrative expected margin"],
+        "Cutoff economics",
+        "PD cutoff",
+        "value per applicant",
+        "part-10-cutoff-economics.png",
+    )
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    labels = ["data", "prediction", "calibration", "outcome", "fairness"]
+    values = [0.05, 0.11, 0.08, 0.17, 0.06]
+    ax.bar(labels, values, color=[TEAL, BLUE, GOLD, NAVY, GREY])
+    ax.axhline(0.10, color="#B44", linestyle="--", label="illustrative alert line")
+    ax.set(title="Monitoring layers must be separated", ylabel="normalized movement")
+    ax.legend(frameon=False)
+    save(fig, "part-11-monitoring-layers.png")
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.axis("off")
+    boxes = [
+        (0.06, 0.66, "Evidence\nregistry"),
+        (0.38, 0.66, "Specialist\nproposal"),
+        (0.70, 0.66, "Policy\ngate"),
+        (0.38, 0.22, "Human\napproval"),
+    ]
+    for x, y, text in boxes:
+        ax.add_patch(
+            plt.Rectangle((x, y), 0.22, 0.18, facecolor="#EEF3F7", edgecolor=BLUE, linewidth=1.6)
+        )
+        ax.text(x + 0.11, y + 0.09, text, ha="center", va="center", color=NAVY, weight="bold")
+    for start, end in [
+        ((0.28, 0.75), (0.38, 0.75)),
+        ((0.60, 0.75), (0.70, 0.75)),
+        ((0.81, 0.66), (0.55, 0.40)),
+    ]:
+        ax.annotate(
+            "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
+        )
+    ax.set_title(
+        "Governed agent: evidence, proposal, gate, and human authority", color=NAVY, weight="bold"
+    )
+    save(fig, "part-12-agent-governance.png")
+    print(f"Generated 12 original figures in {OUT}")
+
+
+if __name__ == "__main__":
+    main()
