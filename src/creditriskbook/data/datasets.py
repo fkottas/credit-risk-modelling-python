@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from scipy.io import arff
 
 from .synthetic import make_synthetic_retail_portfolio
 
@@ -50,6 +51,16 @@ SOUTH_GERMAN_URL = "https://archive.ics.uci.edu/static/public/522/south+german+c
 SOUTH_GERMAN_ZIP_SHA256 = "0b40d40eb7321693d559e247a556f88a6cc8df8489c3cb2ae084db7592584551"
 TAIWAN_URL = "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip"
 TAIWAN_ZIP_SHA256 = "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
+CREDIT_APPROVAL_URL = "https://archive.ics.uci.edu/static/public/27/credit+approval.zip"
+CREDIT_APPROVAL_ZIP_SHA256 = "e3adfa0387815e3a9d8aaaf7b1cd7365424c83298bca6358bc48e451b4a26dd3"
+POLISH_BANKRUPTCY_URL = (
+    "https://archive.ics.uci.edu/static/public/365/polish+companies+bankruptcy+data.zip"
+)
+POLISH_BANKRUPTCY_ZIP_SHA256 = "17377929aa0b204bbf957e56462cf827c19fe4e2ce89f27dfbc77f9ea2bb16c9"
+TAIWAN_BANKRUPTCY_URL = (
+    "https://archive.ics.uci.edu/static/public/572/taiwanese+bankruptcy+prediction.zip"
+)
+TAIWAN_BANKRUPTCY_ZIP_SHA256 = "c346f5ad2618cb198e7ed8306cf2f31fe3bb2ec60acdbbe1736788d50f269aac"
 
 
 def _sha256_bytes(content: bytes) -> str:
@@ -194,7 +205,9 @@ def _south_german_bundle(cache_dir: Path) -> DatasetBundle:
         ),
         quality_spec=QualitySpec(
             ranges={"duration": (1.0, 120.0), "amount": (0.0, None)},
-            allowed_values={column: frozenset(frame[column].dropna().unique()) for column in categorical},
+            allowed_values={
+                column: frozenset(frame[column].dropna().unique()) for column in categorical
+            },
             forbidden_model_columns=frozenset({"age", "personal_status_sex", "foreign_worker"}),
         ),
     )
@@ -211,15 +224,21 @@ def _taiwan_bundle(cache_dir: Path) -> DatasetBundle:
     try:
         frame = pd.read_excel(io.BytesIO(raw), header=1, engine="xlrd")
     except ImportError as exc:
-        raise ImportError("Install optional dataset support with: pip install -e '.[datasets]'") from exc
+        raise ImportError(
+            "Install optional dataset support with: pip install -e '.[datasets]'"
+        ) from exc
     frame.columns = [_normalise_name(column) for column in frame.columns]
-    target_candidates = [column for column in frame.columns if "default" in column and column != "id"]
+    target_candidates = [
+        column for column in frame.columns if "default" in column and column != "id"
+    ]
     if len(target_candidates) != 1:
         raise ValueError(f"Could not identify the Taiwan target column: {target_candidates}")
     target_source = target_candidates[0]
     frame = frame.rename(columns={"id": "application_id", target_source: "default_12m"})
     frame["application_id"] = frame["application_id"].map(lambda value: f"TCC-{int(value):06d}")
-    protected = tuple(column for column in ("sex", "education", "marriage", "age") if column in frame)
+    protected = tuple(
+        column for column in ("sex", "education", "marriage", "age") if column in frame
+    )
     excluded = {"application_id", "default_12m", *protected}
     numeric = tuple(column for column in frame.columns if column not in excluded)
     return DatasetBundle(
@@ -268,7 +287,9 @@ def _kaggle_bundle(data_path: Path) -> DatasetBundle:
     }
     missing = required - set(frame.columns)
     if missing:
-        raise ValueError(f"The Kaggle file does not match the reviewed schema; missing {sorted(missing)}")
+        raise ValueError(
+            f"The Kaggle file does not match the reviewed schema; missing {sorted(missing)}"
+        )
     frame = frame.copy()
     frame.insert(0, "application_id", [f"KCR-{i:07d}" for i in range(len(frame))])
     frame = frame.rename(columns={"loan_status": "default_12m"})
@@ -320,8 +341,128 @@ def _kaggle_bundle(data_path: Path) -> DatasetBundle:
     )
 
 
+def _credit_approval_bundle(cache_dir: Path) -> DatasetBundle:
+    archive = _download_checked(
+        CREDIT_APPROVAL_URL,
+        CREDIT_APPROVAL_ZIP_SHA256,
+        cache_dir / "uci_credit_approval" / "credit_approval.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
+        raw = zipped.read("crx.data")
+    columns = [f"a{i}" for i in range(1, 17)]
+    frame = pd.read_csv(io.BytesIO(raw), names=columns, na_values="?")
+    frame.insert(0, "application_id", [f"UCA-{i:04d}" for i in range(len(frame))])
+    frame["approved"] = (frame.pop("a16") == "+").astype(int)
+    numeric = ("a2", "a3", "a8", "a11", "a14", "a15")
+    for feature in numeric:
+        frame[feature] = pd.to_numeric(frame[feature], errors="coerce")
+    categorical = tuple(f"a{i}" for i in (1, 4, 5, 6, 7, 9, 10, 12, 13))
+    return DatasetBundle(
+        key="uci_credit_approval",
+        frame=frame,
+        target="approved",
+        numeric_features=numeric,
+        categorical_features=categorical,
+        protected_attributes=(),
+        id_column="application_id",
+        date_column=None,
+        split_strategy="stratified_random_no_time_available",
+        source_url="https://archive.ics.uci.edu/dataset/27/credit+approval",
+        licence="CC BY 4.0",
+        attribution="Quinlan, J. (1987), Credit Approval, UCI ML Repository, DOI 10.24432/C5FS30.",
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "The target is approval, not default; fields are deliberately anonymised; no dates, economics, "
+            "or protected-attribute definitions are available. Use for missing-data and pipeline exercises only."
+        ),
+        quality_spec=QualitySpec(forbidden_model_columns=frozenset()),
+    )
+
+
+def _polish_bankruptcy_bundle(cache_dir: Path) -> DatasetBundle:
+    archive = _download_checked(
+        POLISH_BANKRUPTCY_URL,
+        POLISH_BANKRUPTCY_ZIP_SHA256,
+        cache_dir / "uci_polish_bankruptcy" / "polish_bankruptcy.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
+        raw = zipped.read("5year.arff")
+    parsed, _ = arff.loadarff(io.StringIO(raw.decode("utf-8")))
+    frame = pd.DataFrame(parsed)
+    frame.columns = [_normalise_name(column) for column in frame.columns]
+    frame.insert(0, "company_id", [f"POL-5Y-{i:05d}" for i in range(len(frame))])
+    frame["bankrupt_within_1y"] = frame.pop("class").map(
+        lambda value: int(value.decode("utf-8") if isinstance(value, bytes) else value)
+    )
+    numeric = tuple(f"attr{i}" for i in range(1, 65))
+    return DatasetBundle(
+        key="uci_polish_bankruptcy",
+        frame=frame,
+        target="bankrupt_within_1y",
+        numeric_features=numeric,
+        categorical_features=(),
+        protected_attributes=(),
+        id_column="company_id",
+        date_column=None,
+        split_strategy="stratified_random_no_time_available",
+        source_url="https://archive.ics.uci.edu/dataset/365/polish+companies+bankruptcy+data",
+        licence="CC BY 4.0",
+        attribution="Tomczak, S. (2016), Polish Companies Bankruptcy, UCI ML Repository, DOI 10.24432/C5F600.",
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "This adapter uses the 5th-year file (one-year forecast horizon). It is highly imbalanced, "
+            "contains missing ratios, and has no entity dates for an out-of-time split."
+        ),
+        quality_spec=QualitySpec(forbidden_model_columns=frozenset()),
+    )
+
+
+def _taiwan_bankruptcy_bundle(cache_dir: Path) -> DatasetBundle:
+    archive = _download_checked(
+        TAIWAN_BANKRUPTCY_URL,
+        TAIWAN_BANKRUPTCY_ZIP_SHA256,
+        cache_dir / "uci_taiwan_bankruptcy" / "taiwan_bankruptcy.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
+        raw = zipped.read("data.csv")
+    frame = pd.read_csv(io.BytesIO(raw))
+    frame.columns = [_normalise_name(column) for column in frame.columns]
+    target_source = next(column for column in frame.columns if column.startswith("bankrupt"))
+    frame.insert(0, "company_id", [f"TWB-{i:05d}" for i in range(len(frame))])
+    frame["bankrupt"] = frame.pop(target_source).astype(int)
+    numeric = tuple(column for column in frame.columns if column not in {"company_id", "bankrupt"})
+    return DatasetBundle(
+        key="uci_taiwan_bankruptcy",
+        frame=frame,
+        target="bankrupt",
+        numeric_features=numeric,
+        categorical_features=(),
+        protected_attributes=(),
+        id_column="company_id",
+        date_column=None,
+        split_strategy="stratified_random_no_time_available",
+        source_url="https://archive.ics.uci.edu/dataset/572/taiwanese+bankruptcy+prediction",
+        licence="CC BY 4.0",
+        attribution="Taiwanese Bankruptcy Prediction (2020), UCI ML Repository, dataset 572.",
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "Company bankruptcy is not borrower default. The sample covers 1999-2009 and does not include "
+            "observation dates or a lender decision process. Use for low-event corporate modelling exercises."
+        ),
+        quality_spec=QualitySpec(forbidden_model_columns=frozenset()),
+    )
+
+
 def available_datasets() -> tuple[str, ...]:
-    return ("synthetic_retail", "uci_south_german", "uci_taiwan_credit_card", "kaggle_credit_risk")
+    return (
+        "synthetic_retail",
+        "uci_south_german",
+        "uci_taiwan_credit_card",
+        "uci_credit_approval",
+        "uci_polish_bankruptcy",
+        "uci_taiwan_bankruptcy",
+        "kaggle_credit_risk",
+    )
 
 
 def load_dataset(
@@ -340,7 +481,15 @@ def load_dataset(
         return _south_german_bundle(Path(cache_dir))
     if key == "uci_taiwan_credit_card":
         return _taiwan_bundle(Path(cache_dir))
+    if key == "uci_credit_approval":
+        return _credit_approval_bundle(Path(cache_dir))
+    if key == "uci_polish_bankruptcy":
+        return _polish_bankruptcy_bundle(Path(cache_dir))
+    if key == "uci_taiwan_bankruptcy":
+        return _taiwan_bankruptcy_bundle(Path(cache_dir))
     if key == "kaggle_credit_risk":
         path = Path(data_path) if data_path else Path(cache_dir) / key / "credit_risk_dataset.csv"
         return _kaggle_bundle(path)
-    raise KeyError(f"Unknown dataset {key!r}. Available datasets: {', '.join(available_datasets())}")
+    raise KeyError(
+        f"Unknown dataset {key!r}. Available datasets: {', '.join(available_datasets())}"
+    )

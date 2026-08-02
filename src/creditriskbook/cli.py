@@ -12,7 +12,9 @@ from creditriskbook.workflows import run_end_to_end, write_run_manifest
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the tested credit-risk teaching workflow")
     parser.add_argument("--dataset", choices=available_datasets(), default="synthetic_retail")
-    parser.add_argument("--data-path", default=None, help="Local CSV path for a manual dataset adapter")
+    parser.add_argument(
+        "--data-path", default=None, help="Local CSV path for a manual dataset adapter"
+    )
     parser.add_argument("--cache-dir", default="data/raw")
     parser.add_argument("--rows", type=int, default=5_000, help="Rows for the synthetic dataset")
     parser.add_argument("--seed", type=int, default=42)
@@ -37,4 +39,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

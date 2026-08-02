@@ -4,7 +4,7 @@
 
 Author: **Dr. Ferdinantos Kottas**
 
-> Work in progress. The repository is being developed chapter by chapter. It is educational material, not a production lending system or legal, regulatory, accounting, or investment advice.
+> First-edition review build. It is educational material, not a production lending system or legal, regulatory, accounting, or investment advice.
 
 ## What makes this project different
 
@@ -21,12 +21,15 @@ The examples deliberately distinguish:
 
 ## Dataset switching
 
-Students are not locked into one dataset. A common dataset interface supports four modes:
+Students are not locked into one dataset. A common dataset interface supports seven modes:
 
 1. `synthetic_retail` - generated entirely by this repository and safe for unrestricted exercises;
 2. `uci_south_german` - a corrected, small CC BY 4.0 benchmark;
 3. `uci_taiwan_credit_card` - a larger CC BY 4.0 behavioural-credit benchmark;
-4. `kaggle_credit_risk` - a CC0 Kaggle teaching dataset downloaded by the student and never bundled here.
+4. `uci_credit_approval` - an anonymised CC BY 4.0 approval case used only for missing-data and decision-pipeline labs;
+5. `uci_polish_bankruptcy` - a CC BY 4.0 low-event corporate-failure case;
+6. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
+7. `kaggle_credit_risk` - a CC0 Kaggle teaching dataset downloaded by the student and never bundled here.
 
 Additional datasets will be added only after their provenance, licence, permitted use, attribution, and redistribution terms are recorded in [`data/dataset_registry.yml`](data/dataset_registry.yml). A Kaggle mirror never replaces the original publisher's licence.
 
@@ -39,6 +42,7 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 python -m pip install -e .
 python -m unittest discover -s tests -v
+python tools/validate_notebooks.py
 python examples/end_to_end.py --dataset synthetic_retail
 ```
 
@@ -70,7 +74,7 @@ tests/                   deterministic unit and integration tests
 
 The earlier top-level utilities in `src/*.py`, dataset generators in `data/generators/`, configuration, and notebooks remain available. They are preserved during the migration to the tested package structure and will be reviewed and integrated case by case rather than deleted.
 
-See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) for the expanded book structure.
+See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) for the eighteen-chapter first-edition structure.
 
 ## Legal and evidence policy
 
@@ -85,4 +89,4 @@ See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md
 
 ## Current status
 
-This first foundation establishes the legal, reproducibility, testing, and software architecture. It is not presented as the completed book. Chapters and regulated-use examples will be added through reviewed pull requests, with tests required before merge.
+The review branch contains the complete first-edition structure, an original from-scratch scorecard toolkit, nine executable notebooks, multiple public-data adapters, credit component calculators, and the end-to-end governed workflow. The manuscript remains subject to technical, regulatory, legal, copy-editing, and independent model review before publication.

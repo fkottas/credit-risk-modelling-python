@@ -24,5 +24,6 @@ def population_stability_index(
     actual_counts = np.histogram(actual, bins=edges)[0] / actual.size
     expected_counts = np.clip(expected_counts, epsilon, None)
     actual_counts = np.clip(actual_counts, epsilon, None)
-    return float(np.sum((actual_counts - expected_counts) * np.log(actual_counts / expected_counts)))
-
+    return float(
+        np.sum((actual_counts - expected_counts) * np.log(actual_counts / expected_counts))
+    )

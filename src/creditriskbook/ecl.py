@@ -7,7 +7,6 @@ from collections.abc import Mapping
 import numpy as np
 import pandas as pd
 
-
 DEFAULT_SCENARIO_WEIGHTS = {"upside": 0.20, "base": 0.55, "downside": 0.25}
 DEFAULT_PD_MULTIPLIERS = {"upside": 0.75, "base": 1.00, "downside": 1.45}
 DEFAULT_LGD_MULTIPLIERS = {"upside": 0.90, "base": 1.00, "downside": 1.15}
@@ -45,7 +44,9 @@ def educational_ecl(
     missing = required - set(exposures.columns)
     if missing:
         raise ValueError(f"Missing ECL columns: {sorted(missing)}")
-    if set(scenario_weights) != set(pd_multipliers) or set(scenario_weights) != set(lgd_multipliers):
+    if set(scenario_weights) != set(pd_multipliers) or set(scenario_weights) != set(
+        lgd_multipliers
+    ):
         raise ValueError("Scenario keys must agree")
     if not np.isclose(sum(scenario_weights.values()), 1.0):
         raise ValueError("Scenario weights must sum to 1")
@@ -72,4 +73,3 @@ def educational_ecl(
         weighted += weight * scenario_ecl
     result["ecl_probability_weighted"] = weighted
     return result
-

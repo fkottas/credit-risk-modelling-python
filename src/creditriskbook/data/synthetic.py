@@ -30,7 +30,9 @@ def make_synthetic_retail_portfolio(n_rows: int = 5_000, seed: int = 42) -> pd.D
     sex = rng.choice(["female", "male", "not_recorded"], n_rows, p=[0.49, 0.49, 0.02])
     region = rng.choice(["north", "south", "east", "west"], n_rows)
     product = rng.choice(["personal_loan", "credit_card", "bnpl"], n_rows, p=[0.48, 0.32, 0.20])
-    home_ownership = rng.choice(["rent", "mortgage", "own", "other"], n_rows, p=[0.38, 0.36, 0.22, 0.04])
+    home_ownership = rng.choice(
+        ["rent", "mortgage", "own", "other"], n_rows, p=[0.38, 0.36, 0.22, 0.04]
+    )
     purpose = rng.choice(["debt_consolidation", "vehicle", "home", "education", "other"], n_rows)
 
     income = np.clip(rng.lognormal(mean=np.log(38_000), sigma=0.55, size=n_rows), 8_000, 300_000)
@@ -40,11 +42,17 @@ def make_synthetic_retail_portfolio(n_rows: int = 5_000, seed: int = 42) -> pd.D
     credit_history_years = np.minimum(rng.gamma(2.4, 3.2, n_rows), np.maximum(age - 18, 0))
     enquiries_6m = np.clip(rng.poisson(1.4, n_rows), 0, 12)
     loan_amount = np.clip(rng.lognormal(np.log(8_000), 0.65, n_rows), 500, 80_000)
-    term_months = rng.choice([6, 12, 24, 36, 48, 60], n_rows, p=[0.05, 0.16, 0.18, 0.31, 0.10, 0.20])
+    term_months = rng.choice(
+        [6, 12, 24, 36, 48, 60], n_rows, p=[0.05, 0.16, 0.18, 0.31, 0.10, 0.20]
+    )
 
-    year_fraction = (application_date.year.to_numpy() - 2018) + application_date.month.to_numpy() / 12
+    year_fraction = (
+        application_date.year.to_numpy() - 2018
+    ) + application_date.month.to_numpy() / 12
     macro_unemployment = 5.1 + 0.55 * np.sin(year_fraction * 1.3)
-    macro_unemployment += np.where((application_date >= "2020-03-01") & (application_date <= "2021-06-30"), 2.1, 0)
+    macro_unemployment += np.where(
+        (application_date >= "2020-03-01") & (application_date <= "2021-06-30"), 2.1, 0
+    )
 
     risk_logit = (
         -4.25
@@ -64,7 +72,9 @@ def make_synthetic_retail_portfolio(n_rows: int = 5_000, seed: int = 42) -> pd.D
 
     interest_rate = np.clip(0.045 + 0.24 * true_pd + rng.normal(0, 0.012, n_rows), 0.025, 0.32)
     ead = loan_amount * np.clip(rng.normal(0.97, 0.07, n_rows), 0.72, 1.18)
-    lgd_mean = np.clip(0.28 + 0.18 * (home_ownership == "rent") + 0.10 * (product == "bnpl"), 0.08, 0.85)
+    lgd_mean = np.clip(
+        0.28 + 0.18 * (home_ownership == "rent") + 0.10 * (product == "bnpl"), 0.08, 0.85
+    )
     concentration = 11.0
     lgd = rng.beta(lgd_mean * concentration, (1.0 - lgd_mean) * concentration)
     days_past_due = np.where(

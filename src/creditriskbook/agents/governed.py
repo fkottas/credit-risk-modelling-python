@@ -73,4 +73,3 @@ class GovernedMonitoringAgent:
             evidence_sha256=digest,
             created_at_utc=datetime.now(UTC).isoformat(),
         )
-

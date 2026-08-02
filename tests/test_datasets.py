@@ -47,10 +47,17 @@ class DatasetTests(unittest.TestCase):
     def test_available_dataset_keys_are_stable(self) -> None:
         self.assertEqual(
             available_datasets(),
-            ("synthetic_retail", "uci_south_german", "uci_taiwan_credit_card", "kaggle_credit_risk"),
+            (
+                "synthetic_retail",
+                "uci_south_german",
+                "uci_taiwan_credit_card",
+                "uci_credit_approval",
+                "uci_polish_bankruptcy",
+                "uci_taiwan_bankruptcy",
+                "kaggle_credit_risk",
+            ),
         )
 
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -58,6 +58,51 @@ datasets:
     limitations: 2005 Taiwan credit-card sample; demographic fields and historical context limit generalisation.
     attribution: Yeh, I. (2009), Default of Credit Card Clients, UCI ML Repository, DOI 10.24432/C55S3H.
 
+  uci_credit_approval:
+    title: Credit Approval
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/27/credit+approval
+    doi: 10.24432/C5FS30
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved_with_scope_limit
+    cases: [missing_data, mixed_types, pipeline_testing, approval_bias_discussion]
+    limitations: >-
+      The outcome is approval rather than default. Attribute names and values were anonymised;
+      there are no dates, economics, or protected-attribute definitions. It is not a PD dataset.
+    attribution: Quinlan, J. (1987), Credit Approval, UCI ML Repository, DOI 10.24432/C5FS30.
+
+  uci_polish_bankruptcy:
+    title: Polish Companies Bankruptcy
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/365/polish+companies+bankruptcy+data
+    doi: 10.24432/C5F600
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved
+    cases: [corporate_failure, low_default, missing_ratios, horizon_comparison, model_validation]
+    limitations: >-
+      Financial ratios came from EMIS and are provided by UCI under CC BY 4.0. The adapter uses
+      the one-year-ahead 5th-year file. Missing ratios, class imbalance, and absent entity dates
+      constrain validation; bankruptcy is not identical to bank default.
+    attribution: Tomczak, S. (2016), Polish Companies Bankruptcy, UCI ML Repository, DOI 10.24432/C5F600.
+
+  uci_taiwan_bankruptcy:
+    title: Taiwanese Bankruptcy Prediction
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/572/taiwanese+bankruptcy+prediction
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved
+    cases: [corporate_failure, low_event_models, machine_learning, calibration]
+    limitations: >-
+      Company data cover 1999-2009 and contain no observation-date field. Bankruptcy follows
+      Taiwanese exchange rules and must not be relabelled as regulatory default.
+    attribution: Taiwanese Bankruptcy Prediction (2020), UCI ML Repository, dataset 572.
+
   kaggle_credit_risk:
     title: Credit Risk Dataset
     publisher: Kaggle dataset page by laotse
@@ -83,6 +128,29 @@ datasets:
     cases: [ifrs9_forward_looking, stress_testing, macroeconomic_scenarios]
     limitations: Country-level macro data require release-vintage and revision controls.
 
+  cfpb_hmda:
+    title: Home Mortgage Disclosure Act modified loan/application register
+    publisher: CFPB / FFIEC
+    official_url: https://www.consumerfinance.gov/data-research/hmda/
+    access_url: https://ffiec.cfpb.gov/data-publication/modified-lar
+    licence: United States government public data; verify current site terms and file notices
+    redistribution: do not bundle national extracts; code downloads user-selected years/geographies
+    status: approved_for_fair_lending_and_decision_analysis
+    cases: [mortgage_applications, approval_outcomes, pricing, fair_lending, geography]
+    limitations: >-
+      Public files are privacy-modified application and origination records, not loan-performance
+      or default data. They support decision and access analysis, not PD estimation.
+
+  fred_macro:
+    title: FRED macroeconomic series
+    publisher: Federal Reserve Bank of St. Louis and underlying series providers
+    official_url: https://fred.stlouisfed.org/docs/api/fred/
+    licence: series-specific; API metadata exposes copyright and citation information
+    redistribution: only series individually reviewed as public-domain or permissively licensed
+    status: conditional_per_series
+    cases: [ifrs9_forward_looking, cecl, stress_testing, scenario_design]
+    limitations: Real-time vintages, revisions, frequency alignment, and underlying-provider terms must be recorded.
+
   home_credit_competition:
     title: Home Credit Default Risk competition data
     publisher: Kaggle / Home Credit
@@ -92,6 +160,26 @@ datasets:
     status: conditional_not_bundled
     cases: [relational_data, feature_engineering, advanced_machine_learning]
     limitations: Student must accept current competition rules; examples cannot redistribute files.
+
+  give_me_some_credit_competition:
+    title: Give Me Some Credit competition data
+    publisher: Kaggle competition host and data provider
+    official_url: https://www.kaggle.com/competitions/GiveMeSomeCredit
+    licence: competition-specific rules
+    redistribution: never bundled; student must accept the current rules in their own account
+    status: conditional_not_bundled
+    cases: [class_imbalance, delinquency_features, leaderboard_overfitting]
+    limitations: A competition download is not permission to republish the files in a book repository.
+
+  paysim_kaggle:
+    title: PaySim synthetic mobile-money transactions
+    publisher: Kaggle mirror; original simulator authors must be cited
+    official_url: https://www.kaggle.com/datasets/ealaxi/paysim1
+    licence: verify current Kaggle licence and original-paper terms before every release
+    redistribution: not bundled by project policy
+    status: conditional_not_bundled
+    cases: [fraud, imbalanced_learning, transaction_monitoring]
+    limitations: Synthetic fraud data are not a credit-default outcome and should not be used to estimate PD.
 
   lending_club_archives:
     title: LendingClub historical loan data and mirrors
@@ -110,4 +198,3 @@ datasets:
     status: conditional
     cases: [benchmarking]
     limitations: Resolve provenance and licence back to the original publisher before use.
-

@@ -3,7 +3,11 @@ from __future__ import annotations
 import unittest
 
 from creditriskbook.data.datasets import load_dataset
-from creditriskbook.data.quality import assess_quality, inject_teaching_defects, quarantine_invalid_rows
+from creditriskbook.data.quality import (
+    assess_quality,
+    inject_teaching_defects,
+    quarantine_invalid_rows,
+)
 
 
 class DataQualityTests(unittest.TestCase):
@@ -33,4 +37,3 @@ class DataQualityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

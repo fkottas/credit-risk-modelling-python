@@ -26,11 +26,14 @@ class ECLTests(unittest.TestCase):
             }
         )
         result = educational_ecl(exposures)
-        self.assertGreater(result.loc[1, "ecl_probability_weighted"], result.loc[0, "ecl_probability_weighted"])
-        self.assertGreater(result.loc[2, "ecl_probability_weighted"], result.loc[1, "ecl_probability_weighted"])
+        self.assertGreater(
+            result.loc[1, "ecl_probability_weighted"], result.loc[0, "ecl_probability_weighted"]
+        )
+        self.assertGreater(
+            result.loc[2, "ecl_probability_weighted"], result.loc[1, "ecl_probability_weighted"]
+        )
         self.assertTrue((result["ecl_downside"] >= result["ecl_base"]).all())
 
 
 if __name__ == "__main__":
     unittest.main()
-

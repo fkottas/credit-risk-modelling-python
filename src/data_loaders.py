@@ -4,8 +4,8 @@ Credit Risk Modeling for Basel and IFRS 9 using Python.
 """
 
 from pathlib import Path
-import pandas as pd
 
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -69,11 +69,7 @@ def load_synthetic_fraud(path=None):
     return pd.read_csv(path)
 
 
-def load_world_bank_macro(
-    countries=None,
-    start_year=2000,
-    end_year=2023
-):
+def load_world_bank_macro(countries=None, start_year=2000, end_year=2023):
     """
     Load macroeconomic data from World Bank.
 
@@ -98,14 +94,14 @@ def load_world_bank_macro(
     indicators = {
         "NY.GDP.MKTP.KD.ZG": "gdp_growth",
         "FP.CPI.TOTL.ZG": "inflation",
-        "SL.UEM.TOTL.ZS": "unemployment"
+        "SL.UEM.TOTL.ZS": "unemployment",
     }
 
     raw = wb.data.DataFrame(
         list(indicators.keys()),
         economy=countries,
         time=range(start_year, end_year + 1),
-        labels=True
+        labels=True,
     )
 
     return raw
@@ -125,6 +121,7 @@ def load_csv(path):
     Load a local CSV file.
     """
     return pd.read_csv(path)
+
 
 def load_synthetic_lgd(path=None):
     """

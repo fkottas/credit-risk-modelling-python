@@ -57,7 +57,9 @@ def _result(
     detail: str,
     threshold: int = 0,
 ) -> RuleResult:
-    return RuleResult(rule, dimension, severity, failed, evaluated, threshold, failed <= threshold, detail)
+    return RuleResult(
+        rule, dimension, severity, failed, evaluated, threshold, failed <= threshold, detail
+    )
 
 
 def assess_quality(
@@ -222,7 +224,11 @@ def inject_teaching_defects(
 
     if bundle.categorical_features:
         category_column = next(
-            (name for name in bundle.categorical_features if name in bundle.quality_spec.allowed_values),
+            (
+                name
+                for name in bundle.categorical_features
+                if name in bundle.quality_spec.allowed_values
+            ),
             bundle.categorical_features[0],
         )
         invalid_rows = rng.choice(data.index, size=count, replace=False)

@@ -1,13 +1,11 @@
 # Manuscript
 
-The numbered files in `chapters/` follow the expanded plan in [`BOOK_PLAN.md`](BOOK_PLAN.md). Chapter numbers are stable identifiers; unfinished intervening chapters are intentional during staged development.
+The complete first-edition review manuscript is in `book/manuscript/`: front matter, eighteen large applied chapters, appendices and references. The earlier numbered foundation drafts remain in `book/chapters/` as development history.
 
-Current foundation chapters:
+`tools/build_book_docx.py` produces the review Word document using the `compact_reference_guide` design preset and `editorial_cover` pattern.
 
-- Chapter 4 - mathematical and operational foundations
-- Chapter 21 - lawful public, Kaggle, and synthetic data
-- Chapter 22 - data-quality assessment and teaching defects
-- Chapter 70 - governed agentic-AI architecture
+```bash
+$CODEX_PRIMARY_RUNTIME_PYTHON tools/build_book_docx.py
+```
 
-All executable statements point to tested package code. Results are generated during the run and are not pasted into the manuscript as unsupported static numbers.
-
+Generated review files live under the ignored `artifacts/` directory. The editable source, builder, tests and notebook validator remain in Git.

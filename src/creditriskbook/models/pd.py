@@ -72,7 +72,9 @@ def _pipeline(bundle: DatasetBundle) -> Pipeline:
 def fit_pd_model(bundle: DatasetBundle, train: pd.DataFrame) -> PDModel:
     required = list(bundle.model_features) + [bundle.target]
     if train[required].isna().any().any():
-        raise ValueError("Training data contain missing model fields; run quarantine_invalid_rows first")
+        raise ValueError(
+            "Training data contain missing model fields; run quarantine_invalid_rows first"
+        )
     if train[bundle.target].nunique() != 2:
         raise ValueError("Training target must contain both default and non-default observations")
     pipeline = _pipeline(bundle)
@@ -111,4 +113,3 @@ def evaluate_pd(y_true: pd.Series | np.ndarray, predicted_pd: np.ndarray) -> dic
         "log_loss": float(log_loss(observed, predicted, labels=[0, 1])),
         "ks": ks,
     }
-
