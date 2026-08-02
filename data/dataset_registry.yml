@@ -1,0 +1,113 @@
+registry_version: 1
+last_reviewed: 2026-08-02
+policy: >-
+  A dataset may be used only after provenance, licence, access conditions,
+  redistribution, attribution, and material limitations have been recorded.
+
+datasets:
+  synthetic_retail:
+    title: CreditRiskBook Synthetic Retail Portfolio
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally; do not confuse with observed customer data
+    status: approved
+    cases: [data_quality, pd, lgd, ead, ifrs9, deployment, monitoring, agentic_ai]
+    limitations: Synthetic relationships are pedagogical and do not represent a real portfolio.
+
+  uci_south_german:
+    title: South German Credit
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/522/south+german+credit
+    doi: 10.24432/C5X89F
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved
+    cases: [data_quality, pd, scorecards, cost_sensitive_evaluation, fairness]
+    limitations: >-
+      Data are from 1973-1975, bad credits were oversampled, amounts were transformed,
+      and sensitive historical variables require careful fairness discussion.
+    attribution: South German Credit (2019), UCI ML Repository, DOI 10.24432/C5X89F.
+
+  uci_statlog_german:
+    title: Statlog (German Credit Data)
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data
+    doi: 10.24432/C5NC77
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved_with_warning
+    cases: [data_quality_failure, coding_errors, reproducibility, cost_sensitive_evaluation]
+    limitations: >-
+      UCI's South German Credit record reports severe coding-information errors in this older
+      version. It is not the primary benchmark and is used to teach source validation.
+    attribution: Hofmann, H. (1994), Statlog German Credit Data, UCI ML Repository, DOI 10.24432/C5NC77.
+
+  uci_taiwan_credit_card:
+    title: Default of Credit Card Clients
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients
+    doi: 10.24432/C55S3H
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved
+    cases: [behavioural_pd, calibration, machine_learning, explainability, fairness]
+    limitations: 2005 Taiwan credit-card sample; demographic fields and historical context limit generalisation.
+    attribution: Yeh, I. (2009), Default of Credit Card Clients, UCI ML Repository, DOI 10.24432/C55S3H.
+
+  kaggle_credit_risk:
+    title: Credit Risk Dataset
+    publisher: Kaggle dataset page by laotse
+    official_url: https://www.kaggle.com/datasets/laotse/credit-risk-dataset
+    licence: CC0 1.0 as displayed by Kaggle on 2026-08-02
+    licence_url: https://creativecommons.org/publicdomain/zero/1.0/
+    redistribution: not bundled; each student downloads through their own Kaggle account
+    status: approved_for_education
+    cases: [pd, missing_data, dataset_switching, model_comparison]
+    limitations: >-
+      The page describes simulated credit-bureau-style data. Kaggle metadata and provenance
+      must be rechecked before each book release. It is not evidence about a live lender.
+    attribution: Credit Risk Dataset, Kaggle, dataset owner laotse, accessed 2026-08-02.
+
+  world_bank_wdi:
+    title: World Development Indicators
+    publisher: World Bank
+    official_url: https://data.worldbank.org/
+    terms_url: https://data.worldbank.org/summary-terms-of-use
+    licence: CC BY 4.0 plus World Bank mandatory additions; indicator-level terms may vary
+    redistribution: verify and record the licence displayed for each selected indicator
+    status: conditional_per_indicator
+    cases: [ifrs9_forward_looking, stress_testing, macroeconomic_scenarios]
+    limitations: Country-level macro data require release-vintage and revision controls.
+
+  home_credit_competition:
+    title: Home Credit Default Risk competition data
+    publisher: Kaggle / Home Credit
+    official_url: https://www.kaggle.com/competitions/home-credit-default-risk
+    licence: competition-specific rules
+    redistribution: prohibited by project policy unless the current rules explicitly permit it
+    status: conditional_not_bundled
+    cases: [relational_data, feature_engineering, advanced_machine_learning]
+    limitations: Student must accept current competition rules; examples cannot redistribute files.
+
+  lending_club_archives:
+    title: LendingClub historical loan data and mirrors
+    publisher: varies
+    licence: unclear or source-specific
+    redistribution: not permitted by project policy without documented source terms
+    status: excluded_pending_legal_review
+    cases: []
+    limitations: Public availability or a Kaggle mirror is not evidence of reuse rights.
+
+  openml_mirrors:
+    title: Credit datasets mirrored on OpenML
+    publisher: OpenML and original dataset owners
+    licence: dataset-specific
+    redistribution: follow the original dataset licence, not only the aggregator metadata
+    status: conditional
+    cases: [benchmarking]
+    limitations: Resolve provenance and licence back to the original publisher before use.
+
