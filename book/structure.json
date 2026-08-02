@@ -1,0 +1,151 @@
+{
+  "title": "Intelligent Credit Risk Modeling with Python",
+  "subtitle": "From Data Quality and Scorecards to IFRS 9, Basel IRB, Deployment, and Governed Agentic AI",
+  "author": "Dr. Ferdinantos Kottas",
+  "parts": [
+    {
+      "number": 1,
+      "title": "Credit Risk Foundations and the End-to-End System",
+      "chapters": [
+        {"number": 1, "title": "Credit Risk as Uncertain Cash Flows", "code": "creditriskbook.decisioning", "dataset": "synthetic_retail"},
+        {"number": 2, "title": "Expected Loss, Unexpected Loss, and the Loss Distribution", "code": "creditriskbook.capital", "dataset": "synthetic_corporate_irb"},
+        {"number": 3, "title": "Dependence Between PD, LGD, and EAD", "code": "creditriskbook.risk_components", "dataset": "synthetic_retail"},
+        {"number": 4, "title": "Time, Cohorts, Transitions, and Competing Events", "code": "creditriskbook.survival", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 5, "title": "Classification, Regression, Survival, and Multi-State Formulations", "code": "creditriskbook.models", "dataset": "uci_taiwan_credit_card"},
+        {"number": 6, "title": "The Credit Model Operating System", "code": "creditriskbook.workflows", "dataset": "synthetic_retail"}
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Products, Borrowers, Lifecycle, and Credit Policy",
+      "chapters": [
+        {"number": 7, "title": "Retail Loans, Credit Cards, and Mortgages", "code": "creditriskbook.data", "dataset": "synthetic_retail"},
+        {"number": 8, "title": "SME, Corporate, and Specialised Lending", "code": "creditriskbook.irb", "dataset": "synthetic_corporate_irb"},
+        {"number": 9, "title": "BNPL, Microcredit, and Embedded Finance", "code": "creditriskbook.data", "dataset": "synthetic_retail"},
+        {"number": 10, "title": "Prime, Subprime, Thin-File, and Low-Default Segments", "code": "creditriskbook.models", "dataset": "uci_polish_bankruptcy"},
+        {"number": 11, "title": "Origination, Account Management, Default, and Recovery", "code": "creditriskbook.data.portfolios", "dataset": "synthetic_recovery"},
+        {"number": 12, "title": "Risk Appetite, Affordability, Overrides, and Policy Rules", "code": "creditriskbook.decisioning", "dataset": "synthetic_retail"}
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Basel, IFRS 9, CECL, and Responsible Lending",
+      "chapters": [
+        {"number": 13, "title": "Basel Credit Risk Architecture: Standardised and IRB Approaches", "code": "creditriskbook.irb", "dataset": "synthetic_corporate_irb"},
+        {"number": 14, "title": "Regulatory Default and IRB Asset-Class Definitions", "code": "creditriskbook.irb", "dataset": "synthetic_corporate_irb"},
+        {"number": 15, "title": "IRB Use Test, Rating Systems, and Governance", "code": "creditriskbook.irb.validation", "dataset": "synthetic_corporate_irb"},
+        {"number": 16, "title": "IFRS 9 Impairment, Staging, and Significant Increase in Credit Risk", "code": "creditriskbook.ifrs9", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 17, "title": "CECL and Its Relationship to IFRS 9", "code": "creditriskbook.ifrs9.provision_matrix", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 18, "title": "Consumer Protection, Fair Lending, Privacy, and High-Risk AI", "code": "creditriskbook.agents.policy", "dataset": "cfpb_hmda"}
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Lawful Data Engineering and Quality",
+      "chapters": [
+        {"number": 19, "title": "Internal, Bureau, Alternative, Public, and Synthetic Data", "code": "creditriskbook.data", "dataset": "dataset_registry"},
+        {"number": 20, "title": "Data Licences, Attribution, Privacy, and Reproducibility", "code": "creditriskbook.data.datasets", "dataset": "uci_south_german"},
+        {"number": 21, "title": "Data Contracts, Lineage, and Point-in-Time Joins", "code": "creditriskbook.data.quality", "dataset": "synthetic_retail"},
+        {"number": 22, "title": "Sampling, Observation Windows, and Target Construction", "code": "creditriskbook.models", "dataset": "uci_taiwan_credit_card"},
+        {"number": 23, "title": "Data Quality Dimensions, Rules, and Quarantine", "code": "creditriskbook.data.quality", "dataset": "synthetic_retail"},
+        {"number": 24, "title": "Missingness, Outliers, Leakage, and Selection Bias", "code": "creditriskbook.data.quality", "dataset": "uci_credit_approval"}
+      ]
+    },
+    {
+      "number": 5,
+      "title": "From-Scratch Scorecard Engineering",
+      "chapters": [
+        {"number": 25, "title": "Exploratory and Characteristic Analysis", "code": "creditriskbook.scorecard.reporting", "dataset": "synthetic_retail"},
+        {"number": 26, "title": "Manual Numeric and Categorical Binning", "code": "creditriskbook.scorecard.binning", "dataset": "synthetic_retail"},
+        {"number": 27, "title": "Automated Quantile, Equal-Width, ChiMerge, and Monotonic Binning", "code": "creditriskbook.scorecard.binning", "dataset": "synthetic_retail"},
+        {"number": 28, "title": "Weight of Evidence and Information Value from First Principles", "code": "creditriskbook.scorecard.woe", "dataset": "uci_south_german"},
+        {"number": 29, "title": "Logistic Regression by Maximum Likelihood and IRLS", "code": "creditriskbook.scorecard.model", "dataset": "synthetic_retail"},
+        {"number": 30, "title": "PDO Scaling, Bin Points, Ratings, and Reason Codes", "code": "creditriskbook.scorecard.scaling", "dataset": "synthetic_retail"}
+      ]
+    },
+    {
+      "number": 6,
+      "title": "PD Modeling, Machine Learning, and Model Selection",
+      "chapters": [
+        {"number": 31, "title": "Train, Validation, Test, Out-of-Time, and Cross-Validation Design", "code": "creditriskbook.models", "dataset": "synthetic_retail"},
+        {"number": 32, "title": "AUC, CAP, Accuracy Ratio, KS, Lift, and Cost", "code": "creditriskbook.models", "dataset": "uci_taiwan_credit_card"},
+        {"number": 33, "title": "Calibration, Master Scales, Grades, and Migration", "code": "creditriskbook.irb.parameters", "dataset": "synthetic_corporate_irb"},
+        {"number": 34, "title": "Trees, Random Forests, Gradient Boosting, and XGBoost", "code": "creditriskbook.scorecard.ModelScoreMapper", "dataset": "uci_taiwan_credit_card"},
+        {"number": 35, "title": "Explainability, Nonlinear Reason Codes, and Fairness Diagnostics", "code": "creditriskbook.scorecard.diagnostics", "dataset": "synthetic_retail"},
+        {"number": 36, "title": "Reject Inference and Champion-Challenger Strategy", "code": "creditriskbook.decisioning", "dataset": "uci_credit_approval"}
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Lifetime PD, LGD, and EAD",
+      "chapters": [
+        {"number": 37, "title": "Kaplan-Meier, Discrete Hazards, Cox, and AFT Models", "code": "creditriskbook.survival", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 38, "title": "Lifetime PD Curves and Rating Migration", "code": "creditriskbook.ifrs9.curves", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 39, "title": "Low-Default Portfolios and Bayesian Conservatism", "code": "creditriskbook.irb.parameters", "dataset": "uci_polish_bankruptcy"},
+        {"number": 40, "title": "Workout LGD Data, Discounting, and Cure", "code": "creditriskbook.risk_components", "dataset": "synthetic_recovery"},
+        {"number": 41, "title": "LGD Models, Calibration, and Downturn Conditions", "code": "creditriskbook.irb.parameters", "dataset": "synthetic_recovery"},
+        {"number": 42, "title": "EAD, Credit Conversion Factors, and Revolving Exposure", "code": "creditriskbook.risk_components", "dataset": "synthetic_revolving"}
+      ]
+    },
+    {
+      "number": 8,
+      "title": "IFRS 9, CECL, and Stress-Testing Engines",
+      "chapters": [
+        {"number": 43, "title": "ECL Engine Architecture and Data Contracts", "code": "creditriskbook.ifrs9.engine", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 44, "title": "Staging, SICR, Watchlists, Cures, and Backstops", "code": "creditriskbook.ifrs9.staging", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 45, "title": "Macroeconomic Scenarios, Satellite Models, and Weights", "code": "creditriskbook.ifrs9.engine", "dataset": "world_bank_wdi"},
+        {"number": 46, "title": "Contractual Cash Flows, EIR Discounting, and Prepayment", "code": "creditriskbook.ifrs9.engine", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 47, "title": "Provision Matrices, CECL Methods, and Management Overlays", "code": "creditriskbook.ifrs9.provision_matrix", "dataset": "synthetic_ifrs9_schedule"},
+        {"number": 48, "title": "Stress Testing, Reconciliation, Controls, and Disclosure", "code": "creditriskbook.ifrs9.overlays", "dataset": "synthetic_ifrs9_schedule"}
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Basel IRB, Portfolio, and Counterparty Risk",
+      "chapters": [
+        {"number": 49, "title": "Corporate and SME IRB Risk-Weight Functions", "code": "creditriskbook.irb.formulas", "dataset": "synthetic_corporate_irb"},
+        {"number": 50, "title": "Residential Mortgage, QRRE, and Other Retail IRB", "code": "creditriskbook.irb.formulas", "dataset": "synthetic_retail"},
+        {"number": 51, "title": "IRB PD Estimation, Long-Run Average, Calibration, and MoC", "code": "creditriskbook.irb.parameters", "dataset": "synthetic_corporate_irb"},
+        {"number": 52, "title": "IRB LGD, EAD, Downturn, Floors, and Defaulted Assets", "code": "creditriskbook.irb.parameters", "dataset": "synthetic_recovery"},
+        {"number": 53, "title": "Portfolio Concentration, Vasicek, Credit VaR, and Monte Carlo", "code": "creditriskbook.capital", "dataset": "synthetic_corporate_irb"},
+        {"number": 54, "title": "Counterparty Exposure, Netting, Collateral, CVA, and SA-CCR", "code": "creditriskbook.data.portfolios", "dataset": "synthetic_counterparty_profiles"}
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Validation, Decisions, and Optimization",
+      "chapters": [
+        {"number": 55, "title": "Independent Validation and the Model-Risk Framework", "code": "creditriskbook.irb.validation", "dataset": "synthetic_corporate_irb"},
+        {"number": 56, "title": "PD Backtesting, Calibration Tests, Stability, and Benchmarking", "code": "creditriskbook.irb.validation", "dataset": "synthetic_corporate_irb"},
+        {"number": 57, "title": "LGD, EAD, ECL, and Stress-Model Validation", "code": "creditriskbook.risk_components", "dataset": "synthetic_recovery"},
+        {"number": 58, "title": "UAT, Implementation Reconciliation, Shadow Runs, and Sign-Off", "code": "tests", "dataset": "synthetic_retail"},
+        {"number": 59, "title": "Cutoffs, Pricing, Profit, Affordability, and RAROC", "code": "creditriskbook.decisioning", "dataset": "synthetic_retail"},
+        {"number": 60, "title": "Credit Limits, Collections, Bandits, and Safe Reinforcement Learning", "code": "creditriskbook.decisioning", "dataset": "synthetic_revolving"}
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Deployment, Monitoring, and Model Governance",
+      "chapters": [
+        {"number": 61, "title": "Packaging, Run Manifests, Reproducibility, and Model Registry", "code": "creditriskbook.workflows", "dataset": "synthetic_retail"},
+        {"number": 62, "title": "Batch, API, and Real-Time Scoring Architectures", "code": "creditriskbook.cli", "dataset": "synthetic_retail"},
+        {"number": 63, "title": "CI/CD, Security, Access Control, and Deployment Gates", "code": ".github/workflows/tests.yml", "dataset": "synthetic_retail"},
+        {"number": 64, "title": "Data, Prediction, Outcome, Calibration, and Fairness Monitoring", "code": "creditriskbook.monitoring", "dataset": "synthetic_retail"},
+        {"number": 65, "title": "Incidents, Overlays, Redevelopment, Rollback, and Retirement", "code": "creditriskbook.agents", "dataset": "synthetic_retail"},
+        {"number": 66, "title": "Model Inventory, Documentation, Change Control, and Audit", "code": "creditriskbook.agents.core", "dataset": "synthetic_retail"}
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Governed Agentic AI and Integrated Cases",
+      "chapters": [
+        {"number": 67, "title": "What Agentic AI Means in Credit Risk", "code": "creditriskbook.agents", "dataset": "synthetic_retail"},
+        {"number": 68, "title": "Agent Architecture, Tools, Evidence, Memory, and Permissions", "code": "creditriskbook.agents.core", "dataset": "synthetic_retail"},
+        {"number": 69, "title": "Data-Quality and Lineage Agents", "code": "creditriskbook.agents.specialists", "dataset": "synthetic_retail"},
+        {"number": 70, "title": "Validation, Monitoring, and Documentation Agents", "code": "creditriskbook.agents.specialists", "dataset": "synthetic_corporate_irb"},
+        {"number": 71, "title": "Agent Evaluation, Prompt Injection, Red Teaming, and Human Approval", "code": "creditriskbook.agents.policy", "dataset": "synthetic_retail"},
+        {"number": 72, "title": "Integrated Case Studies and the Student Capstone", "code": "examples/end_to_end.py", "dataset": "all reviewed adapters"}
+      ]
+    }
+  ]
+}

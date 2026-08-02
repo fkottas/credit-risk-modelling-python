@@ -1,6 +1,6 @@
-# Applied Credit Risk with Python
+# Intelligent Credit Risk Modeling with Python
 
-**An application-first book and tested codebase for data quality, credit scoring, Basel IRB, IFRS 9, CECL, deployment, monitoring, and governed agentic AI.**
+**From Data Quality and Scorecards to IFRS 9, Basel IRB, Deployment, and Governed Agentic AI.**
 
 Author: **Dr. Ferdinantos Kottas**
 
@@ -8,7 +8,7 @@ Author: **Dr. Ferdinantos Kottas**
 
 ## What makes this project different
 
-The project follows a credit model from the first data contract to retirement. It does not stop after fitting a classifier. Every major case study connects data provenance, data-quality controls, sample construction, modelling, calibration, decision economics, validation, deployment, monitoring, governance, and human approval.
+The 72-chapter project follows a credit model from the first data contract to retirement. It does not stop after fitting a classifier. Every major case study connects data provenance, data-quality controls, sample construction, modelling, calibration, decision economics, validation, deployment, monitoring, governance, and human approval.
 
 The examples deliberately distinguish:
 
@@ -21,7 +21,7 @@ The examples deliberately distinguish:
 
 ## Dataset switching
 
-Students are not locked into one dataset. A common dataset interface supports seven modes:
+Students are not locked into one dataset. A common interface supports six primary PD/public modes:
 
 1. `synthetic_retail` - generated entirely by this repository and safe for unrestricted exercises;
 2. `uci_south_german` - a corrected, small CC BY 4.0 benchmark;
@@ -29,7 +29,15 @@ Students are not locked into one dataset. A common dataset interface supports se
 4. `uci_credit_approval` - an anonymised CC BY 4.0 approval case used only for missing-data and decision-pipeline labs;
 5. `uci_polish_bankruptcy` - a CC BY 4.0 low-event corporate-failure case;
 6. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
-7. `kaggle_credit_risk` - a CC0 Kaggle teaching dataset downloaded by the student and never bundled here.
+6. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
+
+Five original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
+
+- `synthetic_revolving` for CCF and EAD;
+- `synthetic_recovery` for workout LGD and cure;
+- `synthetic_ifrs9_schedule` for staging and cash-flow-period ECL;
+- `synthetic_corporate_irb` for grades, calibration and RWA;
+- `synthetic_counterparty_profiles` for exposure profiles and introductory CVA.
 
 Additional datasets will be added only after their provenance, licence, permitted use, attribution, and redistribution terms are recorded in [`data/dataset_registry.yml`](data/dataset_registry.yml). A Kaggle mirror never replaces the original publisher's licence.
 
@@ -43,6 +51,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 python -m pip install -e .
 python -m unittest discover -s tests -v
 python tools/validate_notebooks.py
+python tools/validate_manuscript.py
 python examples/end_to_end.py --dataset synthetic_retail
 ```
 
@@ -63,7 +72,7 @@ Generated datasets, fitted models, and reports are excluded from Git.
 ## Repository map
 
 ```text
-book/                    manuscript plan, standards, and chapters
+book/full_manuscript/    expanded 72-chapter manuscript and applied appendices
 data/                    dataset registry and download instructions (no raw data)
 examples/                runnable chapter and end-to-end examples
 references/              source policy, regulatory sources, and evidence reviews
@@ -74,7 +83,7 @@ tests/                   deterministic unit and integration tests
 
 The earlier top-level utilities in `src/*.py`, dataset generators in `data/generators/`, configuration, and notebooks remain available. They are preserved during the migration to the tested package structure and will be reviewed and integrated case by case rather than deleted.
 
-See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) for the eighteen-chapter first-edition structure.
+See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) and [`book/structure.json`](book/structure.json) for the complete 72-chapter structure.
 
 ## Legal and evidence policy
 
@@ -89,4 +98,4 @@ See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md
 
 ## Current status
 
-The review branch contains the complete first-edition structure, an original from-scratch scorecard toolkit, nine executable notebooks, multiple public-data adapters, credit component calculators, and the end-to-end governed workflow. The manuscript remains subject to technical, regulatory, legal, copy-editing, and independent model review before publication.
+The expanded review branch contains 72 analytical chapters, 72 worked cases, 14 executed notebooks, a 202-page Word review manuscript, five original component datasets, and original scorecard, IFRS 9, IRB, and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.

@@ -14,10 +14,15 @@ from creditriskbook.scorecard import (
     LogisticScorecard,
     ModelScoreMapper,
     ScoreScale,
+    binned_population_stability,
+    coefficient_inference,
+    export_characteristic_presentation,
     export_characteristic_report,
     manual_categorical_spec,
     manual_numeric_spec,
     population_stability_index,
+    scorecard_policy_flags,
+    variance_inflation_factors,
 )
 
 
@@ -87,6 +92,24 @@ class ScorecardTests(unittest.TestCase):
                 all(path.exists() and path.stat().st_size > 0 for path in artefacts.values())
             )
             self.assertIn("Characteristic analysis", Path(artefacts["html"]).read_text())
+            presentation = export_characteristic_presentation(
+                scorecard, Path(directory) / "characteristic_analysis.pptx"
+            )
+            self.assertTrue(presentation.exists() and presentation.stat().st_size > 10_000)
+
+        inference = coefficient_inference(scorecard)
+        self.assertEqual(inference["term"].tolist(), ["intercept", *self.features])
+        flags = scorecard_policy_flags(scorecard, minimum_bin_count=20)
+        self.assertEqual(set(flags["feature"]), set(self.features))
+
+        reference_bins = scorecard.binning.transform(self.train[self.features])
+        current_bins = scorecard.binning.transform(self.test[self.features])
+        detail, summary = binned_population_stability(reference_bins, current_bins)
+        self.assertEqual(set(summary["feature"]), set(self.features))
+        self.assertAlmostEqual(detail["psi_component"].sum(), summary["psi"].sum())
+
+        vif = variance_inflation_factors(scorecard.encoder_.transform(reference_bins).astype(float))
+        self.assertEqual(set(vif["feature"]), set(self.features))
 
     def test_score_scale_round_trip_and_pdo(self) -> None:
         scale = ScoreScale(base_score=600, pdo=50, base_odds_good_to_bad=20)

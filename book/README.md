@@ -1,6 +1,6 @@
 # Manuscript
 
-The complete first-edition review manuscript is in `book/manuscript/`: front matter, eighteen large applied chapters, appendices and references. The earlier numbered foundation drafts remain in `book/chapters/` as development history.
+The expanded review manuscript is in `book/full_manuscript/`: front matter, 72 analytical chapters, appendices, 72-case practice book, technical workshops, numerical examples, policy playbook, viva questions, glossary and references. The earlier 18-chapter manuscript and numbered foundation drafts remain as development history.
 
 `tools/build_book_docx.py` produces the review Word document using the `compact_reference_guide` design preset and `editorial_cover` pattern.
 
@@ -8,4 +8,4 @@ The complete first-edition review manuscript is in `book/manuscript/`: front mat
 $CODEX_PRIMARY_RUNTIME_PYTHON tools/build_book_docx.py
 ```
 
-Generated review files live under the ignored `artifacts/` directory. The editable source, builder, tests and notebook validator remain in Git.
+Generated review files live under the ignored `artifacts/` directory. The validated review build is 202 pages. The editable source, builder, tests, manuscript validator and notebook validator remain in Git.

@@ -7,6 +7,7 @@ Named overrides: cover, part dividers, code blocks, reference text, wide tables.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -18,7 +19,8 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[1]
-MANUSCRIPT = ROOT / "book" / "manuscript"
+MANUSCRIPT = ROOT / "book" / "full_manuscript"
+STRUCTURE = ROOT / "book" / "structure.json"
 BLUE, DARK_BLUE, INK = "2E74B5", "1F4D78", "203748"
 SUBTITLE, GOLD, MUTED = "2B5163", "8B6F28", "667788"
 TABLE_FILL, LIGHT_FILL, CALLOUT_FILL = "E8EEF5", "F2F4F7", "F4F6F9"
@@ -117,6 +119,7 @@ INLINE = re.compile(r"(\*\*.*?\*\*|\*[^*]+\*|`.*?`|https?://[^\s)]+[\w/#])")
 
 
 def add_inline(paragraph, text: str, *, size: float | None = None) -> None:
+    text = readable_equation(text)
     position = 0
     for match in INLINE.finditer(text):
         if match.start() > position:
@@ -258,7 +261,7 @@ def configure_page(doc: Document) -> None:
     section.header_distance = section.footer_distance = Inches(0.492)
     section.different_first_page_header_footer = True
     paragraph = section.header.paragraphs[0]
-    run = paragraph.add_run("APPLIED CREDIT RISK WITH PYTHON  •  FIRST-EDITION REVIEW")
+    run = paragraph.add_run("INTELLIGENT CREDIT RISK MODELING WITH PYTHON  •  EXPANDED REVIEW")
     set_run_font(run, size=8.5, color=MUTED, bold=True)
     add_page_field(section.footer.paragraphs[0])
     section.first_page_header.paragraphs[0].clear()
@@ -269,11 +272,20 @@ def add_cover(doc: Document) -> None:
     doc.add_paragraph().paragraph_format.space_after = Pt(78)
     kicker = doc.add_paragraph()
     kicker.alignment, kicker.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(18)
-    set_run_font(kicker.add_run("APPLIED QUANTITATIVE FINANCE"), size=10.5, color=GOLD, bold=True)
+    set_run_font(kicker.add_run("APPLIED CREDIT RISK AND AI"), size=10.5, color=GOLD, bold=True)
     title = doc.add_paragraph()
     title.alignment, title.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(8)
-    set_run_font(title.add_run("Applied Credit Risk with Python"), size=30, color=INK, bold=True)
-    for text in ("Scorecards, IRB, IFRS 9, Deployment", "and Governed Agentic AI"):
+    set_run_font(title.add_run("Intelligent Credit Risk"), size=30, color=INK, bold=True)
+    second_title = doc.add_paragraph()
+    second_title.alignment, second_title.paragraph_format.space_after = (
+        WD_ALIGN_PARAGRAPH.CENTER,
+        Pt(8),
+    )
+    set_run_font(second_title.add_run("Modeling with Python"), size=30, color=INK, bold=True)
+    for text in (
+        "From Data Quality and Scorecards to IFRS 9, Basel IRB,",
+        "Deployment, and Governed Agentic AI",
+    ):
         paragraph = doc.add_paragraph()
         paragraph.alignment, paragraph.paragraph_format.space_after = (
             WD_ALIGN_PARAGRAPH.CENTER,
@@ -284,7 +296,7 @@ def add_cover(doc: Document) -> None:
     strapline.alignment = WD_ALIGN_PARAGRAPH.CENTER
     strapline.paragraph_format.space_before, strapline.paragraph_format.space_after = Pt(22), Pt(82)
     set_run_font(
-        strapline.add_run("An application-first handbook with tested Python"),
+        strapline.add_run("Seventy-two analytical chapters with tested Python"),
         size=10.5,
         color=GOLD,
         italic=True,
@@ -303,31 +315,25 @@ def add_cover(doc: Document) -> None:
 def add_toc(doc: Document) -> None:
     title = doc.add_paragraph("Contents", style="Heading 1")
     title.paragraph_format.page_break_before = False
-    entries = [
-        ("PART I", "The End-to-End Credit System"),
-        ("Chapter 1", "Credit Risk as an Operating System"),
-        ("Chapter 2", "Products, Borrowers and the Credit Lifecycle"),
-        ("Chapter 3", "Basel IRB, IFRS 9, CECL and Responsible Lending"),
-        ("Chapter 4", "Lawful Data, Architecture and Quality Engineering"),
-        ("PART II", "PD, Scorecards and Machine Learning"),
-        ("Chapter 5", "From-Scratch Binning, WOE and Characteristic Analysis"),
-        ("Chapter 6", "Logistic Scorecards from Estimation to Reason Codes"),
-        ("Chapter 7", "Machine-Learning Challengers and a Common Score Scale"),
-        ("Chapter 8", "Evaluation, Calibration, Selection and Credit Economics"),
-        ("Chapter 9", "Survival, Lifetime PD and Low-Default Portfolios"),
-        ("PART III", "LGD, EAD, ECL and Capital"),
-        ("Chapter 10", "Workout LGD, Cure and Recovery Modelling"),
-        ("Chapter 11", "EAD, CCF and Revolving Exposure"),
-        ("Chapter 12", "IFRS 9 and CECL Engines"),
-        ("Chapter 13", "IRB Capital, Portfolio and Counterparty Risk"),
-        ("Chapter 14", "Stress Testing and Decision Optimisation"),
-        ("PART IV", "Production, Governance and Agentic AI"),
-        ("Chapter 15", "Validation, UAT and Model Governance"),
-        ("Chapter 16", "Deployment, Monitoring and Model Lifecycle"),
-        ("Chapter 17", "Governed Agentic AI in Credit Risk"),
-        ("Chapter 18", "Integrated Case Studies and Student Projects"),
-        ("Appendices", "Repository, data, tests, formulas, model card and references"),
-    ]
+    structure = json.loads(STRUCTURE.read_text(encoding="utf-8"))
+    entries = []
+    roman = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
+    for index, part in enumerate(structure["parts"]):
+        entries.append((f"PART {roman[index]}", part["title"]))
+        entries.extend(
+            (f"Chapter {chapter['number']}", chapter["title"]) for chapter in part["chapters"]
+        )
+    entries.extend(
+        [
+            ("Appendices", "APIs, policies, templates, legal data catalogue and references"),
+            ("Casebook", "Seventy-two worked assignments and evidence requirements"),
+            ("Workbook", "Twelve end-to-end Python implementation workshops"),
+            ("Numerical", "Twelve hand-auditable calculation examples"),
+            ("Policies", "Sixteen data, model, accounting, capital, and AI policies"),
+            ("Review", "Seventy-two viva questions with instructor notes"),
+            ("Glossary", "Technical terms and control-language reference"),
+        ]
+    )
     table = doc.add_table(rows=len(entries), cols=2)
     table_geometry(table, [1650, 7710], indent_dxa=0)
     for row, (label, item) in zip(table.rows, entries, strict=False):
@@ -440,6 +446,96 @@ def add_callout(doc: Document, text: str) -> None:
     add_inline(cell.paragraphs[0], text)
 
 
+def _replace_braced_command(text: str, command: str, formatter) -> str:
+    """Replace simple or nested TeX braced commands without a TeX dependency."""
+
+    token = f"\\{command}"
+    while token in text:
+        start = text.index(token)
+        cursor = start + len(token)
+        groups = []
+        required = 2 if command == "frac" else 1
+        valid = True
+        for _ in range(required):
+            if cursor >= len(text) or text[cursor] != "{":
+                valid = False
+                break
+            depth, end = 0, cursor
+            while end < len(text):
+                if text[end] == "{":
+                    depth += 1
+                elif text[end] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                end += 1
+            if depth != 0:
+                valid = False
+                break
+            groups.append(text[cursor + 1 : end])
+            cursor = end + 1
+        if not valid:
+            break
+        text = text[:start] + formatter(*groups) + text[cursor:]
+    return text
+
+
+def readable_equation(value: str) -> str:
+    value = " ".join(line.strip() for line in value.splitlines())
+    value = _replace_braced_command(
+        value,
+        "frac",
+        lambda numerator, denominator: (
+            f"({readable_equation(numerator)})/({readable_equation(denominator)})"
+        ),
+    )
+    value = _replace_braced_command(
+        value, "sqrt", lambda argument: f"√({readable_equation(argument)})"
+    )
+    value = value.replace("\\begin{bmatrix}", "[").replace("\\end{bmatrix}", "]")
+    value = value.replace("\\\\", "; ").replace("&", " ")
+    replacements = {
+        "\\times": "×",
+        "\\sum": "Σ",
+        "\\prod": "Π",
+        "\\chi": "χ",
+        "\\beta": "β",
+        "\\ell": "ℓ",
+        "\\log": "log",
+        "\\exp": "exp",
+        "\\left": "",
+        "\\right": "",
+        "\\infty": "∞",
+        "\\in": "∈",
+        "\\mid": " | ",
+        "\\sim": "~",
+        "\\qquad": "    ",
+        "\\quad": "   ",
+        "\\,": " ",
+        "\\ ": " ",
+    }
+    for source, target in replacements.items():
+        value = value.replace(source, target)
+    value = re.sub(r"_\{([^{}]+)\}", r"_\1", value)
+    value = re.sub(r"\^\{([^{}]+)\}", r"^\1", value)
+    value = value.replace("{,}", ",").replace("\\{", "{").replace("\\}", "}")
+    value = value.replace("\\", "")
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def add_equation(doc: Document, value: str) -> None:
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(4)
+    paragraph.paragraph_format.space_after = Pt(8)
+    set_run_font(
+        paragraph.add_run(readable_equation(value)),
+        name="Cambria Math",
+        size=10.5,
+        color=INK,
+    )
+
+
 def markdown_blocks(text: str):
     lines, i, paragraph = text.splitlines(), 0, []
 
@@ -453,7 +549,17 @@ def markdown_blocks(text: str):
 
     while i < len(lines):
         line = lines[i]
-        if line.startswith("```"):
+        if line.strip() == r"\[":
+            item = flush()
+            if item:
+                yield item
+            i += 1
+            equation_lines = []
+            while i < len(lines) and lines[i].strip() != r"\]":
+                equation_lines.append(lines[i])
+                i += 1
+            yield "equation", "\n".join(equation_lines)
+        elif line.startswith("```"):
             item = flush()
             if item:
                 yield item
@@ -521,23 +627,23 @@ def markdown_blocks(text: str):
 
 
 def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
+    structure = json.loads(STRUCTURE.read_text(encoding="utf-8"))
+    roman = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
     parts = {
-        1: ("Part I", "The End-to-End Credit System"),
-        5: ("Part II", "PD, Scorecards and Machine Learning"),
-        10: ("Part III", "LGD, EAD, ECL and Capital"),
-        15: ("Part IV", "Production, Governance and Agentic AI"),
+        part["chapters"][0]["number"]: (f"Part {roman[index]}", part["title"])
+        for index, part in enumerate(structure["parts"])
     }
     previous_kind = None
     current_decimal_num = decimal_num
     for file_index, path in enumerate(sorted(MANUSCRIPT.glob("*.md"))):
         content = path.read_text(encoding="utf-8")
         if path.name == "00_front_matter.md":
-            content = content[content.index("### About this book") :]
-        chapter = int(re.match(r"(\d+)_", path.name).group(1))
-        if chapter in parts:
-            add_part_page(doc, *parts[chapter])
+            content = content[content.index("## Preface") :]
         for kind, value in markdown_blocks(content):
             if kind == "h1":
+                match = re.match(r"Chapter (\d+)\b", value)
+                if match and int(match.group(1)) in parts:
+                    add_part_page(doc, *parts[int(match.group(1))])
                 paragraph = doc.add_paragraph(value, style="Heading 1")
                 if file_index == 0:
                     paragraph.paragraph_format.page_break_before = False
@@ -567,6 +673,8 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
                 add_table(doc, value)
             elif kind == "callout":
                 add_callout(doc, value)
+            elif kind == "equation":
+                add_equation(doc, value)
             previous_kind = kind
 
 
@@ -578,7 +686,10 @@ def audit_document(doc: Document) -> None:
     assert doc.styles["Heading 1"].font.size == Pt(16)
     assert len(doc.tables) >= 10
     headings = [p.text for p in doc.paragraphs if p.style.name == "Heading 1"]
-    assert any(text.startswith("Chapter 18") for text in headings) and "Appendices" in headings
+    assert any(text.startswith("Chapter 72") for text in headings)
+    assert "Appendices" in headings and any(
+        text.startswith("Practice Casebook") for text in headings
+    )
 
 
 def build(output: Path) -> None:
@@ -589,8 +700,10 @@ def build(output: Path) -> None:
         add_custom_numbering(doc, bullet=True),
         add_custom_numbering(doc, bullet=False),
     )
-    doc.core_properties.title = "Applied Credit Risk with Python"
-    doc.core_properties.subject = "Scorecards, IRB, IFRS 9, Deployment and Governed Agentic AI"
+    doc.core_properties.title = "Intelligent Credit Risk Modeling with Python"
+    doc.core_properties.subject = (
+        "From Data Quality and Scorecards to IFRS 9, Basel IRB, Deployment, and Governed Agentic AI"
+    )
     doc.core_properties.author = "Dr. Ferdinantos Kottas"
     doc.core_properties.keywords = "credit risk, scorecard, IFRS 9, IRB, agentic AI, Python"
     add_cover(doc)
@@ -612,7 +725,9 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "artifacts" / "Applied_Credit_Risk_with_Python_First_Edition_Review.docx",
+        default=ROOT
+        / "artifacts"
+        / "Intelligent_Credit_Risk_Modeling_with_Python_Expanded_Review.docx",
     )
     build(parser.parse_args().output.resolve())
 

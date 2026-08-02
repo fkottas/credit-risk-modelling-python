@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from creditriskbook.data import available_case_datasets, load_case_dataset
 from creditriskbook.data.datasets import available_datasets, load_dataset
 
 
@@ -57,6 +58,22 @@ class DatasetTests(unittest.TestCase):
                 "kaggle_credit_risk",
             ),
         )
+
+    def test_case_datasets_cover_ifrs9_irb_lgd_ead_and_counterparty(self) -> None:
+        self.assertEqual(len(available_case_datasets()), 5)
+        revolving = load_case_dataset("synthetic_revolving", n_rows=200, seed=5)
+        recovery = load_case_dataset("synthetic_recovery", n_rows=100, seed=5)
+        ifrs9 = load_case_dataset("synthetic_ifrs9_schedule", n_rows=50, seed=5)
+        corporate = load_case_dataset("synthetic_corporate_irb", n_rows=100, seed=5)
+        counterparty = load_case_dataset("synthetic_counterparty_profiles", n_rows=20, seed=5)
+        self.assertEqual(len(revolving.frame), 200)
+        self.assertGreater(len(recovery.frame), 100)
+        self.assertEqual(len(ifrs9.frame), 50 * 36)
+        self.assertEqual(len(corporate.frame), 100)
+        self.assertGreater(len(counterparty.frame), 20)
+        for case in (revolving, recovery, ifrs9, corporate, counterparty):
+            self.assertEqual(len(case.source_sha256), 64)
+            self.assertIn("synthetic", case.licence.lower())
 
 
 if __name__ == "__main__":

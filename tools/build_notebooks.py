@@ -380,6 +380,254 @@ assert len(bundle.source_sha256) == 64
             ),
         ],
     ),
+    "notebooks/09_ifrs9_staging_scenarios_and_reconciliation.ipynb": notebook(
+        "IFRS 9 staging, scenarios, overlays, and reconciliation",
+        "Use the original IFRS 9 package on a contractual-period teaching schedule. Staging policy, marginal PD, scenario weighting, overlays, and ledger reconciliation remain separate and visible.",
+        [
+            code("""
+import numpy as np
+import pandas as pd
+
+from creditriskbook.data import load_case_dataset
+from creditriskbook.ifrs9 import (
+    Scenario, StagingPolicy, apply_overlay, assign_stages,
+    calculate_ecl, reconcile_ecl,
+)
+
+schedule = load_case_dataset("synthetic_ifrs9_schedule", n_rows=120, seed=909).frame
+accounts = pd.DataFrame({
+    "account_id": ["A", "B", "C", "D"],
+    "origination_pd_12m": [0.01, 0.01, 0.02, 0.03],
+    "current_pd_12m": [0.012, 0.035, 0.04, 0.30],
+    "days_past_due": [0, 0, 45, 95],
+    "watchlist_flag": [False, False, False, False],
+    "default_flag": [False, False, False, True],
+})
+staged = assign_stages(accounts, StagingPolicy())
+assert staged["stage"].tolist() == [1, 2, 2, 3]
+print(staged[["account_id", "stage", "stage_reason", "pd_ratio"]])
+"""),
+            code("""
+scenarios = (
+    Scenario("upside", 0.20, pd_multiplier=0.80, lgd_multiplier=0.90),
+    Scenario("base", 0.55),
+    Scenario("downside", 0.25, pd_multiplier=1.50, lgd_multiplier=1.20, ead_multiplier=1.05),
+)
+result = calculate_ecl(schedule, scenarios)
+assert np.allclose(result.reconciliation["amount"], result.account["ecl"].sum())
+print(result.reconciliation)
+print(result.account.groupby("stage")["ecl"].agg(["count", "sum"]))
+"""),
+            code("""
+selected = result.account.head(2)[["account_id"]].copy()
+selected["overlay_type"] = ["additive", "multiplicative"]
+selected["overlay_value"] = [25.0, 1.10]
+selected["overlay_reason"] = ["bounded data gap", "bounded scenario gap"]
+adjusted = apply_overlay(result.account, selected)
+ledger_total = float(adjusted["post_overlay_ecl"].sum())
+reconciliation = reconcile_ecl(adjusted, ledger_total=ledger_total)
+assert reconciliation["within_tolerance"]
+print(adjusted.head())
+print(reconciliation)
+"""),
+            markdown(
+                "## Control boundary\n\nThese are educational calculations. A real close requires an approved IFRS 9 accounting policy, controlled perimeter, scenario governance, independent validation, overlay approval, ledger posting controls, and disclosure review."
+            ),
+        ],
+    ),
+    "notebooks/10_irb_asset_classes_calibration_and_validation.ipynb": notebook(
+        "Basel IRB asset classes, calibration, and validation",
+        "Calculate transparent IRB rows for major teaching asset classes, calibrate PD central tendency, add named conservatism, and run grade/concentration diagnostics.",
+        [
+            code("""
+import numpy as np
+import pandas as pd
+
+from creditriskbook.data import load_case_dataset
+from creditriskbook.irb import (
+    add_margin_of_conservatism, calibrate_pd_to_long_run_average,
+    grade_backtest, herfindahl_concentration, irb_capital,
+)
+
+portfolio = load_case_dataset("synthetic_corporate_irb", n_rows=600, seed=1010).frame
+calibration = calibrate_pd_to_long_run_average(portfolio["pd"].to_numpy(), 0.025)
+portfolio["calibrated_pd"] = calibration.calibrated_pd
+assert np.isclose(portfolio["calibrated_pd"].mean(), 0.025)
+
+final_pd, moc_audit = add_margin_of_conservatism(
+    portfolio["calibrated_pd"].to_numpy(), {"data": 0.0010, "method": 0.0005}
+)
+portfolio["final_pd"] = np.clip(final_pd, 0, 1)
+print(calibration.scale_factor, moc_audit.head())
+"""),
+            code("""
+corporate = irb_capital(
+    portfolio["final_pd"].to_numpy(), portfolio["lgd"].to_numpy(),
+    portfolio["ead"].to_numpy(), asset_class="corporate",
+    maturity_years=portfolio["maturity_years"].to_numpy(),
+)
+mortgage = irb_capital(
+    portfolio["final_pd"].head(20).to_numpy(), 0.25,
+    portfolio["ead"].head(20).to_numpy(), asset_class="residential_mortgage",
+)
+assert np.allclose(corporate.rows["risk_weighted_assets"], 12.5 * corporate.rows["capital"])
+print(corporate.summary)
+print(mortgage.summary)
+"""),
+            code("""
+rng = np.random.default_rng(1010)
+portfolio["default"] = rng.binomial(1, portfolio["final_pd"].clip(0, 0.75))
+backtest = grade_backtest(
+    portfolio[["grade", "final_pd", "default"]].rename(columns={"final_pd": "pd"})
+)
+hhi = herfindahl_concentration(portfolio["ead"].to_numpy())
+assert backtest["observations"].sum() == len(portfolio)
+print(backtest)
+print("Exposure HHI:", hhi)
+"""),
+            markdown(
+                "## Regulatory boundary\n\nExposure classification, supervisory permission, parameter requirements, floors, downturn conditions, defaulted assets, credit-risk mitigation, output floor, national implementation, and reporting sit outside a generic formula call and require current official text and qualified approval."
+            ),
+        ],
+    ),
+    "notebooks/11_scorecard_diagnostics_and_presentations.ipynb": notebook(
+        "Scorecard diagnostics and characteristic presentations",
+        "Extend the from-scratch scorecard with VIF, coefficient inference, fixed-bin PSI, policy flags, and an editable characteristic-review presentation when the book dependency is installed.",
+        [
+            code("""
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from creditriskbook.data.datasets import load_dataset
+from creditriskbook.models import split_dataset
+from creditriskbook.scorecard import (
+    LogisticScorecard, binned_population_stability, coefficient_inference,
+    export_characteristic_presentation, scorecard_policy_flags,
+    variance_inflation_factors,
+)
+
+bundle = load_dataset("synthetic_retail", n_rows=4_000, seed=1111)
+train, test = split_dataset(bundle, bundle.frame, seed=1111)
+features = ["income", "employment_years", "debt_to_income", "utilisation",
+            "enquiries_6m", "loan_amount", "product", "home_ownership"]
+scorecard = LogisticScorecard().fit(train[features], train[bundle.target])
+"""),
+            code("""
+reference_bins = scorecard.binning.transform(train[features])
+current_bins = scorecard.binning.transform(test[features])
+detail, stability = binned_population_stability(reference_bins, current_bins)
+woe_reference = scorecard.encoder_.transform(reference_bins).astype(float)
+vif = variance_inflation_factors(woe_reference)
+inference = coefficient_inference(scorecard)
+flags = scorecard_policy_flags(scorecard, minimum_bin_count=20)
+assert set(stability["feature"]) == set(features)
+print(stability)
+print(vif)
+print(inference)
+print(flags)
+"""),
+            code("""
+try:
+    import pptx  # noqa: F401
+except ImportError:
+    print("Install the 'book' extra to generate PowerPoint.")
+else:
+    with TemporaryDirectory() as directory:
+        path = export_characteristic_presentation(
+            scorecard, Path(directory) / "characteristic_review.pptx"
+        )
+        assert path.exists() and path.stat().st_size > 10_000
+        print("Generated", path.name, path.stat().st_size, "bytes")
+"""),
+            markdown(
+                "Diagnostics are evidence, not automatic approval thresholds. Review the business definition, availability, stability, sign, sparse bins, missing and unseen behavior, policy relevance, and legal use for every characteristic."
+            ),
+        ],
+    ),
+    "notebooks/12_governed_agentic_ai.ipynb": notebook(
+        "Governed agentic AI for credit-risk evidence",
+        "Register evidence, let bounded specialists propose actions, apply deny-by-default policy, verify the audit chain, and red-team prohibited actions without any external executor.",
+        [
+            code("""
+from creditriskbook.agents import (
+    ActionProposal, GovernedAgentOrchestrator, PolicyEngine,
+)
+
+orchestrator = GovernedAgentOrchestrator()
+quality = orchestrator.run(
+    "data_quality_agent",
+    {"critical_failure": True, "failed_rules": ["point_in_time_join"]},
+    evidence_source="quality/monthly/run-12",
+)
+monitoring = orchestrator.run(
+    "monitoring_agent",
+    {"pd_psi": 0.28, "roc_auc": 0.59},
+    evidence_source="monitoring/monthly/run-12",
+)
+assert quality.policy_decision.human_approval_required
+assert monitoring.proposal.action == "open_model_investigation"
+assert orchestrator.audit_log.verify()
+print(quality)
+print(monitoring)
+"""),
+            code("""
+engine = PolicyEngine()
+forbidden_actions = (
+    "approve_customer_credit", "deploy_model", "retrain_model",
+    "post_accounting_entry", "suppress_evidence",
+)
+decisions = [
+    engine.evaluate(ActionProposal(action, "red-team request", ("ev-12",), "unsafe_agent"))
+    for action in forbidden_actions
+]
+assert all(item.decision == "DENY" for item in decisions)
+print([(action, decision.decision) for action, decision in zip(forbidden_actions, decisions, strict=True)])
+"""),
+            markdown(
+                "## Release gate\n\nAny prohibited action, unlogged external write, approval bypass, secret exposure, or restricted-data export is a critical failure. A correct final narrative does not rescue an unsafe tool trajectory."
+            ),
+        ],
+    ),
+    "notebooks/13_synthetic_component_case_datasets.ipynb": notebook(
+        "Original synthetic component case datasets",
+        "Switch among five deterministic project-generated datasets for revolving EAD, recovery LGD, IFRS 9 schedules, corporate IRB, and counterparty profiles without pretending one public dataset contains every lifecycle table.",
+        [
+            code("""
+from creditriskbook.data import available_case_datasets, load_case_dataset
+
+cases = {}
+for key in available_case_datasets():
+    minimum_rows = {
+        "synthetic_revolving": 200,
+        "synthetic_recovery": 120,
+        "synthetic_ifrs9_schedule": 60,
+        "synthetic_corporate_irb": 200,
+        "synthetic_counterparty_profiles": 30,
+    }[key]
+    bundle = load_case_dataset(key, n_rows=minimum_rows, seed=1313)
+    assert len(bundle.source_sha256) == 64 and len(bundle.frame) > 0
+    cases[key] = bundle
+    print(key, bundle.frame.shape, bundle.unit_of_observation)
+"""),
+            code("""
+revolving = cases["synthetic_revolving"].frame
+recovery = cases["synthetic_recovery"].frame
+ifrs9 = cases["synthetic_ifrs9_schedule"].frame
+corporate = cases["synthetic_corporate_irb"].frame
+counterparty = cases["synthetic_counterparty_profiles"].frame
+
+assert revolving["facility_id"].is_unique
+assert (recovery["cashflow_date"] > recovery["default_date"]).all()
+assert not ifrs9.duplicated(["account_id", "period"]).any()
+assert corporate["obligor_id"].is_unique
+assert (counterparty["expected_exposure"] >= 0).all()
+print({key: value.limitations for key, value in cases.items()})
+"""),
+            markdown(
+                "Original synthetic data enable complete ledgers and deliberate defects but do not establish external validity. Use the matching dataset for each estimand, preserve generator seed/hash, and state the simplified mechanisms."
+            ),
+        ],
+    ),
 }
 
 

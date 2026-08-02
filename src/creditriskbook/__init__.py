@@ -1,3 +1,3 @@
-"""Reusable examples for *Applied Credit Risk with Python*."""
+"""Reusable libraries for *Intelligent Credit Risk Modeling with Python*."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

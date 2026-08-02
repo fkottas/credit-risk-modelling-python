@@ -15,6 +15,56 @@ datasets:
     cases: [data_quality, pd, lgd, ead, ifrs9, deployment, monitoring, agentic_ai]
     limitations: Synthetic relationships are pedagogical and do not represent a real portfolio.
 
+  synthetic_revolving:
+    title: CreditRiskBook Synthetic Revolving Facilities
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [ead, ccf, utilisation, credit_limits, monitoring]
+    limitations: Synthetic drawdowns are simplified and do not reproduce a real revolving portfolio.
+
+  synthetic_recovery:
+    title: CreditRiskBook Synthetic Recovery Cash-Flow Ledger
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [workout_lgd, discounting, cures, recovery_timing, incomplete_workouts]
+    limitations: Synthetic recoveries omit legal, collateral, guarantee and operational complexities.
+
+  synthetic_ifrs9_schedule:
+    title: CreditRiskBook Synthetic IFRS 9 Projection Schedule
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [staging, lifetime_pd, scenarios, ecl, overlays, reconciliation]
+    limitations: Pedagogical schedules omit product-specific contractual cash-flow mechanics.
+
+  synthetic_corporate_irb:
+    title: CreditRiskBook Synthetic Corporate IRB Portfolio
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [irb_pd, irb_lgd, maturity, sme_correlation, rwa, concentration]
+    limitations: Synthetic parameters are not approved regulatory estimates and omit facility hierarchy.
+
+  synthetic_counterparty_profiles:
+    title: CreditRiskBook Synthetic Counterparty Exposure Profiles
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [counterparty_risk, netting, collateral, pfe, cva]
+    limitations: Profiles are stylised and are not market-calibrated derivative simulations.
+
   uci_south_german:
     title: South German Credit
     publisher: UCI Machine Learning Repository
