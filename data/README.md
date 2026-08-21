@@ -13,8 +13,9 @@ The repository's earlier synthetic generators for BNPL/microloans and fraud rema
 | `uci_south_german` | UCI downloader | Small PD, scorecard, cost-sensitive classification, fairness discussion |
 | `uci_taiwan_credit_card` | UCI downloader | Behavioural PD, calibration, ML comparison |
 | `kaggle_credit_risk` | Student downloads `credit_risk_dataset.csv` | Dataset switching, missing data, model benchmarking |
+| `synthetic_credit_documents` | Generated locally as applications, documents, expected facts and policy text | NLP extraction, BM25 retrieval, structured memoranda, prompt-injection and agent controls |
 
-The registry also records conditional, non-bundled official mortgage sources from Fannie Mae, Freddie Mac and FHFA. Readers obtain provider-controlled files under the current official terms; the repository does not republish them.
+The 36-record registry also records official or conditional sources from HMDA/CFPB, SBA, SEC EDGAR, the Federal Reserve, EBA, FHFA, Fannie Mae, Freddie Mac, World Bank and FRED, plus scope-limited or non-bundled Kaggle cases. Readers obtain provider-controlled files under the current official terms; the repository does not republish them. Public access is not treated as permission for every purpose, and every source retains an explicit modelling limitation.
 
 South German Credit uses only the core dependencies. Install optional Excel support for the Taiwan dataset with `python -m pip install -e '.[datasets]'`.
 

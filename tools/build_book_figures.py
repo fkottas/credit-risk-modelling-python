@@ -104,6 +104,32 @@ def main() -> None:
         "part-05-characteristic.png",
     )
 
+    fig, axes = plt.subplots(1, 3, figsize=(8.0, 3.7), sharey=True)
+    tree_panels = [
+        ("Parent", [6, 4], 0.48),
+        ("Split after 5", [5, 0, 1, 4], 0.32),
+        ("Split after 6", [6, 0, 0, 4], 0.48),
+    ]
+    for axis, (title, counts, gain) in zip(axes, tree_panels, strict=True):
+        if len(counts) == 2:
+            positions = [0]
+            goods, bads = [counts[0]], [counts[1]]
+            labels = ["node"]
+        else:
+            positions = [0, 1]
+            goods, bads = counts[::2], counts[1::2]
+            labels = ["left", "right"]
+        axis.bar(positions, goods, color=TEAL, label="non-default")
+        axis.bar(positions, bads, bottom=goods, color=GOLD, label="default")
+        axis.set_xticks(positions, labels)
+        axis.set_title(f"{title}\nGini gain = {gain:.2f}", color=NAVY, weight="bold")
+        axis.set_ylim(0, 10)
+        axis.grid(axis="y", alpha=0.18)
+    axes[0].set_ylabel("observations")
+    axes[-1].legend(frameon=False, loc="upper right", fontsize=8)
+    fig.suptitle("Tree splitting compares weighted child impurity", color=NAVY, weight="bold")
+    save(fig, "tree-split-gain.png")
+
     score = np.asarray(1.0 / (1.0 + np.exp(4.0 - 4.0 * retail["utilisation"])))
     cuts = np.quantile(score, np.linspace(0, 1, 11))
     bucket = np.clip(np.digitize(score, cuts[1:-1]), 0, 9)
@@ -205,6 +231,114 @@ def main() -> None:
         "Governed agent: evidence, proposal, gate, and human authority", color=NAVY, weight="bold"
     )
     save(fig, "part-12-agent-governance.png")
+
+    fig, ax = plt.subplots(figsize=(8.0, 5.0))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+    pipeline = [
+        (0.07, 0.70, "1  Immutable source\nbytes + SHA-256", "Original evidence"),
+        (0.38, 0.70, "2  Parsed text\npage + offsets", "Versioned extraction"),
+        (0.69, 0.70, "3  Evidence chunks\nhash + access label", "Retrieval candidates"),
+        (0.22, 0.27, "4  Ranked passages\nBM25 + as-of filter", "Inspectable support"),
+        (0.56, 0.27, "5  Structured memo\nclaim + citation", "Human-review input"),
+    ]
+    for x, y, label, note in pipeline:
+        ax.add_patch(
+            FancyBboxPatch(
+                (x, y),
+                0.24,
+                0.15,
+                boxstyle="round,pad=0.018",
+                facecolor="#EEF3F7",
+                edgecolor=BLUE,
+                linewidth=1.7,
+            )
+        )
+        ax.text(x + 0.12, y + 0.09, label, ha="center", va="center", color=NAVY, weight="bold")
+        ax.text(x + 0.12, y - 0.035, note, ha="center", va="top", color=GREY, fontsize=8.5)
+    for start, end in [
+        ((0.31, 0.775), (0.38, 0.775)),
+        ((0.62, 0.775), (0.69, 0.775)),
+        ((0.81, 0.70), (0.46, 0.42)),
+        ((0.46, 0.345), (0.56, 0.345)),
+    ]:
+        ax.annotate(
+            "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
+        )
+    ax.text(
+        0.50,
+        0.08,
+        "A citation is valid only when the original span supports the claim and was accessible at the decision time.",
+        ha="center",
+        color="#8A3B2E",
+        weight="bold",
+        fontsize=9.3,
+    )
+    ax.set_title("Document-to-evidence pipeline", color=NAVY, weight="bold", fontsize=14)
+    save(fig, "nlp-document-evidence-pipeline.png")
+
+    fig, ax = plt.subplots(figsize=(8.0, 5.2))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+    architecture = [
+        (0.06, 0.70, 0.24, 0.15, "Approved evidence\nscoped + versioned", TEAL),
+        (0.38, 0.70, 0.24, 0.15, "Bounded assistant\nextract + retrieve", BLUE),
+        (0.70, 0.70, 0.24, 0.15, "Action proposal\nno execution token", GOLD),
+        (0.38, 0.38, 0.24, 0.15, "Deterministic gate\nrole + scope + evidence", NAVY),
+        (0.38, 0.10, 0.24, 0.15, "Human authority\nreview + signed decision", TEAL),
+    ]
+    for x, y, width, height, label, edge in architecture:
+        ax.add_patch(
+            FancyBboxPatch(
+                (x, y),
+                width,
+                height,
+                boxstyle="round,pad=0.02",
+                facecolor="#F6F8FA",
+                edgecolor=edge,
+                linewidth=1.9,
+            )
+        )
+        ax.text(
+            x + width / 2,
+            y + height / 2,
+            label,
+            ha="center",
+            va="center",
+            color=NAVY,
+            weight="bold",
+        )
+    for start, end in [
+        ((0.30, 0.775), (0.38, 0.775)),
+        ((0.62, 0.775), (0.70, 0.775)),
+        ((0.82, 0.70), (0.59, 0.53)),
+        ((0.50, 0.38), (0.50, 0.25)),
+    ]:
+        ax.annotate(
+            "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
+        )
+    ax.text(0.12, 0.48, "READ-ONLY\nTOOLS", ha="center", color=TEAL, weight="bold", fontsize=9)
+    ax.text(
+        0.85,
+        0.46,
+        "DENY: approve / decline\nprice / deploy / post",
+        ha="center",
+        color="#A33",
+        weight="bold",
+        fontsize=9,
+    )
+    ax.text(
+        0.50,
+        0.02,
+        "The model proposes. Deterministic policy and an authorised human control action.",
+        ha="center",
+        color=GREY,
+        fontsize=9.2,
+    )
+    ax.set_title("Governed document-agent architecture", color=NAVY, weight="bold", fontsize=14)
+    save(fig, "nlp-governed-agent-architecture.png")
 
     behavioural = make_behavioral_credit_history(n_customers=300, months=18, seed=920)
     fig, ax = plt.subplots(figsize=(8.0, 4.4))

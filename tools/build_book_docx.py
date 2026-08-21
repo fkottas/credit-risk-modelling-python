@@ -97,6 +97,13 @@ def set_run_font(run, name="Calibri", size=None, color=None, bold=None, italic=N
         run.italic = italic
 
 
+def set_picture_alt_text(inline_shape, description: str) -> None:
+    """Attach meaningful alternative text to an inline Word image."""
+    doc_pr = inline_shape._inline.docPr
+    doc_pr.set("title", description)
+    doc_pr.set("descr", description)
+
+
 def add_hyperlink(paragraph, text: str, url: str) -> None:
     relationship = paragraph.part.relate_to(
         url,
@@ -336,7 +343,11 @@ def add_cover(doc: Document) -> None:
         picture.alignment = WD_ALIGN_PARAGRAPH.CENTER
         picture.paragraph_format.space_before = Pt(1)
         picture.paragraph_format.space_after = Pt(0)
-        picture.add_run().add_picture(str(cover_art), width=Inches(5.20))
+        shape = picture.add_run().add_picture(str(cover_art), width=Inches(5.20))
+        set_picture_alt_text(
+            shape,
+            "Book-cover illustration of a governed end-to-end intelligent credit-risk system.",
+        )
     doc.add_page_break()
 
 
@@ -479,16 +490,47 @@ def table_geometry(table, widths: list[int], indent_dxa=120) -> None:
         grid.append(node)
 
 
-def add_code_block(doc: Document, code: str) -> None:
-    table = doc.add_table(rows=1, cols=1)
+def add_code_block(doc: Document, code: str, language: str = "code") -> None:
+    normalized = language.strip().lower() or "code"
+    labels = {
+        "python": ("PYTHON 3  ·  RUNNABLE", BLUE, "F4F7FA"),
+        "py": ("PYTHON 3  ·  RUNNABLE", BLUE, "F4F7FA"),
+        "output": ("EXECUTED OUTPUT  ·  BUILD VERIFIED", "1C8C8C", "F3F8F8"),
+        "bash": ("TERMINAL  ·  REPRODUCIBLE COMMAND", INK, "F4F6F8"),
+        "shell": ("TERMINAL  ·  REPRODUCIBLE COMMAND", INK, "F4F6F8"),
+        "json": ("JSON  ·  STRUCTURED CONTRACT", DARK_BLUE, "F4F7FA"),
+        "yaml": ("YAML  ·  CONFIGURATION", DARK_BLUE, "F4F7FA"),
+        "text": ("TEXT / RESULT", MUTED, "F7F8FA"),
+    }
+    label, header_fill, body_fill = labels.get(
+        normalized, (f"{normalized.upper()}  ·  CODE", DARK_BLUE, LIGHT_FILL)
+    )
+    table = doc.add_table(rows=2, cols=1)
     table_geometry(table, [PAGE_WIDTH_DXA])
-    cell = table.cell(0, 0)
-    set_cell_width(cell, PAGE_WIDTH_DXA)
-    set_cell_margins(cell, 100, 140, 100, 140)
-    set_cell_shading(cell, LIGHT_FILL)
-    paragraph = cell.paragraphs[0]
+    set_table_borders(table, color=header_fill, size=5)
+    for row in table.rows:
+        row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+    header = table.cell(0, 0)
+    set_cell_width(header, PAGE_WIDTH_DXA)
+    set_cell_margins(header, 50, 140, 45, 140)
+    set_cell_shading(header, header_fill)
+    header_paragraph = header.paragraphs[0]
+    header_paragraph.paragraph_format.space_after = Pt(0)
+    set_run_font(
+        header_paragraph.add_run(label),
+        name="Calibri",
+        size=8.0,
+        color="FFFFFF",
+        bold=True,
+    )
+    body = table.cell(1, 0)
+    set_cell_width(body, PAGE_WIDTH_DXA)
+    set_cell_margins(body, 110, 150, 110, 150)
+    set_cell_shading(body, body_fill)
+    paragraph = body.paragraphs[0]
     paragraph.paragraph_format.space_after, paragraph.paragraph_format.line_spacing = Pt(0), 1.0
-    set_run_font(paragraph.add_run(code.rstrip()), name="Consolas", size=8.5, color="243746")
+    code_size = 8.35 if normalized not in {"output", "text"} else 8.2
+    set_run_font(paragraph.add_run(code.rstrip()), name="Consolas", size=code_size, color="243746")
 
 
 def add_table(doc: Document, rows: list[list[str]]) -> None:
@@ -545,7 +587,8 @@ def add_figure(doc: Document, source: str, caption: str) -> None:
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.space_before = Pt(8)
     paragraph.paragraph_format.space_after = Pt(3)
-    paragraph.add_run().add_picture(str(path), width=Inches(6.15))
+    shape = paragraph.add_run().add_picture(str(path), width=Inches(6.15))
+    set_picture_alt_text(shape, caption)
     label = doc.add_paragraph()
     label.alignment = WD_ALIGN_PARAGRAPH.CENTER
     label.paragraph_format.space_after = Pt(8)
@@ -665,12 +708,13 @@ def markdown_blocks(text: str):
             item = flush()
             if item:
                 yield item
+            language = line[3:].strip().lower() or "code"
             i += 1
             code_lines = []
             while i < len(lines) and not lines[i].startswith("```"):
                 code_lines.append(lines[i])
                 i += 1
-            yield "code", "\n".join(code_lines)
+            yield "code", (language, "\n".join(code_lines))
         elif re.match(r"^!\[[^]]*\]\([^)]+\)$", line.strip()):
             item = flush()
             if item:
@@ -834,7 +878,8 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
                 apply_numbering(paragraph, bullet_num if kind == "bullet" else current_decimal_num)
                 add_inline(paragraph, value)
             elif kind == "code":
-                add_code_block(doc, value)
+                language, code = value
+                add_code_block(doc, code, language)
             elif kind == "table":
                 add_table(doc, value)
             elif kind == "callout":

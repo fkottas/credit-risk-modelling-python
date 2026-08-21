@@ -16,21 +16,7 @@ The familiar product $PD\times LGD\times EAD$ is a useful conditional expectatio
 
 A one-year loan has EAD of EUR 10,000, PD of 3% and LGD of 45%. Expected loss is EUR 135. If the performing margin after funding and operating cost is EUR 500, the simplified expected value is EUR 365. This does not mean that EUR 365 will be earned. In 97% of the stylised outcomes the account may perform; in 3% a loss near EUR 4,500 may occur. Pricing, capital and liquidity must address that distribution, while affordability and consumer law constrain which transactions should be offered.
 
-The repository keeps the calculation explicit:
-
-```python
-import numpy as np
-from creditriskbook.decisioning import expected_application_value
-
-pd_values = np.array([0.01, 0.03, 0.08])
-value = expected_application_value(
-    pd_values,
-    performing_margin=500.0,
-    loss_given_default=0.45,
-    exposure=10_000.0,
-)
-print(value)
-```
+The standalone Python laboratory below defines the complete `discounted_cash_shortfall` function. It creates each period's contractual shortfall, discount factor and present-value loss as visible columns before aggregation. Nothing is imported from the project library. The same source is committed as an executable Chapter 1 script so that a reader can change receipts, recoveries, costs and timing and inspect the resulting output.
 
 The model output is an input to a decision, not the decision itself. A policy also needs eligibility, affordability, fraud, sanctions, concentration, pricing, product and customer-treatment rules. Those rules must be versioned independently so that a change in business appetite is not misreported as a model redevelopment.
 
@@ -50,19 +36,7 @@ Let account loss be $L_i=D_i\times LGD_i\times EAD_i$, where $D_i$ is a default 
 
 Suppose 1,000 equal exposures each have EAD EUR 10,000, PD 2% and LGD 40%. Expected loss is EUR 80,000. If defaults were independent, the standard deviation of default count would be about √(1000×0.02×0.98)=4.43, but a systematic factor can make a count far above 20 plausible in a severe state. The Basel asymptotic single-risk-factor framework represents this effect through asset correlation and a 99.9% conditional default probability.
 
-```python
-import numpy as np
-from creditriskbook.irb import irb_capital
-
-result = irb_capital(
-    pd_values=np.array([0.02]),
-    lgd_values=0.40,
-    ead_values=10_000_000,
-    asset_class="corporate",
-    maturity_years=2.5,
-)
-print(result.rows[["expected_loss", "capital", "risk_weighted_assets"]])
-```
+The laboratory implements `loss_distribution` directly with Bernoulli trials. It reports analytical expected loss, simulated mean, a 99% loss quantile and unexpected loss. Students first use three exposures small enough to calculate by hand, then increase portfolio size and add a common factor. The Basel calculation is deliberately postponed until the regulatory formula has been derived in Part IX.
 
 The reported capital is not a forecast loss and the risk-weighted asset amount is not EAD. In the base formula, capital rate is the stressed conditional loss less expected loss, with a maturity adjustment for corporate exposures. Eligibility, floors, output-floor effects, provision treatment and jurisdictional changes remain outside the teaching function.
 
@@ -86,21 +60,7 @@ ECL_{i,t,s}=mPD_{i,t,s}\times LGD_{i,t,s}\times EAD_{i,t,s}\times DF_{i,t}\times
 
 Here marginal PD is the probability of first default in period (t), not the conditional hazard and not cumulative PD. Confusing these quantities double-counts default. The scenario weight (w_s) is applied after scenario-consistent parameter paths are built.
 
-```python
-from creditriskbook.data import load_case_dataset
-from creditriskbook.ifrs9 import Scenario, calculate_ecl
-
-schedule = load_case_dataset(
-    "synthetic_ifrs9_schedule", n_rows=80, seed=31
-).frame
-scenarios = (
-    Scenario("upside", 0.20, pd_multiplier=0.80, lgd_multiplier=0.90, ead_multiplier=0.98),
-    Scenario("base", 0.55),
-    Scenario("downside", 0.25, pd_multiplier=1.50, lgd_multiplier=1.20, ead_multiplier=1.05),
-)
-ecl = calculate_ecl(schedule, scenarios)
-print(ecl.reconciliation)
-```
+The laboratory builds a common-factor experiment from NumPy primitives. Default, LGD and EAD all respond to the same simulated systematic state, and the code prints component-loss correlation, mean loss and a tail quantile. This is intentionally simpler than an ECL engine: the purpose is to make dependence visible before scenario classes or reusable calculation objects exist.
 
 The library scales conditional hazard rather than directly multiplying marginal probability. This keeps the curve in the probability domain and reconstructs scenario marginal PD consistently. LGD is bounded only in the model layer, while raw workout observations remain available elsewhere.
 
@@ -120,15 +80,7 @@ For a cohort originated in month (v), vintage analysis tracks cumulative default
 
 Transition matrices describe movements among states such as current, 1–29 DPD, 30–59 DPD, 60–89 DPD, default, cure, prepayment and closure. Rows must have the same interval and population definition. Treating prepayment as non-default forever can bias lifetime risk because it is a competing event that removes exposure.
 
-```python
-import numpy as np
-from creditriskbook.survival import kaplan_meier
-
-months = np.array([3, 5, 5, 8, 10, 12, 12, 18])
-default_observed = np.array([1, 0, 1, 1, 0, 1, 0, 1])
-curve = kaplan_meier(months, default_observed)
-print(curve[["time", "at_risk", "events", "survival", "cumulative_pd"]])
-```
+The laboratory constructs transition counts and row probabilities directly from an account-month table. Readers must show how the risk set changes, why each row sums to one, and where closure or prepayment removes an account. Kaplan–Meier, cause-specific hazards and cumulative-incidence estimators are introduced only after these counts are understood.
 
 Kaplan–Meier handles right censoring when the event process and censoring mechanism are appropriately interpreted. It does not solve selection bias, cure definitions, left truncation or informative closure automatically. Competing-risk methods are preferable when different exit causes have distinct meaning.
 
@@ -148,16 +100,7 @@ For binary PD, logistic regression models log odds as $\beta_0+x^\top\beta$. A t
 
 The public UCI Credit Approval dataset illustrates a crucial warning. Its outcome is approval, not default. It can teach mixed data types and missingness, but relabelling `approved` as PD would change the meaning of the evidence. Likewise, corporate bankruptcy is related to but not identical with a bank’s regulatory default definition.
 
-```python
-from creditriskbook.data.datasets import load_dataset
-
-approval = load_dataset("uci_credit_approval", cache_dir="data/raw")
-print(approval.target)          # approved
-print(approval.limitations)
-
-bankruptcy = load_dataset("uci_polish_bankruptcy", cache_dir="data/raw")
-print(bankruptcy.target)        # bankrupt_within_1y
-```
+The laboratory implements a clipped logistic transform and the identity between conditional hazards and cumulative PD. It prints classification probabilities, bounded LGD values and a lifetime curve. The extension asks the reader to define a linear-probability benchmark, a continuous-severity model, an ordinal delinquency model and a competing-risk estimand using the same miniature records, making the difference a matter of mathematics rather than library syntax.
 
 ## Model-selection policy
 
@@ -173,18 +116,7 @@ An end-to-end credit model has at least nine connected layers: source data; data
 
 The repository’s baseline workflow demonstrates the chain. It loads a registered dataset, creates a teaching copy with deterministic defects, assesses quality, quarantines invalid rows under explicit rules, applies an out-of-time split where possible, fits a PD benchmark, calculates monitoring metrics, produces a simplified ECL illustration for the compatible synthetic case, and asks a bounded agent for a recommendation. It writes a manifest rather than only displaying a chart.
 
-```python
-from creditriskbook.workflows import run_end_to_end, write_run_manifest
-
-result = run_end_to_end(
-    "synthetic_retail",
-    n_rows=5_000,
-    seed=42,
-    inject_defects=True,
-)
-path = write_run_manifest(result, "artifacts/runs/chapter06.json")
-print(path, result["pd_metrics"], result["agent_recommendation"]["status"])
-```
+The laboratory writes `reproducible_run_id` from elementary JSON canonicalisation and SHA-256 hashing. Every input is visible, and changing one policy field changes the identifier. The end-to-end workflow and manifest classes are built much later, after the reader has created the individual data, model, validation and approval artifacts that a run manifest must reference.
 
 The run manifest should include code version, dataset hash, environment, configuration, timestamps, row counts, exclusions, metrics and approvals. A production registry additionally needs owner, intended use, materiality, validation status, effective dates, dependencies, deployment endpoints and retirement status.
 

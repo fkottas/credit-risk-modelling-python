@@ -77,9 +77,9 @@ print({"dirty_rows": len(dirty), "quarantined": len(quarantine), "failed_rules":
             ),
         ],
     ),
-    "notebooks/02_from_scratch_scorecard.ipynb": notebook(
-        "From-scratch scorecard development",
-        "Fit manual and automatic bins, WOE/IV, a penalised IRLS logistic model, score scaling, grades, reason codes, and characteristic tables without a scorecard library.",
+    "notebooks/02_scorecard_after_from_scratch_construction.ipynb": notebook(
+        "Scorecard integration after from-scratch construction",
+        "After Chapters 25–30 write manual and automatic bins, WOE/IV and penalised IRLS visibly, assemble their promoted implementations into score scaling, grades, reason codes, and characteristic reports without an external scorecard package.",
         [
             code("""
 from tempfile import TemporaryDirectory
@@ -625,6 +625,119 @@ print({key: value.limitations for key, value in cases.items()})
 """),
             markdown(
                 "Original synthetic data enable complete ledgers and deliberate defects but do not establish external validity. Use the matching dataset for each estimand, preserve generator seed/hash, and state the simplified mechanisms."
+            ),
+        ],
+    ),
+    "notebooks/14_behavioral_data_cleaning_and_features.ipynb": notebook(
+        "Behavioural cleaning and feature engineering after construction",
+        "After Chapters 21–24 implement point-in-time joins, cleaning and features visibly, this integration lab calls the promoted package and checks that the original synthetic outcome remains rational.",
+        [
+            code("""
+from creditriskbook.data import make_behavioral_credit_history
+from creditriskbook.data.cleaning import clean_monthly_performance
+from creditriskbook.features import build_behavioral_features
+
+case = make_behavioral_credit_history(n_customers=200, months=18, seed=2401)
+refs = case.applications[["customer_id", "reference_date"]]
+cleaning = clean_monthly_performance(case.monthly_performance, refs)
+features = build_behavioral_features(
+    cleaning.clean, case.contracts, refs, enquiries=case.bureau_enquiries
+)
+model_table = case.applications.merge(
+    features, on=["customer_id", "reference_date"], validate="one_to_one"
+)
+print("model table:", model_table.shape)
+print("cleaning issues:", len(cleaning.issues))
+assert cleaning.issues.empty
+"""),
+            code("""
+selected = [
+    "max_dpd_6m", "last_dpd", "count_dpd30_6m",
+    "count_contracts_last_6m", "current_utilisation",
+]
+print(model_table[selected].head().round(4).to_string(index=False))
+"""),
+            code("""
+import pandas as pd
+
+bands = pd.qcut(model_table["max_dpd_6m"], q=4, duplicates="drop")
+characteristic = (
+    model_table.assign(band=bands)
+    .groupby("band", observed=True)["default_12m"]
+    .agg(observations="size", defaults="sum", default_rate="mean")
+)
+print(characteristic.round(4))
+assert characteristic["default_rate"].is_monotonic_increasing
+"""),
+            markdown(
+                "The increasing rate across `max_dpd_6m` bands is a generator rationality check, not evidence that real data must be forced to monotonicity. Real portfolios require source, cohort, policy, uncertainty and stability analysis."
+            ),
+        ],
+    ),
+    "notebooks/15_nlp_llm_and_document_agent.ipynb": notebook(
+        "NLP, structured LLM outputs, and a governed document agent",
+        "Build document chunks and BM25 retrieval, validate an evidence memo, run a bounded underwriting assistant, and prove prohibited actions are denied.",
+        [
+            code("""
+from creditriskbook.data import make_synthetic_credit_document_case
+from creditriskbook.nlp import (
+    DocumentUnderwritingAssistant, bm25_retrieve, chunk_document,
+    detect_instruction_like_text, extract_tagged_facts,
+)
+
+case = make_synthetic_credit_document_case(n_applications=16, seed=7801)
+assert case.applications["application_id"].is_unique
+assert case.documents["synthetic"].all()
+print(case.applications.shape, case.documents.shape, case.source_sha256[:16])
+"""),
+            code("""
+application_id = case.applications.iloc[1]["application_id"]
+packet = case.documents.loc[case.documents["application_id"].eq(application_id)]
+facts = tuple(
+    fact
+    for row in packet.itertuples(index=False)
+    for fact in extract_tagged_facts(row.document_id, row.text)
+)
+flags = tuple(
+    (row.document_id, detect_instruction_like_text(row.text))
+    for row in packet.itertuples(index=False)
+    if detect_instruction_like_text(row.text)
+)
+assert flags and all(fact.evidence_id.startswith("doc-ev-") for fact in facts)
+print("facts", len(facts), "instruction flags", flags)
+"""),
+            code("""
+chunks = tuple(
+    chunk
+    for row in case.policy_documents.itertuples(index=False)
+    for chunk in chunk_document(row.document_id, row.text, chunk_words=55, overlap_words=8)
+)
+retrieved = bm25_retrieve("missing income evidence and human approval", chunks, top_k=2)
+assert retrieved and retrieved[0].score >= retrieved[-1].score
+print([(item.document_id, round(item.score, 4)) for item in retrieved])
+"""),
+            code("""
+assistant = DocumentUnderwritingAssistant()
+result = assistant.run(case.applications.iloc[0], case.documents, case.policy_documents)
+assert result.policy_decision.decision == "PENDING_HUMAN_APPROVAL"
+assert result.memo.recommendation == "request_missing_evidence"
+print(result.memo)
+print(result.trace)
+"""),
+            code("""
+from creditriskbook.agents import ActionProposal, PolicyEngine
+
+engine = PolicyEngine()
+forbidden = ("approve_customer_credit", "deploy_model", "alter_source_evidence")
+decisions = [
+    engine.evaluate(ActionProposal(action, "red-team", ("EV-RED",), "unsafe_agent"))
+    for action in forbidden
+]
+assert all(item.decision == "DENY" for item in decisions)
+print([(action, item.decision) for action, item in zip(forbidden, decisions, strict=True)])
+"""),
+            markdown(
+                "## Student extensions\n\nImplement TF-IDF and BM25 by hand, vary chunk size and overlap, add an as-of policy filter, calculate retrieval recall at k, inject an invented citation, and design a reviewer screen that always links a claim to its immutable source span. A live LLM adapter is optional and may be connected only after the schema, privacy review, evaluation cases, logging, budget, and human-authority boundary are approved."
             ),
         ],
     ),

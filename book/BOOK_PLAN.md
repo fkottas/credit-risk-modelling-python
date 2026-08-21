@@ -21,12 +21,12 @@ The expanded edition has 72 analytical chapters in twelve parts. Each chapter co
 | IX | 49–54 | IRB functions/parameters, portfolio dependence/concentration and counterparty/CVA/SA-CCR |
 | X | 55–60 | validation, backtesting, UAT, pricing, profit, limits, bandits and safe reinforcement learning |
 | XI | 61–66 | deployment, APIs, containers, monitoring, incidents, governance, change and retirement |
-| XII | 67–72 | governed agents, evidence/tools/memory, quality/validation agents, red teams and capstones |
+| XII | 67–72 | NLP, document extraction, BM25 retrieval, structured LLM outputs, RAG, governed agents, human workflows and red teams |
 
 ## Applied material after the chapters
 
 - original scorecard, IFRS 9, IRB and agent API guides;
-- lawful dataset catalogue and 40-source reference ledger;
+- lawful 36-record dataset catalogue and 62-source reference ledger;
 - 72-case practice book;
 - twelve end-to-end technical workshops;
 - twelve hand-auditable numerical examples;
@@ -45,5 +45,6 @@ The expanded edition has 72 analytical chapters in twelve parts. Each chapter co
 | IFRS 9 and CECL | `creditriskbook.ifrs9` | 06, 09 |
 | Basel IRB and portfolios | `creditriskbook.irb` | 06, 10 |
 | deployment, monitoring and agents | `creditriskbook.monitoring`, `agents` | 07, 12 |
+| NLP, documents, retrieval and bounded LLM workflows | `creditriskbook.nlp` | 15 |
 
 The Word builder uses `book/full_manuscript/`, interleaves one mathematics-to-code laboratory after every chapter, and uses native Word equations plus original teaching figures. The current analytical review output exceeds 400 pages. It remains an educational review manuscript requiring legal, accounting, regulatory, technical and independent model review before publication or real use.

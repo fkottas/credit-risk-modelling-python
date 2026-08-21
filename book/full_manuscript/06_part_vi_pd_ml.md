@@ -136,6 +136,52 @@ challenger = XGBClassifier(
 
 `ModelScoreMapper` converts any `predict_proba` output to the same PDO score scale. This makes business comparisons easier but does not make the nonlinear model an additive scorecard.
 
+![Figure 34.1 — Original impurity calculation for two candidate tree splits on the same ordered sample.](book/figures/tree-split-gain.png)
+
+## Linear, multiclass, ordinal, neural, Bayesian, and self-organising challengers
+
+The linear-probability model $E[Y\mid X]=X\beta$ is useful as a diagnostic because coefficients are marginal probability changes, but fitted values can fall outside $[0,1]$ and its error variance is heteroskedastic. A robust covariance estimate can improve inference; it cannot make the probability range valid. Binary logistic regression is therefore the usual transparent benchmark.
+
+When the outcome has mutually exclusive classes—current, 30 DPD, 60 DPD, default, for example—multinomial logistic regression defines a reference class and
+
+\[
+P(Y=c\mid x)=\frac{\exp(\alpha_c+x^\top\beta_c)}{1+\sum_{k=1}^{C-1}\exp(\alpha_k+x^\top\beta_k)}.
+\]
+
+If classes are ordered, a cumulative-logit model instead assumes
+
+\[
+\log\frac{P(Y\le c\mid x)}{P(Y>c\mid x)}=\alpha_c-x^\top\beta.
+\]
+
+The shared slope is the proportional-odds assumption and must be tested. A nomogram is a graphical translation of an additive model's coefficients into points; it is a presentation, not a different estimator. For delinquency states, a transition or competing-risk model can be more faithful than forcing every state into one static label.
+
+A multilayer perceptron composes affine transformations and nonlinear activations. With hidden layer $h=\phi(W_1x+b_1)$ and logit $z=W_2h+b_2$, the bad probability is $\sigma(z)$. Binary cross-entropy is
+
+\[
+\mathcal{L}=-\sum_i\{y_i\log p_i+(1-y_i)\log(1-p_i)\}.
+\]
+
+Back-propagation applies the chain rule to compute gradients. Width, depth, activation, initialisation, regularisation, early stopping and class treatment are model choices. Neural networks are most credible when sample size and genuinely complex inputs justify them; tabular credit data often do not provide a material advantage over well-tuned boosting. Probability calibration, explanation stability and operational reproducibility remain separate tests.
+
+Naive Bayes uses Bayes' rule with a conditional-independence approximation,
+
+\[
+P(Y=c\mid x)\propto P(Y=c)\prod_j P(x_j\mid Y=c).
+\]
+
+It is fast and useful as a benchmark, but correlated bureau ratios violate the simplifying assumption. Bayesian networks make conditional dependencies explicit in a directed acyclic graph; causal meaning must not be inferred from a graph learned only from association. Bayesian additive regression trees place priors over an ensemble of shallow trees and integrate posterior uncertainty rather than returning one fitted tree. Markov-chain Monte Carlo approximates posterior expectations with dependent draws; variational inference optimises a tractable approximation $q(\theta)$ by minimising $KL(q\|p)$. Convergence, approximation bias, prior sensitivity and computation need validation.
+
+A self-organising map updates the best-matching prototype $m_c$ and its neighbours,
+
+\[
+m_j^{(t+1)}=m_j^{(t)}+\eta_t h_{cj,t}(x_t-m_j^{(t)}).
+\]
+
+It can visualise borrower topology or detect unusual groups, but its map is sensitive to scale, topology and random initialisation and it does not produce a calibrated PD by itself. Use it as exploratory evidence, never as an unexplained customer-decision rule.
+
+These families are included to teach model choice, not to encourage a leaderboard. For each challenger, the student writes the objective, identifies assumptions, constructs a simple fixture, verifies a limiting case, calibrates probabilities, maps to a common score only when meaningful, and explains why the added complexity earns its control cost.
+
 ## Complexity policy
 
 Require a material, stable benefit over logistic regression. Compare calibration, fairness, reason quality, latency, security and monitoring burden. Preserve training data and library versions. Test deterministic seeds and serialization.

@@ -41,28 +41,18 @@ Public datasets are teaching and infrastructure assets, not automatic evidence f
 
 Synthetic does not mean arbitrary. A useful generator specifies support, dependencies, time and limitations. For example, an open contract must not have a closing date before its opening date; a monthly snapshot must not occur before opening; $DPD\ge 90$ should reconcile to the chosen default-status rule; balances should normally be non-negative; and future labels should depend on past risk, not on a random target unrelated to the features.
 
-The repository generator creates four separate tables: applications, contracts, monthly performance and bureau enquiries. It uses a latent propensity only to produce rational teaching directions. Recent DPD, utilisation and new-credit intensity increase generated default probability, while income reduces it. This mechanism is original project code and is not estimated from a real lender.
-
-```python
-from creditriskbook.data import make_behavioral_credit_history
-
-case = make_behavioral_credit_history(n_customers=800, months=18, seed=1901)
-print(case.applications.shape, case.contracts.shape)
-print(case.monthly_performance.shape, case.bureau_enquiries.shape)
-print(case.licence)
-print(case.limitations)
-```
+The course generator creates four separate tables: applications, contracts, monthly performance and bureau enquiries. It uses a latent propensity only to produce rational teaching directions. Recent DPD, utilisation and new-credit intensity increase generated default probability, while income reduces it. The laboratory first constructs miniature rows explicitly; the complete generator is then assembled progressively in the Chapter 19 source script and subsequent data chapters. This mechanism is original project code and is not estimated from a real lender.
 
 Representative output for the fixed seed:
 
-```text
+```output
 (800, 7) (1937, 8)
 (23193, 10) (1406, 4)
 Project-generated synthetic teaching data
 Original synthetic relationships are pedagogical ... and not calibrated to any lender.
 ```
 
-These row counts are the executed result for seed 1901 in version 0.5.0 and are asserted in tests. The checksum covers all four tables and changes if any generated value changes.
+These row counts are the executed result for seed 1901 in version 0.6.0 and are asserted in tests. The checksum covers all four tables and changes if any generated value changes.
 
 ## Source assessment and prohibited inference
 
@@ -92,19 +82,7 @@ The book's dataset registry records publisher, official URL, licence, redistribu
 
 Checksums protect reproducibility, not legality. A hash proves which bytes were used. It does not prove a right to use them. Conversely, a permissive licence does not establish representativeness, target validity or fairness.
 
-```python
-from creditriskbook.data.datasets import load_dataset
-
-bundle = load_dataset("uci_south_german", cache_dir="data/raw")
-evidence = {
-    "source": bundle.source_url,
-    "licence": bundle.licence,
-    "attribution": bundle.attribution,
-    "sha256": bundle.source_sha256,
-    "limitations": bundle.limitations,
-}
-print(evidence)
-```
+The laboratory defines `DatasetLicenceRecord` and `licence_gate` directly. Empty publisher, official URL, licence, redistribution rule or attribution blocks the record; an unresolved licence never becomes permission through silence. The live UCI adapter is introduced after readers can review this evidence structure themselves.
 
 The expected licence is `CC BY 4.0`, and the attribution includes UCI and DOI `10.24432/C5X89F`. The adapter downloads from the reviewed UCI archive and rejects a file whose SHA-256 no longer matches. The repository does not quietly update the checksum; a changed file triggers human review.
 
@@ -210,17 +188,7 @@ For every engineered feature store source table, source fields, filtering bounda
 
 for the same as-of population, currency and exclusions. A difference can be legitimate only if its bridge is explicit.
 
-The generated relational case is now called only after the fundamentals are clear:
-
-```python
-from creditriskbook.data import make_behavioral_credit_history
-
-case = make_behavioral_credit_history(n_customers=500, months=18, seed=2101)
-assert case.applications["application_id"].is_unique
-assert case.contracts["contract_id"].is_unique
-assert not case.monthly_performance.duplicated(["contract_id", "snapshot_date"]).any()
-print(case.applications[["customer_id", "reference_date"]].head(2))
-```
+After the fundamentals are clear, the student expands the hand table into an original relational case. The Chapter 21 script asserts unique application and contract keys, prevents duplicate contract-month rows and prints the selected effective timestamp. Only the later integration phase promotes the reviewed generator and join into the reusable package.
 
 **Applied investigation.** Draw the key and cardinality map, make a deliberately multiplying join, reconcile its balance inflation, then replace it with an aggregation at the correct point in time.
 
@@ -399,23 +367,9 @@ r_K^*=\arg\max_{r:key(r)=K} processing\_time(r).
 
 Earlier versions are not erased. They move to quarantine with action `retain_latest_ingestion_and_quarantine_prior_version`. If authority is ambiguous, halt. Choosing the value most favourable to model performance is never a cleaning rule.
 
-## Promote the tested method into the library
+## Freeze the tested cleaning contract before promotion
 
-After students understand and test the simple rules, the full implementation is promoted to `creditriskbook.data.cleaning`. It adds customer-specific reference dates, processing-time versions, status-DPD consistency and row-level issue evidence.
-
-```python
-from creditriskbook.data import inject_behavioral_defects, make_behavioral_credit_history
-from creditriskbook.data.cleaning import clean_monthly_performance
-
-case = make_behavioral_credit_history(n_customers=300, months=18, seed=2301)
-dirty = inject_behavioral_defects(case.monthly_performance, seed=2302)
-references = case.applications[["customer_id", "reference_date"]]
-result = clean_monthly_performance(dirty, references)
-
-print(result.issues["rule"].value_counts().sort_index())
-print({"clean": len(result.clean), "quarantine": len(result.quarantine)})
-assert set(result.clean["source_row_id"]).isdisjoint(result.quarantine["source_row_id"])
-```
+Students now have enough information to specify the later package contract: raw rows in; accepted rows, quarantine rows and one issue record per failed rule out. The Chapter 23 standalone script implements this contract without project imports and prints the accepted indexes plus row-level reasons. The full version is promoted only after Chapters 21–24 are complete, adding customer-specific reference dates, processing-time versions, status-DPD consistency and source-row evidence without changing the visible contract.
 
 Expected issue categories include `dpd_out_of_domain`, `negative_or_missing_payment_received`, `balance_exceeds_120pct_limit`, `status_out_of_domain`, `post_reference_snapshot`, `status_dpd_inconsistent` and `superseded_business_key`. Counts are generated and tested; they are not manually edited into a presentation.
 
@@ -577,30 +531,9 @@ This example prevents four common errors: taking last instead of maximum, counti
 
 Add a future row with $DPD=999$. Every feature at the earlier reference date must remain identical. Add a contract exactly at $t-6m$ and verify exclusion under the open-left convention. Add two contracts in one month and verify `count_dpd30_6m` still counts a month, not contracts. Add no-history and zero-limit cases; missing or quarantine policy must be explicit.
 
-## Promote and reuse the tested library
+## Freeze the feature contract before package reuse
 
-Only now is the richer implementation called from the student-built package. It computes 3-, 6- and 12-month DPD severity/frequency, recency, persistence, current/mean/max/trend utilisation, payment ratios, over-limit months, active and new contracts, outstanding balance and bureau enquiries.
-
-```python
-from creditriskbook.data import make_behavioral_credit_history
-from creditriskbook.data.cleaning import clean_monthly_performance
-from creditriskbook.features import build_behavioral_features
-
-case = make_behavioral_credit_history(n_customers=800, months=18, seed=2401)
-references = case.applications[["customer_id", "reference_date"]]
-cleaning = clean_monthly_performance(case.monthly_performance, references)
-features = build_behavioral_features(
-    cleaning.clean,
-    case.contracts,
-    references,
-    enquiries=case.bureau_enquiries,
-)
-model_table = case.applications.merge(features, on=["customer_id", "reference_date"])
-print(model_table[[
-    "default_12m", "max_dpd_6m", "last_dpd", "count_dpd30_6m",
-    "count_contracts_last_6m", "current_utilisation", "utilisation_slope_6m",
-]].head())
-```
+The Chapter 24 standalone script calculates `last_dpd`, `max_dpd_6m`, `count_dpd30_6m`, mean utilisation and `CountContractsLast6Months` from visible histories. The extension then adds 3-, 6- and 12-month severity/frequency, recency, persistence, current/mean/max/trend utilisation, payment ratios, over-limit months, active balances and bureau enquiries. Only after the hand cases and future-leakage tests pass is this contract promoted to the richer implementation used later in the book.
 
 The cleaning result is passed into features so a model cannot quietly consume quarantined rows. Tests reconcile scratch and library results for hand cases, assert the closed-form utilisation slope, and prove that future rows do not change earlier features.
 

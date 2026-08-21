@@ -6,20 +6,37 @@ Scorecard development begins after the population, target and split are frozen. 
 
 Characteristic analysis evaluates one predictor across interpretable groups. For each bin report count, population share, goods, bads, bad rate, WOE, IV component and eventual points. Add time and segment views. A summary slide should not hide zero-event bins, sparse bins or missing values.
 
-```python
-from pathlib import Path
-from creditriskbook.data.datasets import load_dataset
-from creditriskbook.models import split_dataset
-from creditriskbook.scorecard import LogisticScorecard, export_characteristic_presentation
+The first characteristic table is written without the project package. Its tiny fixture makes every denominator visible.
 
-bundle = load_dataset("synthetic_retail", n_rows=5_000, seed=251)
-train, _ = split_dataset(bundle, bundle.frame)
-features = ["income", "debt_to_income", "utilisation", "enquiries_6m", "product"]
-scorecard = LogisticScorecard().fit(train[features], train[bundle.target])
-export_characteristic_presentation(
-    scorecard,
-    Path("artifacts/reports/chapter25_characteristics.pptx"),
+```python
+import pandas as pd
+
+
+def characteristic_table(frame, feature, target):
+    result = (
+        frame.groupby(feature, dropna=False, observed=True)[target]
+        .agg(observations="size", bads="sum", bad_rate="mean")
+        .reset_index()
+    )
+    result["goods"] = result["observations"] - result["bads"]
+    result["share"] = result["observations"] / len(frame)
+    return result[[feature, "observations", "goods", "bads", "bad_rate", "share"]]
+
+
+fixture = pd.DataFrame(
+    {
+        "utilisation_band": ["low", "low", "medium", "medium", "high", "high", "high"],
+        "default_12m": [0, 0, 0, 1, 0, 1, 1],
+    }
 )
+print(characteristic_table(fixture, "utilisation_band", "default_12m").to_string(index=False))
+```
+
+```output
+utilisation_band  observations  goods  bads  bad_rate    share
+            high             3      1     2  0.666667 0.428571
+             low             2      2     0  0.000000 0.285714
+          medium             2      1     1  0.500000 0.285714
 ```
 
 The presentation generator creates a title, characteristic summary and one slide per feature with bad rates and a bin table. It is deliberately not a one-click approval pack. Sample dates, population, cut-point rationale, stability, exclusions, judgement and sign-off must be added.
@@ -41,23 +58,42 @@ Manual bins encode product knowledge, operational thresholds and stable interpre
 Numeric bins should cover $(-\infty,+\infty)$, with missing and special values explicit. Special values such as -999 must not be treated as economic numbers. Categorical grouping combines levels with similar risk and meaning; rare categories may be grouped, but protected or materially different categories should not be hidden merely to smooth bad rates. Unseen production levels require a defined `OTHER` policy.
 
 ```python
-from creditriskbook.scorecard import (
-    BinningProcess,
-    manual_categorical_spec,
-    manual_numeric_spec,
-)
+import math
 
-manual = {
-    "enquiries_6m": manual_numeric_spec(
-        "enquiries_6m", [0, 1, 3, 6], special_values=[-999]
-    ),
-    "product": manual_categorical_spec(
-        "product",
-        [["personal_loan"], ["credit_card"], ["bnpl"]],
-        labels=["instalment", "revolving", "short_term"],
-    ),
-}
-process = BinningProcess(manual_specs=manual, numeric_method="monotonic")
+import pandas as pd
+
+
+def manual_numeric_bin(value, edges, special_values=(-999.0,)):
+    """Apply frozen right-closed cuts; never learn an edge while scoring."""
+    if pd.isna(value):
+        return "MISSING"
+    if value in special_values:
+        return f"SPECIAL:{value:g}"
+    boundaries = [-math.inf, *sorted(edges), math.inf]
+    for index, (left, right) in enumerate(zip(boundaries[:-1], boundaries[1:]), start=1):
+        if left < value <= right:
+            return f"BIN_{index}:({left:g},{right:g}]"
+    raise AssertionError("unreachable")
+
+
+def manual_categorical_bin(value, groups):
+    if pd.isna(value):
+        return "MISSING"
+    for label, members in groups.items():
+        if value in members:
+            return label
+    return "OTHER"
+
+
+values = [-999.0, None, 0.0, 1.0, 2.5, 8.0]
+print([manual_numeric_bin(value, [0, 1, 3, 6]) for value in values])
+groups = {"instalment": {"personal_loan"}, "revolving": {"credit_card"}}
+print([manual_categorical_bin(value, groups) for value in ["personal_loan", "credit_card", "new_product", None]])
+```
+
+```output
+['SPECIAL:-999', 'MISSING', 'BIN_1:(-inf,0]', 'BIN_2:(0,1]', 'BIN_3:(1,3]', 'BIN_5:(6,inf]']
+['instalment', 'revolving', 'OTHER', 'MISSING']
 ```
 
 Intervals use right-closed semantics and labels are stored with the bin specification. Training and scoring call the same `transform`; cut points are never recomputed at scoring time.
@@ -74,7 +110,7 @@ The binning memo should include variable definition, available time, raw distrib
 
 Quantile binning targets similar counts and is robust to skew, but repeated values can collapse edges. Equal-width binning preserves the measurement scale but can create sparse tails. ChiMerge begins with fine ordered intervals and repeatedly merges the adjacent pair with the smallest Pearson chi-square difference in good/bad composition. A monotonic variant continues merging violations until bad rates move in one direction.
 
-The repository implements these algorithms without a scorecard package. It first creates pre-bins, applies minimum population and event/non-event constraints, merges by chi-square to `max_bins`, and optionally enforces a trend. Missing and special values stay outside the ordered merge.
+We implement these algorithms without a scorecard package. The complete library version first creates pre-bins, applies minimum population and event/non-event constraints, merges by chi-square to `max_bins`, and optionally enforces a trend. Missing and special values stay outside the ordered merge.
 
 For adjacent bins with observed table (O_{rc}), Pearson’s statistic is
 
@@ -85,20 +121,54 @@ For adjacent bins with observed table (O_{rc}), Pearson’s statistic is
 A small value means the two adjacent bins have similar class composition and are candidates for merging. This is a heuristic, not proof that the final grouping is optimal or stable.
 
 ```python
-from creditriskbook.scorecard import BinningProcess
+import numpy as np
 
-process = BinningProcess(
-    numeric_method="monotonic",
-    max_bins=6,
-    prebins=20,
-    min_bin_fraction=0.04,
-    min_events=5,
-    monotonic_trend="auto",
-)
-binned_train = process.fit_transform(train[features], train[bundle.target])
-binned_test = process.transform(test[features])
-print(process.specs_["utilisation"])
+
+def pair_chi_square(left, right):
+    observed = np.array(
+        [[left["goods"], left["bads"]], [right["goods"], right["bads"]]], dtype=float
+    )
+    expected = observed.sum(axis=1, keepdims=True) @ observed.sum(axis=0, keepdims=True)
+    expected /= observed.sum()
+    contributions = np.divide(
+        (observed - expected) ** 2,
+        expected,
+        out=np.zeros_like(expected),
+        where=expected > 0,
+    )
+    return float(contributions.sum())
+
+
+def chimerge(prebins, max_bins):
+    bins = [dict(item) for item in prebins]
+    while len(bins) > max_bins:
+        scores = [pair_chi_square(bins[i], bins[i + 1]) for i in range(len(bins) - 1)]
+        i = int(np.argmin(scores))
+        left, right = bins[i], bins[i + 1]
+        merged = {
+            "lower": left["lower"],
+            "upper": right["upper"],
+            "goods": left["goods"] + right["goods"],
+            "bads": left["bads"] + right["bads"],
+        }
+        bins[i : i + 2] = [merged]
+    return bins
+
+
+prebins = [
+    {"lower": 0, "upper": 1, "goods": 40, "bads": 4},
+    {"lower": 1, "upper": 2, "goods": 35, "bads": 5},
+    {"lower": 2, "upper": 3, "goods": 20, "bads": 10},
+    {"lower": 3, "upper": 4, "goods": 10, "bads": 12},
+]
+print(chimerge(prebins, max_bins=3))
 ```
+
+```output
+[{'lower': 0, 'upper': 2, 'goods': 75, 'bads': 9}, {'lower': 2, 'upper': 3, 'goods': 20, 'bads': 10}, {'lower': 3, 'upper': 4, 'goods': 10, 'bads': 12}]
+```
+
+The first two pre-bins merge because their good/bad compositions are most similar. The production implementation adds deterministic tie-breaking, quantile and equal-width pre-bins, minimum shares, minimum goods and bads, missing/special isolation, monotonic-violation merging and serialisable interval specifications. Students add each control one at a time and write its boundary test before the function is promoted.
 
 Automatic trend choice can be unstable when the true relationship is flat or U-shaped. Compare increasing and decreasing alternatives, bootstrap edges, and challenge business plausibility. A monotonic variable is not necessarily causal.
 
@@ -112,7 +182,7 @@ Fit bins only on training data. Persist the complete specification. Test boundar
 
 ## Definition and convention
 
-For bin (j), let (G_j) and (B_j) be goods and bads. With smoothing (a>0) and (k) bins,
+For bin $j$, let $G_j$ and $B_j$ be goods and bads. With smoothing $a>0$ and $k$ bins,
 
 \[
 p^G_j=\frac{G_j+a}{\sum_{m=1}^{k}G_m+ak},\qquad
@@ -130,13 +200,36 @@ IV=\sum_{j=1}^{k}(p^G_j-p^B_j)WOE_j.
 Smoothing prevents infinite WOE for zero-event bins but does not make them reliable. The smoothing value affects small bins and belongs in configuration.
 
 ```python
-from creditriskbook.scorecard import WOEEncoder
+import numpy as np
+import pandas as pd
 
-encoder = WOEEncoder(smoothing=0.5)
-woe_train = encoder.fit_transform(binned_train, train[bundle.target])
-woe_test = encoder.transform(binned_test)
-print(encoder.tables_["utilisation"].table)
-print(encoder.information_values)
+
+def woe_iv(bin_counts, smoothing=0.5):
+    table = bin_counts.copy()
+    k = len(table)
+    total_goods = table["goods"].sum() + smoothing * k
+    total_bads = table["bads"].sum() + smoothing * k
+    table["p_good"] = (table["goods"] + smoothing) / total_goods
+    table["p_bad"] = (table["bads"] + smoothing) / total_bads
+    table["woe"] = np.log(table["p_good"] / table["p_bad"])
+    table["iv_component"] = (table["p_good"] - table["p_bad"]) * table["woe"]
+    return table, float(table["iv_component"].sum())
+
+
+counts = pd.DataFrame(
+    {"bin": ["low", "medium", "high"], "goods": [80, 45, 15], "bads": [10, 20, 30]}
+)
+table, information_value = woe_iv(counts)
+print(table.round(4).to_string(index=False))
+print("IV =", round(information_value, 6))
+```
+
+```output
+   bin  goods  bads  p_good  p_bad     woe  iv_component
+   low     80    10  0.5689 0.1707  1.2036        0.4792
+medium     45    20  0.3216 0.3333 -0.0360        0.0004
+  high     15    30  0.1095 0.4959 -1.5101        0.5835
+IV = 1.063185
 ```
 
 WOE turns a nonlinear univariate relationship into a piecewise constant representation. A logistic coefficient then scales that characteristic after controlling for others. WOE does not solve multicollinearity, selection bias or temporal instability.
@@ -151,7 +244,7 @@ Investigate high IV, zero goods/bads, small bins, non-business ordering and miss
 
 ## Model and likelihood
 
-For WOE vector (x_i), logistic regression assumes
+For WOE vector $x_i$, logistic regression assumes
 
 \[
 p_i=\frac{1}{1+\exp[-(\beta_0+x_i'\beta)]}.
@@ -163,18 +256,51 @@ The Bernoulli log-likelihood is
 \ell(\beta)=\sum_{i=1}^{n}\{y_i\log p_i+(1-y_i)\log(1-p_i)\}.
 \]
 
-Iteratively reweighted least squares is Newton’s method applied to this likelihood. At each iteration, calculate probabilities, variance weights (p_i(1-p_i)), gradient and information matrix, then update coefficients. The repository adds an L2 penalty to slopes but not the intercept, clips extreme logits for numerical stability, records convergence and retains an approximate covariance matrix.
+Iteratively reweighted least squares is Newton’s method applied to this likelihood. At each iteration, calculate probabilities, variance weights $p_i(1-p_i)$, gradient and information matrix, then update coefficients. We first write the full estimator below. The promoted repository class later adds input contracts, stored feature names, covariance, serialisation and richer diagnostics.
 
 ```python
-from creditriskbook.scorecard import IRLSLogisticRegression
+import numpy as np
 
-model = IRLSLogisticRegression(
-    l2=1e-3,
-    max_iter=100,
-    tolerance=1e-8,
-).fit(woe_train, train[bundle.target])
-pd_test = model.predict_proba(woe_test)[:, 1]
-print(model.converged_, model.n_iter_, model.intercept_, model.coef_)
+
+def sigmoid(logit):
+    logit = np.clip(logit, -35, 35)
+    return 1.0 / (1.0 + np.exp(-logit))
+
+
+def fit_logistic_irls(X, y, l2=1e-3, max_iter=100, tolerance=1e-9):
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    design = np.column_stack([np.ones(len(X)), X])
+    beta = np.zeros(design.shape[1])
+    penalty = np.diag([0.0] + [l2] * X.shape[1])
+    for iteration in range(1, max_iter + 1):
+        probability = sigmoid(design @ beta)
+        weights = np.clip(probability * (1.0 - probability), 1e-9, None)
+        gradient = design.T @ (y - probability) - penalty @ beta
+        information = (design.T * weights) @ design + penalty
+        step = np.linalg.solve(information, gradient)
+        beta_next = beta + step
+        if np.max(np.abs(step)) < tolerance:
+            return beta_next, iteration
+        beta = beta_next
+    raise RuntimeError("IRLS did not converge")
+
+
+X = np.array([[-1.5], [-1.0], [-0.5], [0.0], [0.5], [1.0], [1.5]])
+y = np.array([0, 0, 0, 0, 1, 1, 1])
+beta, iterations = fit_logistic_irls(X, y, l2=0.2)
+print(
+    {
+        "intercept": float(round(beta[0], 6)),
+        "coefficient": float(round(beta[1], 6)),
+        "iterations": iterations,
+        "pd_at_zero": float(round(sigmoid(beta[0]), 6)),
+    }
+)
+```
+
+```output
+{'intercept': -0.641179, 'coefficient': 2.500836, 'iterations': 7, 'pd_at_zero': 0.34498}
 ```
 
 L2 regularisation reduces unstable magnitudes but changes inference. Approximate standard errors rely on model assumptions and do not account for bin search, repeated observations or temporal dependence. Use bootstrap or clustered methods where appropriate.
@@ -182,6 +308,57 @@ L2 regularisation reduces unstable magnitudes but changes inference. Approximate
 ## Variable selection
 
 Selection should combine business meaning, availability, univariate evidence, correlation, VIF, sign, stability and incremental performance. Stepwise p-values alone overfit. LASSO may select among correlated features arbitrarily. Keep a simple benchmark and document exclusions.
+
+Filter, wrapper and embedded methods answer different questions. A Fisher score for variable $x_j$ compares between-class separation with within-class variation,
+
+\[
+F_j=\frac{(\bar{x}_{j,1}-\bar{x}_{j,0})^2}{s^2_{j,1}+s^2_{j,0}},
+\]
+
+while Cramér's $V$ describes association between two categorical variables from a contingency-table statistic,
+
+\[
+V=\sqrt{\frac{\chi^2/n}{\min(r-1,c-1)}}.
+\]
+
+Neither measure knows whether the field is available at the decision time, stable, explainable or lawful. A wrapper repeatedly fits models to candidate subsets and evaluates a predeclared out-of-time objective. This can discover combinations, but it multiplies selection noise; nested validation is needed if the reported performance is to include the search.
+
+Embedded regularisation estimates coefficients and selects or shrinks them in one objective. For negative log-likelihood $-\ell(\beta)$,
+
+\[
+\widehat\beta_{ridge}=\arg\min_\beta\{-\ell(\beta)+\lambda\sum_{j=1}^{p}\beta_j^2\},
+\]
+
+\[
+\widehat\beta_{lasso}=\arg\min_\beta\{-\ell(\beta)+\lambda\sum_{j=1}^{p}|\beta_j|\}.
+\]
+
+Ridge stabilises correlated coefficients but normally keeps them all. LASSO can set coefficients exactly to zero, yet may choose one of several correlated variables unpredictably. Elastic net combines both penalties. The intercept is normally unpenalised, and $\lambda$ must be selected inside the training process rather than against the final test period.
+
+Principal-component analysis diagonalises the training covariance matrix $S$: $Sv_k=\lambda_kv_k$, with component $z_k=Xv_k$. It can compress correlated numeric variables, but components may be difficult to explain and can drift when the covariance structure changes. Fit loadings on training data only, freeze centring and scaling, retain the original feature lineage and compare the loss of business meaning with any performance benefit. Bayesian additive regression trees are a flexible nonlinear selection-and-interaction challenger: a prior regularises an ensemble of shallow trees, and posterior inclusion summaries express model uncertainty. They are not a replacement for point-in-time controls, independent validation or reason governance.
+
+```python
+import numpy as np
+
+
+def fisher_score(values, target):
+    good = np.asarray(values)[np.asarray(target) == 0]
+    bad = np.asarray(values)[np.asarray(target) == 1]
+    numerator = (bad.mean() - good.mean()) ** 2
+    denominator = bad.var(ddof=1) + good.var(ddof=1)
+    return numerator / denominator
+
+
+x = np.array([0.10, 0.20, 0.25, 0.55, 0.70, 0.85])
+y = np.array([0, 0, 0, 1, 1, 1])
+print(round(fisher_score(x, y), 6))
+```
+
+```output
+14.7
+```
+
+The score is deliberately hand-checkable: the two class means are $0.1833$ and $0.7000$, and the sample variances are $0.005833$ and $0.022500$. The ratio of squared mean difference to their sum is $14.7$. A large value signals separation in this fixture, not automatic admission to a model.
 
 The expected coefficient sign depends on the WOE convention. With good-to-bad WOE and target 1=bad, a stable risk characteristic commonly receives a negative coefficient: higher WOE implies lower bad log odds.
 
@@ -200,6 +377,8 @@ Score=Offset+Factor\log O,
 where $Factor=PDO/\log 2$ and $Offset=BaseScore-Factor\log(BaseOdds)$. If base score is 600 at good-to-bad odds 20 and PDO is 50, doubling good odds increases score by 50.
 
 Because the logistic model uses bad log odds $z=\log[p/(1-p)]$, score equals `offset - factor*z`. The intercept contributes base points and each characteristic contributes `-factor*beta*WOE`. The repository reconciles row components to total score before rounding and clipping.
+
+This is the promotion checkpoint. The reader has already written characteristic summaries, frozen manual bins, an adjacent-bin ChiMerge loop, WOE/IV and IRLS. Those functions are moved into modules, given dataclasses and serialisable specifications, and surrounded by unit tests for event sign, boundaries, missing, special and unseen values, convergence and reconciliation. Only now do we call the assembled `LogisticScorecard`; the import is a reviewed version of the code just constructed, not a hidden scorecard dependency.
 
 ```python
 from creditriskbook.scorecard import LogisticScorecard, ScoreScale

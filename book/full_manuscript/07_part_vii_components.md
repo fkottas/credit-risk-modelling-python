@@ -61,6 +61,16 @@ When events are rare, maximum-likelihood estimates are unstable and grades may c
 
 A beta-binomial model starts with prior (PD\sim Beta(a,b)). After (d) defaults in (n) observations, posterior is (Beta(a+d,b+n-d)). Priors must be justified by comparable evidence, not chosen to reach a capital target. Hierarchical models partially pool grades or countries and quantify uncertainty.
 
+For grades $g=1,\ldots,G$, a hierarchical logit model can write
+
+\[
+logit(PD_g)=\mu+u_g,\qquad u_g\sim N(0,\tau^2).
+\]
+
+Small grades shrink towards the portfolio distribution through $\tau$, while data-rich grades retain more of their own signal. This is partial pooling, not permission to combine economically incomparable obligors. Posterior predictive checks compare simulated default counts with observed grade and period patterns. Prior predictive checks are performed before seeing outcomes to reveal implausible prior mass.
+
+MCMC estimates $E[g(\theta)\mid D]$ with an average over posterior draws after warm-up. Inspect multiple chains, effective sample size, rank plots, tail behaviour and sensitivity to parameterisation. Variational inference can be faster, but a restricted $q(\theta)$ may understate tail dependence and uncertainty. In a low-default portfolio, understated uncertainty defeats the purpose of using a Bayesian method. Report the likelihood, priors, pooling structure, algorithm, diagnostics, posterior intervals and decision rule; do not report only a posterior mean.
+
 ```python
 from scipy.stats import beta
 

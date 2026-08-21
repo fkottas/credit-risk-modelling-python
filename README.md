@@ -23,7 +23,7 @@ The teaching sequence is also deliberate. Each substantial method is introduced 
 
 ## Dataset switching
 
-Students are not locked into one dataset. A common interface supports seven primary PD/public modes:
+Students are not locked into one dataset. The legal and technical registry contains 36 source records. The common executable interface supports these principal PD/public modes:
 
 1. `synthetic_retail` - generated entirely by this repository and safe for unrestricted exercises;
 2. `uci_south_german` - a corrected, small CC BY 4.0 benchmark;
@@ -33,7 +33,7 @@ Students are not locked into one dataset. A common interface supports seven prim
 6. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
 7. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
 
-Six original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
+Eight original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
 
 - `synthetic_behavioral_history` for applications, contracts, monthly DPD/payment histories and bureau enquiries;
 
@@ -42,6 +42,9 @@ Six original deterministic case generators provide lifecycle tables that public 
 - `synthetic_ifrs9_schedule` for staging and cash-flow-period ECL;
 - `synthetic_corporate_irb` for grades, calibration and RWA;
 - `synthetic_counterparty_profiles` for exposure profiles and introductory CVA.
+- `synthetic_credit_documents` for field extraction, BM25 retrieval, structured evidence memoranda and agent red teams.
+
+The registry also covers official HMDA, CFPB complaint, SBA 7(a)/504, SEC EDGAR, Federal Reserve SCF, EBA Pillar 3, FHFA, World Bank and FRED sources; provider-controlled mortgage data; and conditional Kaggle competition cases. A registry entry is not blanket approval: each exercise applies its recorded scope, current notice, access method and redistribution decision.
 
 Additional datasets will be added only after their provenance, licence, permitted use, attribution, and redistribution terms are recorded in [`data/dataset_registry.yml`](data/dataset_registry.yml). A Kaggle mirror never replaces the original publisher's licence.
 
@@ -104,4 +107,4 @@ See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md
 
 ## Current status
 
-The expanded review branch contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 14 executed notebooks, a 400+ page Word review manuscript with native equations, multiple original teaching figures and datasets, and original scorecard, IFRS 9, IRB, and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.
+The expanded teaching edition contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 24 standalone early-chapter scripts, 16 executed notebooks, a 400+ page Word manuscript with native equations and labelled Python/output panels, original teaching figures, a 36-record lawful-use dataset registry, and original scorecard, IFRS 9, IRB, NLP and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.

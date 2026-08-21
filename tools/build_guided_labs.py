@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
+
+from early_chapter_examples import EXAMPLES as EARLY_EXAMPLES
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "book" / "guided_labs"
@@ -32,7 +37,7 @@ FORMULAS = [
     r"X_t=\operatorname{join}_{\tau\le t}(A_t,B_\tau)",
     r"Y_i=\mathbf{1}\{T_i\le h\}",
     r"Q=\sum_{k=1}^{K} w_k q_k",
-    r"\mathbb{E}[Y\mid X,R=1]\ne\mathbb{E}[Y\mid X]",
+    r"maxDPD_i(w)=\max_{t_i-w<s\le t_i}DPD_{i,s},\quad CountContracts_i(w)=\sum_j\mathbf{1}\{t_i-w<open_{ij}\le t_i\}",
     r"\widehat{p}_j=\frac{B_j}{G_j+B_j}",
     r"b(x)=\sum_{j=1}^{J}j\,\mathbf{1}\{c_{j-1}<x\le c_j\}",
     r"\chi^2=\sum_{r=1}^{R}\sum_{c=1}^{C}\frac{(O_{rc}-E_{rc})^2}{E_{rc}}",
@@ -75,12 +80,12 @@ FORMULAS = [
     r"PSI=\sum_{j=1}^{J}(a_j-e_j)\log(a_j/e_j)",
     r"Trigger=\mathbf{1}\{metric>threshold\}\times severity",
     r"ChangeHash=SHA256(previous\ hash\Vert change\ record)",
-    r"proposal=(action,evidence,uncertainty,requested\ authority)",
-    r"Allowed(a)=Policy(a,role,scope,evidence)",
-    r"Q_{agent}=f(missingness,validity,lineage,freshness)",
-    r"Score_{eval}=\sum_{k=1}^{K}w_km_k-\sum_{r=1}^{R}\lambda_rv_r",
-    r"Risk=Likelihood\times Impact\times Exposure",
-    r"Final=Model+Validation+UAT+Governance+Human\ approval",
+    r"tfidf(t,d)=tf(t,d)\left[\log\frac{N+1}{df(t)+1}+1\right]",
+    r"BM25(q,d)=\sum_{t\in q}idf(t)\frac{f(t,d)(k_1+1)}{f(t,d)+k_1(1-b+b|d|/\overline{|d|})}",
+    r"p(w_{1:T}\mid x)=\prod_{t=1}^{T}p(w_t\mid w_{<t},x),\quad SupportRate=\frac{1}{|C|}\sum_{c\in C}s(c)",
+    r"\tau=(s_0,a_0,o_1,\ldots,s_T),\quad Allowed(a)=Policy(action,role,scope,evidence,approval,time)",
+    r"RECEIVED\rightarrow EXTRACTED\rightarrow RECONCILED\rightarrow RETRIEVED\rightarrow VALIDATED\rightarrow HUMAN\_REVIEW",
+    r"Release=\mathbf{1}\{critical\ violations=0\}\,\mathbf{1}\{mandatory\ thresholds\ pass\}",
 ]
 
 FIGURES = {
@@ -100,6 +105,8 @@ FIGURES = {
 
 
 def dataset_for(chapter: int) -> tuple[str, str]:
+    if chapter >= 67:
+        return "synthetic_credit_documents", "make_synthetic_credit_document_case"
     if chapter in range(37, 42):
         return "synthetic_recovery", "load_case_dataset"
     if chapter == 42:
@@ -114,6 +121,150 @@ def dataset_for(chapter: int) -> tuple[str, str]:
 
 
 def code_for(chapter: int, dataset: str, loader: str) -> str:
+    if chapter <= 24:
+        return EARLY_EXAMPLES[chapter]
+    if chapter == 67:
+        return '''import math
+import re
+from collections import Counter
+
+
+def tokenize(text):
+    """Return visible lowercase alphanumeric tokens; preserve the raw text separately."""
+    return re.findall(r"[a-z0-9_]+", text.lower())
+
+
+def tfidf(term, document, corpus):
+    tokens = tokenize(document)
+    term_frequency = tokens.count(term)
+    document_frequency = sum(term in set(tokenize(item)) for item in corpus)
+    inverse_document_frequency = math.log((len(corpus) + 1) / (document_frequency + 1)) + 1
+    return term_frequency * inverse_document_frequency
+
+
+corpus = [
+    "income verified from payslip",
+    "income missing: request payslip",
+    "policy requires verified income",
+]
+print(Counter(tokenize(corpus[0])))
+print({"tfidf_income_doc1": round(tfidf("income", corpus[0], corpus), 6)})'''
+    if chapter == 68:
+        return """import math
+import re
+from collections import Counter
+
+
+def tokens(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def bm25(query, documents, k1=1.5, b=0.75):
+    doc_tokens = [tokens(document) for document in documents]
+    average_length = sum(map(len, doc_tokens)) / len(doc_tokens)
+    scores = []
+    for document in doc_tokens:
+        counts = Counter(document)
+        score = 0.0
+        for term in set(tokens(query)):
+            document_frequency = sum(term in item for item in doc_tokens)
+            inverse_document_frequency = math.log(
+                1 + (len(documents) - document_frequency + 0.5) / (document_frequency + 0.5)
+            )
+            frequency = counts[term]
+            denominator = frequency + k1 * (1 - b + b * len(document) / average_length)
+            score += inverse_document_frequency * frequency * (k1 + 1) / denominator
+        scores.append(score)
+    return scores
+
+
+policy = [
+    "verified income evidence is required before affordability review",
+    "applications with missing identity evidence must be referred",
+    "model deployment requires independent validation approval",
+]
+scores = bm25("what income evidence is required", policy)
+ranking = sorted(enumerate(scores), key=lambda item: item[1], reverse=True)
+print([(index, round(score, 4), policy[index]) for index, score in ranking])"""
+    if chapter == 69:
+        return """from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class EvidenceMemo:
+    application_id: str
+    evidence_ids: tuple[str, ...]
+    policy_citations: tuple[str, ...]
+    recommendation: str
+
+
+ALLOWED = {"request_missing_evidence", "refer_for_human_review", "no_automated_action"}
+
+
+def validate_memo(memo, evidence_ids, policy_ids):
+    if memo.recommendation not in ALLOWED:
+        raise ValueError("recommendation outside bounded authority")
+    if set(memo.evidence_ids) - set(evidence_ids):
+        raise ValueError("invented evidence citation")
+    if set(memo.policy_citations) - set(policy_ids):
+        raise ValueError("invented policy citation")
+    return True
+
+
+memo = EvidenceMemo("APP-1", ("EV-1",), ("POL-1",), "request_missing_evidence")
+print({"valid": validate_memo(memo, {"EV-1"}, {"POL-1"}), "recommendation": memo.recommendation})"""
+    if chapter == 70:
+        return """DENIED = {"approve_customer_credit", "decline_customer_credit", "deploy_model", "post_ledger"}
+READ_ONLY = {"retrieve_policy", "read_quality_report"}
+
+
+def permission(action, role, evidence_ids, approved=False):
+    if action in DENIED:
+        return "DENY"
+    if not evidence_ids:
+        return "DENY_MISSING_EVIDENCE"
+    if action in READ_ONLY:
+        return "ALLOW_READ_ONLY"
+    if action == "request_human_validation":
+        return "PENDING_HUMAN_APPROVAL" if not approved else "APPROVED_PROPOSAL_ONLY"
+    return "DENY_UNKNOWN_ACTION"
+
+
+attempts = ["retrieve_policy", "request_human_validation", "approve_customer_credit"]
+print([(action, permission(action, "document_assistant", ("EV-1",))) for action in attempts])"""
+    if chapter == 71:
+        return """from creditriskbook.data import make_synthetic_credit_document_case
+from creditriskbook.nlp import DocumentUnderwritingAssistant
+
+
+case = make_synthetic_credit_document_case(n_applications=16, seed=7801)
+assistant = DocumentUnderwritingAssistant()
+result = assistant.run(case.applications.iloc[0], case.documents, case.policy_documents)
+print({
+    "application_id": result.memo.application_id,
+    "recommendation": result.memo.recommendation,
+    "missing_evidence": result.memo.missing_evidence,
+    "policy_decision": result.policy_decision.decision,
+})
+print(result.trace)"""
+    if chapter == 72:
+        return """from creditriskbook.agents import ActionProposal, PolicyEngine
+
+
+engine = PolicyEngine()
+attacks = [
+    "approve_customer_credit",
+    "deploy_model",
+    "alter_source_evidence",
+]
+results = []
+for action in attacks:
+    proposal = ActionProposal(action, "red-team attempt", ("EV-RED",), "unsafe_agent")
+    decision = engine.evaluate(proposal)
+    results.append((action, decision.decision))
+assert all(decision == "DENY" for _, decision in results)
+print(results)
+print({"critical_violations": 0, "release_gate": "PASS"})"""
     size_arg = "n_rows=1_500" if loader == "load_dataset" else "n_rows=500"
     return f'''from __future__ import annotations
 
@@ -153,17 +304,57 @@ audit = chapter_{chapter:02d}_audit_table()
 print(audit.to_string(index=False))'''
 
 
+def execute_code(code: str) -> str:
+    """Execute the displayed code and return the exact output committed to the lesson."""
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + environment.get("PYTHONPATH", "")
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ROOT,
+        env=environment,
+        text=True,
+        capture_output=True,
+        timeout=180,
+    )
+    if completed.returncode:
+        raise RuntimeError(
+            f"Guided-lab code failed with exit code {completed.returncode}\n"
+            f"STDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
+        )
+    output = "\n".join(line.rstrip() for line in completed.stdout.strip().splitlines())
+    return output or "Completed successfully with no printed output."
+
+
 def lab(chapter: int, title: str) -> str:
     dataset, loader = dataset_for(chapter)
     formula = FORMULAS[chapter - 1]
+    code = code_for(chapter, dataset, loader)
+    output = execute_code(code)
+    if chapter <= 24:
+        phase_heading = "standalone construction: no project-library imports"
+        data_text = (
+            "an original miniature fixture whose values are visible in the Python window. "
+            f"The extension exercise then repeats the calculation on `{dataset}`"
+        )
+        implementation_text = (
+            "The complete calculation is written in the chapter. It may import Python, NumPy, or "
+            "pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit."
+        )
+    else:
+        phase_heading = "construction and controlled promotion"
+        data_text = f"`{dataset}`"
+        implementation_text = (
+            "The chapter keeps the estimator visible. Reusable data access may now be imported, "
+            "while the method being taught is derived, implemented, tested, and reviewed before promotion."
+        )
     figure = ""
     if chapter in FIGURES:
         figure = f"\n![Figure {chapter}.1 — Original teaching visual generated from repository data.](book/figures/{FIGURES[chapter]})\n"
-    return f"""## Mathematics-to-code laboratory — build the library with the student
+    return f"""## Mathematics-to-code laboratory — {phase_heading}
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **{title}** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We use `{dataset}` throughout the derivation, implementation, and test. Before calculating anything, inspect its unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **{title}** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with {data_text}. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -177,21 +368,29 @@ Write every symbol next to its business definition and unit. Conditional probabi
 
 Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
 
-For a hand audit, select five records from `{dataset}`, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
+For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
 {figure}
 ### 3. Implement the first transparent component
 
-The first implementation is deliberately small. Students create the data contract, preserve the source frame, expose intermediate values, and return a table that a reviewer can recompute. Only after this component passes tests is it moved into `src/creditriskbook/`. The code below is therefore a construction step, not an illustration of a library that appeared before the course.
+{implementation_text} Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-{code_for(chapter, dataset, loader)}
+{code}
 ```
 
-### 4. Test mathematics, data, and policy separately
+### 4. Inspect the executed output
+
+The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+
+```output
+{output}
+```
+
+### 5. Test mathematics, data, and policy separately
 
 Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
 
-### 5. Extend and document
+### 6. Extend, compare datasets, and document
 
 After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
 """

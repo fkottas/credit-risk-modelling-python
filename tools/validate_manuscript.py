@@ -45,9 +45,12 @@ def main() -> None:
 
     for number, _, section in chapters:
         words = re.findall(r"\b[\w'-]+\b", section)
+        lab_section = (GUIDED_LABS / f"chapter_{number:02d}.md").read_text(encoding="utf-8")
+        teaching_section = section + "\n" + lab_section
         assert len(words) >= 150, f"Chapter {number} has insufficient analytical content"
-        assert "```" in section, f"Chapter {number} requires a code example"
-        assert re.search(r"(?i)lab|exercise", section), f"Chapter {number} requires a lab"
+        assert "```python" in teaching_section, f"Chapter {number} requires a Python example"
+        assert "```output" in teaching_section, f"Chapter {number} requires executed output"
+        assert re.search(r"(?i)lab|exercise", teaching_section), f"Chapter {number} requires a lab"
         assert re.search(r"^## ", section, re.MULTILINE), f"Chapter {number} needs subsections"
 
     cases = re.findall(r"^### Case (\d+) — ", all_text, re.MULTILINE)

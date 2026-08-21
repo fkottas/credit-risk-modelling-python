@@ -8,20 +8,7 @@ Under IRB, PD, LGD, EAD and effective maturity enter prescribed functions. “In
 
 The standardised approach uses exposure classes, external ratings where permitted, loan-to-value and other prescribed risk drivers. It remains model-dependent operationally: exposure classification, collateral eligibility, due diligence and data quality require controlled systems.
 
-```python
-from creditriskbook.data import load_case_dataset
-from creditriskbook.irb import irb_capital
-
-portfolio = load_case_dataset("synthetic_corporate_irb", n_rows=500, seed=131).frame
-result = irb_capital(
-    portfolio["pd"].to_numpy(),
-    portfolio["lgd"].to_numpy(),
-    portfolio["ead"].to_numpy(),
-    asset_class="corporate",
-    maturity_years=portfolio["maturity_years"].to_numpy(),
-)
-print(result.summary)
-```
+The laboratory starts with the standardised identity $RWA=Exposure\times RiskWeight$ and implements it as a six-line function with boundary checks. Four risk weights make the exposure, RWA and 8% minimum-capital relationship visible. The IRB normal-distribution function is not imported here: it is derived term by term in Part IX, where asset class, correlation and maturity can be audited.
 
 The output is a base teaching calculation. A regulatory engine must identify the exact framework version, jurisdiction, exposure class, applicable floors, supporting factors, expected-loss treatment, output-floor effects, transition rules and supervisory decisions.
 
@@ -41,19 +28,7 @@ Default data construction needs an obligor or facility identifier, reference dat
 
 Asset-class assignment affects risk-weight functions and parameter rules. Corporate, sovereign, bank, residential mortgage, qualifying revolving retail, other retail and specialised-lending treatments are not interchangeable. Retail treatment requires portfolio management characteristics; size alone is insufficient.
 
-```python
-import numpy as np
-from creditriskbook.irb import asset_correlation
-
-pd_values = np.array([0.001, 0.01, 0.10])
-for asset_class in (
-    "corporate",
-    "residential_mortgage",
-    "qualifying_revolving_retail",
-    "other_retail",
-):
-    print(asset_class, asset_correlation(pd_values, asset_class))
-```
+The laboratory implements the default definition as a transparent decision function returning both flag and trigger list. Past due, unlikeliness to pay and distressed restructuring remain separate evidence. Readers add materiality, contagion, probation, cure and correction cases as test fixtures before any default-definition component is reused.
 
 Different correlations demonstrate why asset class cannot be chosen to optimise capital. Classification is a regulatory fact determined under approved rules.
 
@@ -71,17 +46,7 @@ IRB is not a capital-only calculation detached from management. The use test ask
 
 A rating system includes methods, processes, controls, data collection and IT systems supporting assessment, grade assignment and parameter quantification. Governance must cover model ownership, independent validation, internal audit, senior management and board oversight proportionate to materiality. Documentation should explain judgement, not merely reproduce code.
 
-```python
-import pandas as pd
-from creditriskbook.irb import grade_backtest
-
-observations = pd.DataFrame({
-    "grade": ["A"] * 100 + ["B"] * 100,
-    "pd": [0.01] * 100 + [0.05] * 100,
-    "default": [1] + [0] * 99 + [1] * 6 + [0] * 94,
-})
-print(grade_backtest(observations))
-```
+The laboratory writes the grade backtest from a `groupby`: observations, predicted PD, observed rate, defaults and observed-to-expected ratio. Students calculate both grades by hand, then add exact intervals and a traffic-light policy as a separate layer. The mathematics remains visible and the policy cannot silently redefine the statistical result.
 
 The exact interval is evidence, not an automatic pass/fail rule. Small grades have wide uncertainty; pooling may hide heterogeneity. Backtesting must consider overlapping horizons, multiple observations per obligor and economic conditions.
 
@@ -99,20 +64,7 @@ IFRS 9 recognises expected credit losses using a three-stage general approach. S
 
 SICR is assessed relative to credit risk at initial recognition using reasonable and supportable information. A PD ratio can be one indicator, but no universal doubling rule defines SICR. Delinquency backstops, watchlists, forbearance, qualitative information, low-credit-risk simplification and rebuttals require approved accounting policy.
 
-```python
-import pandas as pd
-from creditriskbook.ifrs9 import StagingPolicy, assign_stages
-
-accounts = pd.DataFrame({
-    "account_id": ["A", "B", "C"],
-    "origination_pd_12m": [0.01, 0.02, 0.03],
-    "current_pd_12m": [0.012, 0.06, 0.20],
-    "days_past_due": [0, 35, 95],
-    "watchlist_flag": [False, True, False],
-    "default_flag": [False, False, True],
-})
-print(assign_stages(accounts, StagingPolicy())[["account_id", "stage", "stage_reason"]])
-```
+The laboratory builds `assign_ifrs9_stage` directly. Its ordered conditions expose Stage 3 precedence, the DPD/watchlist/relative-PD Stage 2 indicators and the Stage 1 remainder. The output contains both stage and reason. Students then change one trigger at a time and design cure/probation state, rather than receiving a stage from a class whose rules are still unknown.
 
 The function exposes every trigger and one primary reason. A real engine also needs cure and probation, modification, POCI, revolving-life, collateral and write-off policies.
 
@@ -146,18 +98,7 @@ FASB's post-implementation work continues to generate targeted amendments. ASU 2
 
 For trade receivables under IFRS 9’s simplified approach, a provision matrix can estimate lifetime ECL by aging bucket, adjusted for forward-looking information. It is not a shortcut to avoid data validation.
 
-```python
-import pandas as pd
-from creditriskbook.ifrs9 import build_provision_matrix
-
-history = pd.DataFrame({
-    "aging_bucket": ["current", "current", "31-60", "31-60", "90+"] * 20,
-    "exposure": [1_000, 1_500, 800, 900, 500] * 20,
-    "credit_loss": [5, 8, 50, 70, 220] * 20,
-})
-matrix = build_provision_matrix(history, forward_multipliers={"90+": 1.20})
-print(matrix)
-```
+The laboratory computes a CECL lifetime loss-rate example directly from exposure, historical rate and an explicitly named qualitative adjustment. It validates bounds and reconciles pool totals. The exercise then contrasts this lifetime-from-initial-recognition logic with the Stage 1/Stage 2 horizon switch under IFRS 9 before either accounting engine is constructed.
 
 ## Method governance
 
@@ -175,17 +116,7 @@ Annex III 5(b) of the EU AI Act identifies AI systems intended to evaluate the c
 
 US and other jurisdictions may require specific adverse-action reasons. CFPB Circulars 2022-03 and 2023-03 state that creditors using complex algorithms remain responsible for specific and accurate principal reasons; opacity or a closest sample-form checklist is not a substitute [R44–R45]. Generic feature importance is not automatically an adequate reason. For nonlinear models, the repository labels sensitivity-based reason codes honestly instead of presenting them as logistic bin points.
 
-```python
-from creditriskbook.agents import ActionProposal, PolicyEngine
-
-proposal = ActionProposal(
-    action="decline_customer_credit",
-    rationale="automated model output",
-    evidence_ids=("ev-example",),
-    requested_by="credit_agent",
-)
-print(PolicyEngine().evaluate(proposal))  # DENY
-```
+The laboratory calculates approval rate, true-positive rate and false-positive rate by group from an explicit twelve-row decision table. Every denominator can be inspected. These diagnostics do not decide discrimination or approve model use; they trigger legal, policy and data review. Agent permission enforcement appears only in the final part, after the reader has built the decisions and evidence objects it must protect.
 
 ## Responsible-model policy
 

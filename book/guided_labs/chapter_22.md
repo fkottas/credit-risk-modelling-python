@@ -1,21 +1,62 @@
-## Mathematics-to-code laboratory — observation and outcome windows
+## Mathematics-to-code laboratory — standalone construction: no project-library imports
 
-### 1. Draw the timeline
+### 1. Start with the decision, observation unit, and estimand
 
-For each row label the lookback $(t-w,t]$, buffer $(t,t+g]$ and performance window $(t+g,t+g+h]$. Place events exactly on every boundary and predict their labels before writing code.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Observation Windows, Targets, and Leakage-Safe Samples** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
-### 2. Build the target from raw events
+The chapter's principal mathematical object is
 
-Implement $Y_i=\mathbb{1}\{t_i+g<\tau_i\le t_i+g+h\}$. Preserve observation identifier, customer, reference date, event date, maturity flag and trigger reason. Multiple default events collapse to one binary label only after the rule is evaluated.
+\[
+Y_i=\mathbf{1}\{T_i\le h\}
+\]
 
-### 3. Prove label maturity
+Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-Given extraction date $T$, assert $t_i+g+h\le T$ for binary-model rows. Do not turn censored observations into non-defaults. Compare the event rate before and after an intentionally incorrect immature-label treatment.
+### 2. Derive before implementing
 
-### 4. Split at the right unit
+Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
 
-Compare random-row, grouped-customer and out-of-time splits. Assert no customer appears on both sides of a grouped split. Fit preprocessing on training only. Explain why a higher random-row result is not stronger evidence when customers repeat.
+For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
 
-### 5. Promote and document
+### 3. Implement the first transparent component
 
-Move the tested target builder into the student's library. Store default-definition version, window boundaries, extraction date, exclusions, maturity counts and code commit in the run manifest.
+The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+
+```python
+import pandas as pd
+
+
+def build_default_target(reference_dates, default_dates, horizon_months=12):
+    reference = pd.to_datetime(reference_dates)
+    default = pd.to_datetime(default_dates)
+    horizon_end = reference + pd.offsets.DateOffset(months=horizon_months)
+    observed = default.notna() & (default > reference) & (default <= horizon_end)
+    return pd.DataFrame({"reference_date": reference, "horizon_end": horizon_end,
+                         "default_date": default, "default_in_horizon": observed.astype(int)})
+
+
+target = build_default_target(
+    ["2024-01-31", "2024-01-31", "2024-01-31"],
+    ["2024-08-15", "2025-05-01", None],
+)
+print(target.to_string(index=False))
+```
+
+### 4. Inspect the executed output
+
+The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+
+```output
+reference_date horizon_end default_date  default_in_horizon
+    2024-01-31  2025-01-31   2024-08-15                   1
+    2024-01-31  2025-01-31   2025-05-01                   0
+    2024-01-31  2025-01-31          NaT                   0
+```
+
+### 5. Test mathematics, data, and policy separately
+
+Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+
+### 6. Extend, compare datasets, and document
+
+After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
