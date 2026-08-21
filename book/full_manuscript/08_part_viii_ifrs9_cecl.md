@@ -92,7 +92,7 @@ An approved committee should record source forecasts, narrative, range, weights,
 
 ## Timing matters
 
-ECL is a present value of cash shortfalls. The effective interest rate established under applicable accounting rules determines discounting. With monthly period (t) and annual EIR (r), the teaching engine uses (DF_t=(1+r/12)^{-t}). Product conventions may require more precise day count and modified-asset treatment.
+ECL is a present value of cash shortfalls. The effective interest rate established under applicable accounting rules determines discounting. With monthly period $t$ and annual EIR $r$, the teaching engine uses $DF_t=(1+r/12)^{-t}$. Product conventions may require more precise day count and modified-asset treatment.
 
 EAD paths should reflect scheduled amortisation, revolving drawdown and contractual features. Prepayment shortens exposure life and affects interest cash flows. It is not default and must not be double-counted as zero loss after a default curve already conditions on survival and exposure.
 

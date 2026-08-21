@@ -112,7 +112,7 @@ Quantile binning targets similar counts and is robust to skew, but repeated valu
 
 We implement these algorithms without a scorecard package. The complete library version first creates pre-bins, applies minimum population and event/non-event constraints, merges by chi-square to `max_bins`, and optionally enforces a trend. Missing and special values stay outside the ordered merge.
 
-For adjacent bins with observed table (O_{rc}), Pearson’s statistic is
+For adjacent bins with observed table $O_{rc}$, Pearson’s statistic is
 
 \[
 \chi^2=\sum_{r=1}^{R}\sum_{c=1}^{C}\frac{(O_{rc}-E_{rc})^2}{E_{rc}}.
@@ -368,7 +368,7 @@ The expected coefficient sign depends on the WOE convention. With good-to-bad WO
 
 ## From log odds to a score
 
-Let good-to-bad odds be (O=(1-p)/p). A conventional linear score is
+Let good-to-bad odds be $O=(1-p)/p$. A conventional linear score is
 
 \[
 Score=Offset+Factor\log O,

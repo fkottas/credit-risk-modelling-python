@@ -2,7 +2,7 @@
 
 ## Risk over time
 
-Survival analysis models time until an event while recognising right censoring. If (T) is default time, survival is (S(t)=P(T>t)), cumulative PD is (1-S(t)), and conditional hazard describes event risk among accounts still at risk. For discrete periods with hazard (h_t), marginal PD is (S(t-1)h_t).
+Survival analysis models time until an event while recognising right censoring. If $T$ is default time, survival is $S(t)=P(T>t)$, cumulative PD is $1-S(t)$, and conditional hazard describes event risk among accounts still at risk. For discrete periods with hazard $h_t$, marginal PD is $S(t-1)h_t$.
 
 Kaplan–Meier estimates survival non-parametrically as a product of one minus event share at each time. The Cox model specifies $h(t\mid x)=h_0(t)\exp(x^\top\beta)$, leaving baseline hazard unspecified. Accelerated failure-time models scale survival time under a parametric distribution. Discrete-time logistic or complementary-log-log models are often convenient for monthly credit panels.
 
@@ -59,7 +59,7 @@ Store curve type, conditioning, horizon, frequency, scenario, segment and calibr
 
 When events are rare, maximum-likelihood estimates are unstable and grades may contain zero defaults. Exact confidence intervals, conservative bounds, external evidence and expert judgement become important. Pooling can improve precision while masking risk differences; segmentation can preserve meaning while creating unusably small samples.
 
-A beta-binomial model starts with prior (PD\sim Beta(a,b)). After (d) defaults in (n) observations, posterior is (Beta(a+d,b+n-d)). Priors must be justified by comparable evidence, not chosen to reach a capital target. Hierarchical models partially pool grades or countries and quantify uncertainty.
+A beta-binomial model starts with prior $PD\sim Beta(a,b)$. After $d$ defaults in $n$ observations, the posterior is $Beta(a+d,b+n-d)$. Priors must be justified by comparable evidence, not chosen to reach a capital target. Hierarchical models partially pool grades or countries and quantify uncertainty.
 
 For grades $g=1,\ldots,G$, a hierarchical logit model can write
 
@@ -95,7 +95,7 @@ Separate best estimate, data deficiency, methodological uncertainty, general est
 
 ## Cash-flow construction
 
-Workout LGD compares EAD at default with discounted post-default recoveries net of direct costs. For cash flow (CF_t=Recovery_t-Cost_t), a simplified account LGD is
+Workout LGD compares EAD at default with discounted post-default recoveries net of direct costs. For cash flow $CF_t=Recovery_t-Cost_t$, a simplified account LGD is
 
 \[
 LGD=1-\frac{\sum_{t=1}^{T} CF_t(1+EIR)^{-t}}{EAD_0}.
@@ -151,7 +151,7 @@ Reconcile recovery sources, discount rates and collateral. Document downturn ide
 
 ## Reference-date construction
 
-For a revolving facility, undrawn amount at reference is (U=L-D), where (L) is limit and (D) is drawn. Additional draw to default is (EAD-D). Raw CCF is
+For a revolving facility, undrawn amount at reference is $U=L-D$, where $L$ is limit and $D$ is drawn. Additional draw to default is $EAD-D$. Raw CCF is
 
 \[
 CCF=\frac{EAD-D}{L-D}.

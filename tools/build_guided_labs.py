@@ -330,7 +330,19 @@ def lab(chapter: int, title: str) -> str:
     formula = FORMULAS[chapter - 1]
     code = code_for(chapter, dataset, loader)
     output = execute_code(code)
-    if chapter <= 24:
+    if chapter <= 6:
+        phase_heading = "foundational arithmetic in plain Python"
+        data_text = (
+            "a deliberately tiny, hand-checkable fixture whose values are visible in the Python "
+            "window. The extension exercise then repeats the calculation on "
+            f"`{dataset}`"
+        )
+        implementation_text = (
+            "The first six chapters use scalar arithmetic, lists, loops, and only Python's standard "
+            "library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally "
+            "absent so that every intermediate value can be checked by hand."
+        )
+    elif chapter <= 24:
         phase_heading = "standalone construction: no project-library imports"
         data_text = (
             "an original miniature fixture whose values are visible in the Python window. "

@@ -1,8 +1,8 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Mathematics-to-code laboratory — foundational arithmetic in plain Python
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Credit Risk as Uncertain Cash Flows** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Credit Risk as Uncertain Cash Flows** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with a deliberately tiny, hand-checkable fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -22,35 +22,27 @@ For a hand audit, select five records, retain the raw values, and calculate ever
 
 ### 3. Implement the first transparent component
 
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+The first six chapters use scalar arithmetic, lists, loops, and only Python's standard library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally absent so that every intermediate value can be checked by hand. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-import pandas as pd
+schedule = [
+    # month, contractual, received, recovery, workout cost
+    (1, 350.0, 350.0, 0.0, 0.0),
+    (2, 350.0, 200.0, 0.0, 5.0),
+    (3, 350.0, 0.0, 120.0, 15.0),
+]
+eir = 0.12
+total_pv_loss = 0.0
 
+print("month  shortfall  discount  pv_loss")
+for month, contractual, received, recovery, cost in schedule:
+    shortfall = contractual - received - recovery + cost
+    discount = (1.0 + eir) ** (-month / 12.0)
+    pv_loss = shortfall * discount
+    total_pv_loss += pv_loss
+    print(f"{month:>5}  {shortfall:>9.2f}  {discount:>8.4f}  {pv_loss:>7.2f}")
 
-def discounted_cash_shortfall(schedule: pd.DataFrame) -> pd.DataFrame:
-    """Calculate period and present-value loss without hiding intermediates."""
-    required = {"month", "contractual", "received", "recovery", "workout_cost", "eir"}
-    missing = required - set(schedule)
-    if missing:
-        raise ValueError(f"Missing fields: {sorted(missing)}")
-    out = schedule.copy(deep=True)
-    out["cash_shortfall"] = (
-        out["contractual"] - out["received"] - out["recovery"] + out["workout_cost"]
-    )
-    out["discount_factor"] = (1.0 + out["eir"]) ** (-out["month"] / 12.0)
-    out["pv_loss"] = out["cash_shortfall"] * out["discount_factor"]
-    return out
-
-
-cashflows = pd.DataFrame({
-    "month": [1, 2, 3], "contractual": [350.0, 350.0, 350.0],
-    "received": [350.0, 200.0, 0.0], "recovery": [0.0, 0.0, 120.0],
-    "workout_cost": [0.0, 5.0, 15.0], "eir": [0.12, 0.12, 0.12],
-})
-audit = discounted_cash_shortfall(cashflows)
-print(audit[["month", "cash_shortfall", "discount_factor", "pv_loss"]].round(2).to_string(index=False))
-print("Total PV loss:", round(audit["pv_loss"].sum(), 2))
+print("Total PV loss:", round(total_pv_loss, 2))
 ```
 
 ### 4. Inspect the executed output
@@ -58,10 +50,10 @@ print("Total PV loss:", round(audit["pv_loss"].sum(), 2))
 The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
 
 ```output
-month  cash_shortfall  discount_factor  pv_loss
-     1             0.0             0.99     0.00
-     2           155.0             0.98   152.10
-     3           245.0             0.97   238.16
+month  shortfall  discount  pv_loss
+    1       0.00    0.9906     0.00
+    2     155.00    0.9813   152.10
+    3     245.00    0.9721   238.16
 Total PV loss: 390.26
 ```
 

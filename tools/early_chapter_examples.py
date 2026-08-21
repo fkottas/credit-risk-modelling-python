@@ -7,117 +7,117 @@ complete calculation before any implementation is promoted into the reusable pac
 from __future__ import annotations
 
 EXAMPLES: dict[int, str] = {
-    1: r'''import pandas as pd
+    1: r"""schedule = [
+    # month, contractual, received, recovery, workout cost
+    (1, 350.0, 350.0, 0.0, 0.0),
+    (2, 350.0, 200.0, 0.0, 5.0),
+    (3, 350.0, 0.0, 120.0, 15.0),
+]
+eir = 0.12
+total_pv_loss = 0.0
 
+print("month  shortfall  discount  pv_loss")
+for month, contractual, received, recovery, cost in schedule:
+    shortfall = contractual - received - recovery + cost
+    discount = (1.0 + eir) ** (-month / 12.0)
+    pv_loss = shortfall * discount
+    total_pv_loss += pv_loss
+    print(f"{month:>5}  {shortfall:>9.2f}  {discount:>8.4f}  {pv_loss:>7.2f}")
 
-def discounted_cash_shortfall(schedule: pd.DataFrame) -> pd.DataFrame:
-    """Calculate period and present-value loss without hiding intermediates."""
-    required = {"month", "contractual", "received", "recovery", "workout_cost", "eir"}
-    missing = required - set(schedule)
-    if missing:
-        raise ValueError(f"Missing fields: {sorted(missing)}")
-    out = schedule.copy(deep=True)
-    out["cash_shortfall"] = (
-        out["contractual"] - out["received"] - out["recovery"] + out["workout_cost"]
-    )
-    out["discount_factor"] = (1.0 + out["eir"]) ** (-out["month"] / 12.0)
-    out["pv_loss"] = out["cash_shortfall"] * out["discount_factor"]
-    return out
+print("Total PV loss:", round(total_pv_loss, 2))""",
+    2: r"""from itertools import product
 
+pd = [0.10, 0.20]
+loss_if_default = [500.0, 800.0]  # LGD times EAD
+distribution = []
 
-cashflows = pd.DataFrame({
-    "month": [1, 2, 3], "contractual": [350.0, 350.0, 350.0],
-    "received": [350.0, 200.0, 0.0], "recovery": [0.0, 0.0, 120.0],
-    "workout_cost": [0.0, 5.0, 15.0], "eir": [0.12, 0.12, 0.12],
-})
-audit = discounted_cash_shortfall(cashflows)
-print(audit[["month", "cash_shortfall", "discount_factor", "pv_loss"]].round(2).to_string(index=False))
-print("Total PV loss:", round(audit["pv_loss"].sum(), 2))''',
-    2: r'''import numpy as np
+for defaults in product((0, 1), repeat=2):
+    probability = 1.0
+    loss = 0.0
+    for default, probability_of_default, amount in zip(
+        defaults, pd, loss_if_default, strict=True
+    ):
+        probability *= probability_of_default if default else 1.0 - probability_of_default
+        loss += default * amount
+    distribution.append((loss, probability, defaults))
 
+expected_loss = sum(loss * probability for loss, probability, _ in distribution)
+cumulative_probability = 0.0
+loss_quantile_95 = None
+for loss, probability, defaults in sorted(distribution):
+    cumulative_probability += probability
+    print(defaults, "loss=", loss, "probability=", round(probability, 3))
+    if loss_quantile_95 is None and cumulative_probability >= 0.95:
+        loss_quantile_95 = loss
 
-def loss_distribution(pd, lgd, ead, *, simulations=20_000, seed=802):
-    """Simulate Bernoulli defaults and expose EL, quantile loss, and unexpected loss."""
-    pd, lgd, ead = map(lambda x: np.asarray(x, dtype=float), (pd, lgd, ead))
-    if not (pd.shape == lgd.shape == ead.shape):
-        raise ValueError("PD, LGD, and EAD must have the same shape")
-    if np.any((pd < 0) | (pd > 1)) or np.any((lgd < 0) | (lgd > 1)):
-        raise ValueError("PD and LGD must be proportions")
-    rng = np.random.default_rng(seed)
-    defaults = rng.random((simulations, len(pd))) < pd
-    simulated = (defaults * lgd * ead).sum(axis=1)
-    analytical_el = float(np.sum(pd * lgd * ead))
-    q99 = float(np.quantile(simulated, 0.99, method="higher"))
-    return {"analytical_el": analytical_el, "simulated_mean": simulated.mean(),
-            "q99": q99, "unexpected_loss_99": q99 - analytical_el}
+print("Expected loss:", expected_loss)
+print("95% loss quantile:", loss_quantile_95)
+print("Unexpected loss at 95%:", loss_quantile_95 - expected_loss)""",
+    3: r"""scenarios = [
+    # name, weight, PD, LGD, EAD
+    ("base", 0.60, 0.03, 0.35, 10_000.0),
+    ("downturn", 0.25, 0.09, 0.50, 11_000.0),
+    ("severe", 0.15, 0.20, 0.65, 12_000.0),
+]
 
+coherent_el = 0.0
+average_pd = average_lgd = average_ead = 0.0
+for name, weight, pd, lgd, ead in scenarios:
+    scenario_el = pd * lgd * ead
+    coherent_el += weight * scenario_el
+    average_pd += weight * pd
+    average_lgd += weight * lgd
+    average_ead += weight * ead
+    print(name, "EL=", round(scenario_el, 2), "weighted EL=", round(weight * scenario_el, 2))
 
-result = loss_distribution([0.02, 0.05, 0.10], [0.35, 0.45, 0.60], [10_000, 8_000, 5_000])
-print({key: round(value, 2) for key, value in result.items()})''',
-    3: r'''import numpy as np
+product_of_averages = average_pd * average_lgd * average_ead
+print("Weighted scenario EL:", round(coherent_el, 2))
+print("Product of separate averages:", round(product_of_averages, 2))
+print("Dependence effect:", round(coherent_el - product_of_averages, 2))""",
+    4: r"""from collections import Counter, defaultdict
 
+histories = {
+    "A": ["current", "current", "30_dpd", "60_dpd"],
+    "B": ["current", "30_dpd", "current", "current"],
+    "C": ["current", "current", "prepaid", "prepaid"],
+}
+transition_counts = defaultdict(Counter)
 
-def dependent_component_losses(n=50_000, seed=803):
-    """Create a transparent common-factor dependence experiment."""
-    rng = np.random.default_rng(seed)
-    systematic = rng.normal(size=n)
-    idiosyncratic = rng.normal(size=(n, 3))
-    latent = 0.55 * systematic[:, None] + np.sqrt(1 - 0.55**2) * idiosyncratic
-    defaults = latent < np.array([-1.65, -1.40, -1.15])
-    lgd = np.clip(0.40 - 0.08 * systematic[:, None], 0.10, 0.90)
-    ead = np.array([10_000.0, 8_000.0, 6_000.0]) * (1 + 0.06 * np.maximum(-systematic[:, None], 0))
-    losses = defaults * lgd * ead
-    portfolio = losses.sum(axis=1)
-    return {
-        "component_correlation": float(np.corrcoef(losses.T)[0, 1]),
-        "mean_loss": float(portfolio.mean()),
-        "q99_loss": float(np.quantile(portfolio, 0.99)),
+for states in histories.values():
+    for current_state, next_state in zip(states, states[1:], strict=False):
+        transition_counts[current_state][next_state] += 1
+
+for current_state, counts in transition_counts.items():
+    row_total = sum(counts.values())
+    probabilities = {
+        next_state: round(count / row_total, 3)
+        for next_state, count in sorted(counts.items())
     }
+    print(current_state, probabilities, "row sum=", round(sum(probabilities.values()), 3))""",
+    5: r"""from math import exp
 
 
-result = dependent_component_losses()
-print({key: round(value, 3) for key, value in result.items()})''',
-    4: r'''import pandas as pd
+def sigmoid(value):
+    return 1.0 / (1.0 + exp(-value))
 
 
-def transition_matrix(history: pd.DataFrame) -> pd.DataFrame:
-    """Estimate one-step transition probabilities from adjacent observed states."""
-    ordered = history.sort_values(["account_id", "month"]).copy()
-    ordered["next_state"] = ordered.groupby("account_id")["state"].shift(-1)
-    pairs = ordered.dropna(subset=["next_state"])
-    counts = pd.crosstab(pairs["state"], pairs["next_state"])
-    return counts.div(counts.sum(axis=1), axis=0).fillna(0.0)
+def cumulative_pd(hazards):
+    survival = 1.0
+    result = []
+    for hazard in hazards:
+        if not 0.0 <= hazard <= 1.0:
+            raise ValueError("Each hazard must lie between zero and one")
+        survival *= 1.0 - hazard
+        result.append(1.0 - survival)
+    return result
 
 
-history = pd.DataFrame({
-    "account_id": ["A"] * 4 + ["B"] * 4 + ["C"] * 4,
-    "month": [1, 2, 3, 4] * 3,
-    "state": ["C", "C", "30", "60", "C", "30", "C", "C", "C", "C", "P", "P"],
-})
-matrix = transition_matrix(history)
-print(matrix.round(3).to_string())
-print("Rows reconcile:", matrix.sum(axis=1).round(8).eq(1).all())''',
-    5: r"""import numpy as np
-
-
-def sigmoid(linear_predictor):
-    z = np.clip(np.asarray(linear_predictor, dtype=float), -35, 35)
-    return 1.0 / (1.0 + np.exp(-z))
-
-
-def cumulative_pd_from_hazards(hazards):
-    h = np.asarray(hazards, dtype=float)
-    if np.any((h < 0) | (h > 1)):
-        raise ValueError("Hazards must lie in [0, 1]")
-    return 1.0 - np.cumprod(1.0 - h)
-
-
-classification_pd = sigmoid([-2.0, -0.5, 1.0])
-regression_lgd = np.clip([0.18, 0.42, 0.77], 0, 1)
-survival_pd = cumulative_pd_from_hazards([0.02, 0.03, 0.05, 0.08])
-print("Classification PD:", np.round(classification_pd, 4).tolist())
-print("Regression LGD:", np.round(regression_lgd, 4).tolist())
-print("Cumulative lifetime PD:", np.round(survival_pd, 4).tolist())""",
+classification_pd = [round(sigmoid(value), 4) for value in (-2.0, -0.5, 1.0)]
+regression_lgd = [0.18, 0.42, 0.77]
+lifetime_pd = [round(value, 4) for value in cumulative_pd([0.02, 0.03, 0.05, 0.08])]
+print("Classification PD:", classification_pd)
+print("Regression LGD:", regression_lgd)
+print("Cumulative lifetime PD:", lifetime_pd)""",
     6: r'''import hashlib
 import json
 
@@ -206,7 +206,6 @@ borrowers = pd.DataFrame({
 borrowers["segment"] = borrowers.apply(assign_segment, axis=1)
 print(borrowers[["borrower", "segment"]].to_string(index=False))""",
     11: r"""import pandas as pd
-
 
 ALLOWED = {
     "application": {"approved", "declined"}, "approved": {"current"},

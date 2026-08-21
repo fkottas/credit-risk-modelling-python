@@ -25,7 +25,6 @@ The complete calculation is written in the chapter. It may import Python, NumPy,
 ```python
 import pandas as pd
 
-
 ALLOWED = {
     "application": {"approved", "declined"}, "approved": {"current"},
     "current": {"delinquent", "prepaid"}, "delinquent": {"current", "default"},

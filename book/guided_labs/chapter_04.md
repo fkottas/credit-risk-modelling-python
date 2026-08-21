@@ -1,8 +1,8 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Mathematics-to-code laboratory — foundational arithmetic in plain Python
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Time, Cohorts, Transitions, and Competing Events** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Time, Cohorts, Transitions, and Competing Events** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with a deliberately tiny, hand-checkable fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -20,29 +20,29 @@ For a hand audit, select five records, retain the raw values, and calculate ever
 
 ### 3. Implement the first transparent component
 
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+The first six chapters use scalar arithmetic, lists, loops, and only Python's standard library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally absent so that every intermediate value can be checked by hand. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-import pandas as pd
+from collections import Counter, defaultdict
 
+histories = {
+    "A": ["current", "current", "30_dpd", "60_dpd"],
+    "B": ["current", "30_dpd", "current", "current"],
+    "C": ["current", "current", "prepaid", "prepaid"],
+}
+transition_counts = defaultdict(Counter)
 
-def transition_matrix(history: pd.DataFrame) -> pd.DataFrame:
-    """Estimate one-step transition probabilities from adjacent observed states."""
-    ordered = history.sort_values(["account_id", "month"]).copy()
-    ordered["next_state"] = ordered.groupby("account_id")["state"].shift(-1)
-    pairs = ordered.dropna(subset=["next_state"])
-    counts = pd.crosstab(pairs["state"], pairs["next_state"])
-    return counts.div(counts.sum(axis=1), axis=0).fillna(0.0)
+for states in histories.values():
+    for current_state, next_state in zip(states, states[1:], strict=False):
+        transition_counts[current_state][next_state] += 1
 
-
-history = pd.DataFrame({
-    "account_id": ["A"] * 4 + ["B"] * 4 + ["C"] * 4,
-    "month": [1, 2, 3, 4] * 3,
-    "state": ["C", "C", "30", "60", "C", "30", "C", "C", "C", "C", "P", "P"],
-})
-matrix = transition_matrix(history)
-print(matrix.round(3).to_string())
-print("Rows reconcile:", matrix.sum(axis=1).round(8).eq(1).all())
+for current_state, counts in transition_counts.items():
+    row_total = sum(counts.values())
+    probabilities = {
+        next_state: round(count / row_total, 3)
+        for next_state, count in sorted(counts.items())
+    }
+    print(current_state, probabilities, "row sum=", round(sum(probabilities.values()), 3))
 ```
 
 ### 4. Inspect the executed output
@@ -50,12 +50,9 @@ print("Rows reconcile:", matrix.sum(axis=1).round(8).eq(1).all())
 The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
 
 ```output
-next_state     30   60    C      P
-state
-30          0.000  0.5  0.5  0.000
-C           0.333  0.0  0.5  0.167
-P           0.000  0.0  0.0  1.000
-Rows reconcile: True
+current {'30_dpd': 0.333, 'current': 0.5, 'prepaid': 0.167} row sum= 1.0
+30_dpd {'60_dpd': 0.5, 'current': 0.5} row sum= 1.0
+prepaid {'prepaid': 1.0} row sum= 1.0
 ```
 
 ### 5. Test mathematics, data, and policy separately

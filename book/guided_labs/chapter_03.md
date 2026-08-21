@@ -1,8 +1,8 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Mathematics-to-code laboratory — foundational arithmetic in plain Python
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Dependence Between PD, LGD, and EAD** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Dependence Between PD, LGD, and EAD** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with a deliberately tiny, hand-checkable fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -20,32 +20,30 @@ For a hand audit, select five records, retain the raw values, and calculate ever
 
 ### 3. Implement the first transparent component
 
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+The first six chapters use scalar arithmetic, lists, loops, and only Python's standard library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally absent so that every intermediate value can be checked by hand. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-import numpy as np
+scenarios = [
+    # name, weight, PD, LGD, EAD
+    ("base", 0.60, 0.03, 0.35, 10_000.0),
+    ("downturn", 0.25, 0.09, 0.50, 11_000.0),
+    ("severe", 0.15, 0.20, 0.65, 12_000.0),
+]
 
+coherent_el = 0.0
+average_pd = average_lgd = average_ead = 0.0
+for name, weight, pd, lgd, ead in scenarios:
+    scenario_el = pd * lgd * ead
+    coherent_el += weight * scenario_el
+    average_pd += weight * pd
+    average_lgd += weight * lgd
+    average_ead += weight * ead
+    print(name, "EL=", round(scenario_el, 2), "weighted EL=", round(weight * scenario_el, 2))
 
-def dependent_component_losses(n=50_000, seed=803):
-    """Create a transparent common-factor dependence experiment."""
-    rng = np.random.default_rng(seed)
-    systematic = rng.normal(size=n)
-    idiosyncratic = rng.normal(size=(n, 3))
-    latent = 0.55 * systematic[:, None] + np.sqrt(1 - 0.55**2) * idiosyncratic
-    defaults = latent < np.array([-1.65, -1.40, -1.15])
-    lgd = np.clip(0.40 - 0.08 * systematic[:, None], 0.10, 0.90)
-    ead = np.array([10_000.0, 8_000.0, 6_000.0]) * (1 + 0.06 * np.maximum(-systematic[:, None], 0))
-    losses = defaults * lgd * ead
-    portfolio = losses.sum(axis=1)
-    return {
-        "component_correlation": float(np.corrcoef(losses.T)[0, 1]),
-        "mean_loss": float(portfolio.mean()),
-        "q99_loss": float(np.quantile(portfolio, 0.99)),
-    }
-
-
-result = dependent_component_losses()
-print({key: round(value, 3) for key, value in result.items()})
+product_of_averages = average_pd * average_lgd * average_ead
+print("Weighted scenario EL:", round(coherent_el, 2))
+print("Product of separate averages:", round(product_of_averages, 2))
+print("Dependence effect:", round(coherent_el - product_of_averages, 2))
 ```
 
 ### 4. Inspect the executed output
@@ -53,7 +51,12 @@ print({key: round(value, 3) for key, value in result.items()})
 The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
 
 ```output
-{'component_correlation': 0.176, 'mean_loss': 956.533, 'q99_loss': 10248.608}
+base EL= 105.0 weighted EL= 63.0
+downturn EL= 495.0 weighted EL= 123.75
+severe EL= 1560.0 weighted EL= 234.0
+Weighted scenario EL: 420.75
+Product of separate averages: 321.68
+Dependence effect: 99.07
 ```
 
 ### 5. Test mathematics, data, and policy separately

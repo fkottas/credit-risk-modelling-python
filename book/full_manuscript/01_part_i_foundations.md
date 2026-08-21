@@ -4,7 +4,7 @@
 
 Credit risk is the possibility that contractual cash flows are not received in the amount or at the time expected. That definition is broader than binary default. A borrower may pay late, prepay, cure after delinquency, enter forbearance, draw an unused line shortly before default, or repay only after expensive recovery work. The economic loss depends on the path of cash flows and not merely on the final label.
 
-For a single exposure, let (C_t) denote the contractual cash flow at time (t), (R_t) the cash actually received, (K_t) direct recovery cost, and (d_t) an appropriate discount factor. A cash-flow loss is
+For a single exposure, let $C_t$ denote the contractual cash flow at time $t$, $R_t$ the cash actually received, $K_t$ direct recovery cost, and $d_t$ an appropriate discount factor. A cash-flow loss is
 
 \[
 L=\sum_{t=1}^{T} d_t(C_t-R_t+K_t).
@@ -16,7 +16,7 @@ The familiar product $PD\times LGD\times EAD$ is a useful conditional expectatio
 
 A one-year loan has EAD of EUR 10,000, PD of 3% and LGD of 45%. Expected loss is EUR 135. If the performing margin after funding and operating cost is EUR 500, the simplified expected value is EUR 365. This does not mean that EUR 365 will be earned. In 97% of the stylised outcomes the account may perform; in 3% a loss near EUR 4,500 may occur. Pricing, capital and liquidity must address that distribution, while affordability and consumer law constrain which transactions should be offered.
 
-The standalone Python laboratory below defines the complete `discounted_cash_shortfall` function. It creates each period's contractual shortfall, discount factor and present-value loss as visible columns before aggregation. Nothing is imported from the project library. The same source is committed as an executable Chapter 1 script so that a reader can change receipts, recoveries, costs and timing and inspect the resulting output.
+The standalone Python laboratory begins with a five-value tuple for each period and a plain `for` loop. It calculates the contractual shortfall, discount factor and present-value loss one line at a time before aggregation. There is no dataframe and no modelling package to hide the arithmetic. The exact source is also committed as an executable Chapter 1 script so that a reader can change receipts, recoveries, costs and timing and inspect the resulting output.
 
 The model output is an input to a decision, not the decision itself. A policy also needs eligibility, affordability, fraud, sanctions, concentration, pricing, product and customer-treatment rules. Those rules must be versioned independently so that a change in business appetite is not misreported as a model redevelopment.
 
@@ -34,9 +34,9 @@ Expected loss is the probability-weighted average loss over repeated comparable 
 
 Let account loss be $L_i=D_i\times LGD_i\times EAD_i$, where $D_i$ is a default indicator. Portfolio loss is $L=\sum_{i=1}^{n}L_i$. Even if individual default probabilities are accurate, the portfolio tail depends on default dependence, concentration and the relationship between default, recovery and exposure. Under independence, idiosyncratic variation diversifies rapidly. Under a common downturn, many obligors deteriorate together and recovery values may fall at the same time.
 
-Suppose 1,000 equal exposures each have EAD EUR 10,000, PD 2% and LGD 40%. Expected loss is EUR 80,000. If defaults were independent, the standard deviation of default count would be about √(1000×0.02×0.98)=4.43, but a systematic factor can make a count far above 20 plausible in a severe state. The Basel asymptotic single-risk-factor framework represents this effect through asset correlation and a 99.9% conditional default probability.
+Suppose 1,000 equal exposures each have EAD EUR 10,000, PD 2% and LGD 40%. Expected loss is EUR 80,000. If defaults were independent, the standard deviation of default count would be about $\sqrt{1000\times0.02\times0.98}=4.43$, but a systematic factor can make a count far above 20 plausible in a severe state. The Basel asymptotic single-risk-factor framework represents this effect through asset correlation and a 99.9% conditional default probability.
 
-The laboratory implements `loss_distribution` directly with Bernoulli trials. It reports analytical expected loss, simulated mean, a 99% loss quantile and unexpected loss. Students first use three exposures small enough to calculate by hand, then increase portfolio size and add a common factor. The Basel calculation is deliberately postponed until the regulatory formula has been derived in Part IX.
+The laboratory starts with two exposures and enumerates all four possible joint default states exactly. For each state it multiplies Bernoulli probabilities, calculates loss, accumulates the loss distribution and locates the 95% quantile. Expected and unexpected loss therefore emerge from visible arithmetic rather than from a simulation call. Only after this exact example should students increase portfolio size and introduce Monte Carlo methods. The Basel calculation is deliberately postponed until the regulatory formula has been derived in Part IX.
 
 The reported capital is not a forecast loss and the risk-weighted asset amount is not EAD. In the base formula, capital rate is the stressed conditional loss less expected loss, with a maturity adjustment for corporate exposures. Eligibility, floors, output-floor effects, provision treatment and jurisdictional changes remain outside the teaching function.
 
@@ -52,15 +52,15 @@ A model-development policy should distinguish central-tendency estimation from t
 
 The identity $EL=\mathbb{E}[D\times LGD\times EAD]$ does not generally equal $\mathbb{E}[D]\,\mathbb{E}[LGD]\,\mathbb{E}[EAD]$. The latter factorisation assumes independence or uses parameters already defined conditionally in a compatible way. In downturns, obligors default more often, collateral values fall, recovery takes longer, and revolving borrowers may draw available limits. The three components can therefore move adversely together.
 
-A practical scenario engine preserves account-level relationships. For scenario (s), period (t) and account (i), an ECL contribution is
+A practical scenario engine preserves account-level relationships. For scenario $s$, period $t$ and account $i$, an ECL contribution is
 
 \[
 ECL_{i,t,s}=mPD_{i,t,s}\times LGD_{i,t,s}\times EAD_{i,t,s}\times DF_{i,t}\times w_s.
 \]
 
-Here marginal PD is the probability of first default in period (t), not the conditional hazard and not cumulative PD. Confusing these quantities double-counts default. The scenario weight (w_s) is applied after scenario-consistent parameter paths are built.
+Here marginal PD is the probability of first default in period $t$, not the conditional hazard and not cumulative PD. Confusing these quantities double-counts default. The scenario weight $w_s$ is applied after scenario-consistent parameter paths are built.
 
-The laboratory builds a common-factor experiment from NumPy primitives. Default, LGD and EAD all respond to the same simulated systematic state, and the code prints component-loss correlation, mean loss and a tail quantile. This is intentionally simpler than an ECL engine: the purpose is to make dependence visible before scenario classes or reusable calculation objects exist.
+The laboratory uses three visible macroeconomic scenarios. PD, LGD and EAD rise together from base to severe conditions, so students can calculate the scenario-consistent weighted expected loss and compare it with the product of three separately weighted averages. Their difference is a direct, hand-auditable dependence effect. A common-factor simulation is introduced later, after this conditional-expectation calculation is understood.
 
 The library scales conditional hazard rather than directly multiplying marginal probability. This keeps the curve in the probability domain and reconstructs scenario marginal PD consistently. LGD is bounded only in the model layer, while raw workout observations remain available elsewhere.
 
@@ -76,7 +76,7 @@ Check whether scenarios affect the same economic drivers across PD, LGD and EAD.
 
 A default label without a reference date and horizon is incomplete. Application PD may ask whether an accepted applicant defaults within twelve months of origination. Behavioural PD may use monthly snapshots and a twelve-month performance window. IFRS 9 lifetime PD follows the remaining contractual life and must interact with prepayment, cure and maturity. IRB one-year PD has a regulatory definition and calibration objective.
 
-For a cohort originated in month (v), vintage analysis tracks cumulative default by months on book. It separates maturation from calendar conditions. A 2025 vintage observed for six months cannot be compared directly with a 2021 vintage observed for thirty-six months. Calendar analysis instead aligns exposures by economic time; both views are needed.
+For a cohort originated in month $v$, vintage analysis tracks cumulative default by months on book. It separates maturation from calendar conditions. A 2025 vintage observed for six months cannot be compared directly with a 2021 vintage observed for thirty-six months. Calendar analysis instead aligns exposures by economic time; both views are needed.
 
 Transition matrices describe movements among states such as current, 1–29 DPD, 30–59 DPD, 60–89 DPD, default, cure, prepayment and closure. Rows must have the same interval and population definition. Treating prepayment as non-default forever can bias lifetime risk because it is a competing event that removes exposure.
 
@@ -100,7 +100,7 @@ For binary PD, logistic regression models log odds as $\beta_0+x^\top\beta$. A t
 
 The public UCI Credit Approval dataset illustrates a crucial warning. Its outcome is approval, not default. It can teach mixed data types and missingness, but relabelling `approved` as PD would change the meaning of the evidence. Likewise, corporate bankruptcy is related to but not identical with a bank’s regulatory default definition.
 
-The laboratory implements a clipped logistic transform and the identity between conditional hazards and cumulative PD. It prints classification probabilities, bounded LGD values and a lifetime curve. The extension asks the reader to define a linear-probability benchmark, a continuous-severity model, an ordinal delinquency model and a competing-risk estimand using the same miniature records, making the difference a matter of mathematics rather than library syntax.
+The laboratory implements the logistic transform with `math.exp` and builds cumulative PD by multiplying survival probabilities inside a loop. It prints classification probabilities, example LGD values and a lifetime curve. The extension asks the reader to define a linear-probability benchmark, a continuous-severity model, an ordinal delinquency model and a competing-risk estimand using the same miniature records, making the difference a matter of mathematics rather than library syntax.
 
 ## Model-selection policy
 

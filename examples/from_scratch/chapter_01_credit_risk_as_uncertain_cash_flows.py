@@ -3,36 +3,21 @@
 Standalone construction code: no creditriskbook imports.
 """
 
-import pandas as pd
+schedule = [
+    # month, contractual, received, recovery, workout cost
+    (1, 350.0, 350.0, 0.0, 0.0),
+    (2, 350.0, 200.0, 0.0, 5.0),
+    (3, 350.0, 0.0, 120.0, 15.0),
+]
+eir = 0.12
+total_pv_loss = 0.0
 
+print("month  shortfall  discount  pv_loss")
+for month, contractual, received, recovery, cost in schedule:
+    shortfall = contractual - received - recovery + cost
+    discount = (1.0 + eir) ** (-month / 12.0)
+    pv_loss = shortfall * discount
+    total_pv_loss += pv_loss
+    print(f"{month:>5}  {shortfall:>9.2f}  {discount:>8.4f}  {pv_loss:>7.2f}")
 
-def discounted_cash_shortfall(schedule: pd.DataFrame) -> pd.DataFrame:
-    """Calculate period and present-value loss without hiding intermediates."""
-    required = {"month", "contractual", "received", "recovery", "workout_cost", "eir"}
-    missing = required - set(schedule)
-    if missing:
-        raise ValueError(f"Missing fields: {sorted(missing)}")
-    out = schedule.copy(deep=True)
-    out["cash_shortfall"] = (
-        out["contractual"] - out["received"] - out["recovery"] + out["workout_cost"]
-    )
-    out["discount_factor"] = (1.0 + out["eir"]) ** (-out["month"] / 12.0)
-    out["pv_loss"] = out["cash_shortfall"] * out["discount_factor"]
-    return out
-
-
-cashflows = pd.DataFrame(
-    {
-        "month": [1, 2, 3],
-        "contractual": [350.0, 350.0, 350.0],
-        "received": [350.0, 200.0, 0.0],
-        "recovery": [0.0, 0.0, 120.0],
-        "workout_cost": [0.0, 5.0, 15.0],
-        "eir": [0.12, 0.12, 0.12],
-    }
-)
-audit = discounted_cash_shortfall(cashflows)
-print(
-    audit[["month", "cash_shortfall", "discount_factor", "pv_loss"]].round(2).to_string(index=False)
-)
-print("Total PV loss:", round(audit["pv_loss"].sum(), 2))
+print("Total PV loss:", round(total_pv_loss, 2))

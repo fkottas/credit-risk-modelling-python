@@ -1,8 +1,8 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Mathematics-to-code laboratory — foundational arithmetic in plain Python
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Classification, Regression, Survival, and Multi-State Formulations** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Classification, Regression, Survival, and Multi-State Formulations** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with a deliberately tiny, hand-checkable fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -20,30 +20,33 @@ For a hand audit, select five records, retain the raw values, and calculate ever
 
 ### 3. Implement the first transparent component
 
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+The first six chapters use scalar arithmetic, lists, loops, and only Python's standard library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally absent so that every intermediate value can be checked by hand. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-import numpy as np
+from math import exp
 
 
-def sigmoid(linear_predictor):
-    z = np.clip(np.asarray(linear_predictor, dtype=float), -35, 35)
-    return 1.0 / (1.0 + np.exp(-z))
+def sigmoid(value):
+    return 1.0 / (1.0 + exp(-value))
 
 
-def cumulative_pd_from_hazards(hazards):
-    h = np.asarray(hazards, dtype=float)
-    if np.any((h < 0) | (h > 1)):
-        raise ValueError("Hazards must lie in [0, 1]")
-    return 1.0 - np.cumprod(1.0 - h)
+def cumulative_pd(hazards):
+    survival = 1.0
+    result = []
+    for hazard in hazards:
+        if not 0.0 <= hazard <= 1.0:
+            raise ValueError("Each hazard must lie between zero and one")
+        survival *= 1.0 - hazard
+        result.append(1.0 - survival)
+    return result
 
 
-classification_pd = sigmoid([-2.0, -0.5, 1.0])
-regression_lgd = np.clip([0.18, 0.42, 0.77], 0, 1)
-survival_pd = cumulative_pd_from_hazards([0.02, 0.03, 0.05, 0.08])
-print("Classification PD:", np.round(classification_pd, 4).tolist())
-print("Regression LGD:", np.round(regression_lgd, 4).tolist())
-print("Cumulative lifetime PD:", np.round(survival_pd, 4).tolist())
+classification_pd = [round(sigmoid(value), 4) for value in (-2.0, -0.5, 1.0)]
+regression_lgd = [0.18, 0.42, 0.77]
+lifetime_pd = [round(value, 4) for value in cumulative_pd([0.02, 0.03, 0.05, 0.08])]
+print("Classification PD:", classification_pd)
+print("Regression LGD:", regression_lgd)
+print("Cumulative lifetime PD:", lifetime_pd)
 ```
 
 ### 4. Inspect the executed output

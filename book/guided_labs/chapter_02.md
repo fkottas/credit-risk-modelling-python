@@ -1,8 +1,8 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Mathematics-to-code laboratory — foundational arithmetic in plain Python
 
 ### 1. Start with the decision, observation unit, and estimand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Expected Loss, Unexpected Loss, and the Loss Distribution** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+This laboratory does not begin by importing a finished modelling function. The class first states what **Expected Loss, Unexpected Loss, and the Loss Distribution** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with a deliberately tiny, hand-checkable fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
 
 The chapter's principal mathematical object is
 
@@ -20,30 +20,37 @@ For a hand audit, select five records, retain the raw values, and calculate ever
 
 ### 3. Implement the first transparent component
 
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+The first six chapters use scalar arithmetic, lists, loops, and only Python's standard library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally absent so that every intermediate value can be checked by hand. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
 
 ```python
-import numpy as np
+from itertools import product
 
+pd = [0.10, 0.20]
+loss_if_default = [500.0, 800.0]  # LGD times EAD
+distribution = []
 
-def loss_distribution(pd, lgd, ead, *, simulations=20_000, seed=802):
-    """Simulate Bernoulli defaults and expose EL, quantile loss, and unexpected loss."""
-    pd, lgd, ead = map(lambda x: np.asarray(x, dtype=float), (pd, lgd, ead))
-    if not (pd.shape == lgd.shape == ead.shape):
-        raise ValueError("PD, LGD, and EAD must have the same shape")
-    if np.any((pd < 0) | (pd > 1)) or np.any((lgd < 0) | (lgd > 1)):
-        raise ValueError("PD and LGD must be proportions")
-    rng = np.random.default_rng(seed)
-    defaults = rng.random((simulations, len(pd))) < pd
-    simulated = (defaults * lgd * ead).sum(axis=1)
-    analytical_el = float(np.sum(pd * lgd * ead))
-    q99 = float(np.quantile(simulated, 0.99, method="higher"))
-    return {"analytical_el": analytical_el, "simulated_mean": simulated.mean(),
-            "q99": q99, "unexpected_loss_99": q99 - analytical_el}
+for defaults in product((0, 1), repeat=2):
+    probability = 1.0
+    loss = 0.0
+    for default, probability_of_default, amount in zip(
+        defaults, pd, loss_if_default, strict=True
+    ):
+        probability *= probability_of_default if default else 1.0 - probability_of_default
+        loss += default * amount
+    distribution.append((loss, probability, defaults))
 
+expected_loss = sum(loss * probability for loss, probability, _ in distribution)
+cumulative_probability = 0.0
+loss_quantile_95 = None
+for loss, probability, defaults in sorted(distribution):
+    cumulative_probability += probability
+    print(defaults, "loss=", loss, "probability=", round(probability, 3))
+    if loss_quantile_95 is None and cumulative_probability >= 0.95:
+        loss_quantile_95 = loss
 
-result = loss_distribution([0.02, 0.05, 0.10], [0.35, 0.45, 0.60], [10_000, 8_000, 5_000])
-print({key: round(value, 2) for key, value in result.items()})
+print("Expected loss:", expected_loss)
+print("95% loss quantile:", loss_quantile_95)
+print("Unexpected loss at 95%:", loss_quantile_95 - expected_loss)
 ```
 
 ### 4. Inspect the executed output
@@ -51,7 +58,13 @@ print({key: round(value, 2) for key, value in result.items()})
 The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
 
 ```output
-{'analytical_el': 550.0, 'simulated_mean': np.float64(567.68), 'q99': 3600.0, 'unexpected_loss_99': 3050.0}
+(0, 0) loss= 0.0 probability= 0.72
+(1, 0) loss= 500.0 probability= 0.08
+(0, 1) loss= 800.0 probability= 0.18
+(1, 1) loss= 1300.0 probability= 0.02
+Expected loss: 210.00000000000003
+95% loss quantile: 800.0
+Unexpected loss at 95%: 590.0
 ```
 
 ### 5. Test mathematics, data, and policy separately

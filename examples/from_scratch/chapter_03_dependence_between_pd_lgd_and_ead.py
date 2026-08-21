@@ -3,26 +3,24 @@
 Standalone construction code: no creditriskbook imports.
 """
 
-import numpy as np
+scenarios = [
+    # name, weight, PD, LGD, EAD
+    ("base", 0.60, 0.03, 0.35, 10_000.0),
+    ("downturn", 0.25, 0.09, 0.50, 11_000.0),
+    ("severe", 0.15, 0.20, 0.65, 12_000.0),
+]
 
+coherent_el = 0.0
+average_pd = average_lgd = average_ead = 0.0
+for name, weight, pd, lgd, ead in scenarios:
+    scenario_el = pd * lgd * ead
+    coherent_el += weight * scenario_el
+    average_pd += weight * pd
+    average_lgd += weight * lgd
+    average_ead += weight * ead
+    print(name, "EL=", round(scenario_el, 2), "weighted EL=", round(weight * scenario_el, 2))
 
-def dependent_component_losses(n=50_000, seed=803):
-    """Create a transparent common-factor dependence experiment."""
-    rng = np.random.default_rng(seed)
-    systematic = rng.normal(size=n)
-    idiosyncratic = rng.normal(size=(n, 3))
-    latent = 0.55 * systematic[:, None] + np.sqrt(1 - 0.55**2) * idiosyncratic
-    defaults = latent < np.array([-1.65, -1.40, -1.15])
-    lgd = np.clip(0.40 - 0.08 * systematic[:, None], 0.10, 0.90)
-    ead = np.array([10_000.0, 8_000.0, 6_000.0]) * (1 + 0.06 * np.maximum(-systematic[:, None], 0))
-    losses = defaults * lgd * ead
-    portfolio = losses.sum(axis=1)
-    return {
-        "component_correlation": float(np.corrcoef(losses.T)[0, 1]),
-        "mean_loss": float(portfolio.mean()),
-        "q99_loss": float(np.quantile(portfolio, 0.99)),
-    }
-
-
-result = dependent_component_losses()
-print({key: round(value, 3) for key, value in result.items()})
+product_of_averages = average_pd * average_lgd * average_ead
+print("Weighted scenario EL:", round(coherent_el, 2))
+print("Product of separate averages:", round(product_of_averages, 2))
+print("Dependence effect:", round(coherent_el - product_of_averages, 2))

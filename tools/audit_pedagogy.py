@@ -16,6 +16,9 @@ MANUSCRIPT = ROOT / "book" / "full_manuscript"
 SCRIPTS = ROOT / "examples" / "from_scratch"
 
 PROJECT_IMPORT = re.compile(r"(?:from|import)\s+creditriskbook\b")
+FOUNDATION_DATA_SCIENCE_IMPORT = re.compile(
+    r"(?:from|import)\s+(?:numpy|pandas|scipy|sklearn|xgboost)\b"
+)
 
 
 def main() -> None:
@@ -49,6 +52,14 @@ def main() -> None:
     for path in scripts:
         text = path.read_text(encoding="utf-8")
         assert not PROJECT_IMPORT.search(text), f"Standalone script imports the library: {path}"
+        chapter_number = int(path.name.split("_")[1])
+        if chapter_number <= 6:
+            assert not FOUNDATION_DATA_SCIENCE_IMPORT.search(text), (
+                f"Chapter {chapter_number} must begin with built-in Python or the standard library"
+            )
+            assert len(text.splitlines()) <= 45, (
+                f"Chapter {chapter_number} exceeds the introductory code-size limit"
+            )
         completed = subprocess.run(
             [sys.executable, str(path)], cwd=ROOT, text=True, capture_output=True, timeout=60
         )

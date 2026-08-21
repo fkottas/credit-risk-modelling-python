@@ -22,6 +22,17 @@ The primary reader is a credit-risk modeller, validator, data scientist, risk ma
 
 Every chapter contains six elements: the decision or control problem; the minimum analytical framework; a worked numerical example; Python linked to the repository; policy and failure modes; and a practical lab. Students should run the notebooks, change assumptions, create deliberately defective copies, and explain the effect before changing code. A good submission does not report only AUC or ECL. It records dataset identity and licence, as-of date, sample filters, target construction, model version, policy version, environment, random seed, validation results and limitations.
 
+The code deliberately grows with the reader. A reusable module never appears as magic. The teaching sequence is formula, hand calculation, plain function, boundary tests, comparison across datasets, promotion into the project package, and only then an import from that reviewed package.
+
+| Learning stage | Chapters | Programming and modelling progression |
+|---|---:|---|
+| Foundations | 1–6 | Scalar arithmetic, tuples, lists, loops and the Python standard library only; every intermediate value is hand-checkable. |
+| Small applied cases | 7–12 | Functions and small pandas tables for products, borrower segments, lifecycle states and explicit policy rules. |
+| Regulation and data construction | 13–24 | Standalone pandas workflows for capital illustrations, staging, licences, point-in-time joins, target windows, quarantine and behavioural features. |
+| Algorithms before promotion | 25–54 | Scorecard, PD, survival, LGD, EAD, IFRS 9 and IRB mathematics are implemented visibly, tested, then moved into the library. |
+| Controlled integration | 55–66 | Reviewed components are called together for validation, UAT, deployment, monitoring, change control and audit. |
+| NLP and governed agents | 67–72 | Tokenisation and retrieval start from first principles; structured evidence, permissions, workflow tools and red-team gates are added progressively. |
+
 The recommended sequence for a full project is:
 
 1. Select a case and record why the dataset is legally and analytically suitable.
@@ -48,7 +59,7 @@ No example may be used to approve, decline, price, limit, collect from or otherw
 
 ## Notation and conventions
 
-The target convention is (Y=1) for default or the adverse event and (Y=0) for non-default. Probability of default is PD, loss given default is LGD, and exposure at default is EAD. Expected loss for a compatible horizon and conditioning basis is
+The target convention is $Y=1$ for default or the adverse event and $Y=0$ for non-default. Probability of default is PD, loss given default is LGD, and exposure at default is EAD. Expected loss for a compatible horizon and conditioning basis is
 
 \[
 EL = PD \times LGD \times EAD.

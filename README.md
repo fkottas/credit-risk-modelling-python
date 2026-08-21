@@ -4,7 +4,7 @@
 
 Author: **Dr. Ferdinantos Kottas**
 
-> First-edition review build. It is educational material, not a production lending system or legal, regulatory, accounting, or investment advice.
+> First-edition teaching build. It is educational material, not a production lending system or legal, regulatory, accounting, or investment advice.
 
 ## What makes this project different
 
@@ -20,6 +20,8 @@ The examples deliberately distinguish:
 - agent assistance from autonomous authority.
 
 The teaching sequence is also deliberate. Each substantial method is introduced as intuition and mathematics, implemented in transparent scratch Python, checked against hand calculations and edge cases, and only then promoted into `src/creditriskbook/`. Later chapters import the tested library. The package therefore emerges from the course; it is not a black box presented before the student sees the calculation.
+
+Chapters 1–6 use only scalar arithmetic, lists, loops, and the Python standard library. Chapters 7–24 introduce small pandas workflows but still prohibit project-library imports. Chapters 25–54 derive, implement, and test the substantive algorithms before promotion. The integration, deployment, NLP, and agent chapters then call the reviewed components under explicit controls.
 
 ## Dataset switching
 
@@ -76,6 +78,19 @@ The end-to-end example:
 
 Generated datasets, fitted models, and reports are excluded from Git.
 
+### Build the Word teaching edition
+
+Pandoc is required because the build converts every TeX expression to editable native Word mathematics (OMML), preserving fractions, radicals, matrices, summations, products, and limits.
+
+```bash
+python -m pip install -e ".[book]"
+python tools/build_guided_labs.py
+python tools/build_book_docx.py --output artifacts/Intelligent_Credit_Risk_Modeling_with_Python_Teaching_Edition.docx
+python tools/audit_book_docx.py artifacts/Intelligent_Credit_Risk_Modeling_with_Python_Teaching_Edition.docx
+```
+
+The final contents page is a static, fully linked table with rendered page numbers. After a layout change, render the DOCX, refresh `book/page_map.json` with `tools/extract_book_page_map.py`, and rebuild once so every label, title, and page number links to its chapter.
+
 ## Repository map
 
 ```text
@@ -107,4 +122,4 @@ See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md
 
 ## Current status
 
-The expanded teaching edition contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 24 standalone early-chapter scripts, 16 executed notebooks, a 400+ page Word manuscript with native equations and labelled Python/output panels, original teaching figures, a 36-record lawful-use dataset registry, and original scorecard, IFRS 9, IRB, NLP and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.
+The expanded teaching edition contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 24 standalone early-chapter scripts, 16 executed notebooks, a 350+ page Word manuscript with editable native equations and labelled Python/output panels, original teaching figures, a 36-record lawful-use dataset registry, and original scorecard, IFRS 9, IRB, NLP and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.

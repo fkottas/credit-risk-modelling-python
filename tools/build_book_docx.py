@@ -7,8 +7,12 @@ Named overrides: cover, part dividers, code blocks, reference text, wide tables.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
+import subprocess
+import tempfile
+import zipfile
 from pathlib import Path
 
 from docx import Document
@@ -17,7 +21,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
-from math2docx import add_math
+from lxml import etree
 
 ROOT = Path(__file__).resolve().parents[1]
 MANUSCRIPT = ROOT / "book" / "full_manuscript"
@@ -29,6 +33,122 @@ BLUE, DARK_BLUE, INK = "2E74B5", "1F4D78", "203748"
 SUBTITLE, GOLD, MUTED = "2B5163", "8B6F28", "667788"
 TABLE_FILL, LIGHT_FILL, CALLOUT_FILL = "E8EEF5", "F2F4F7", "F4F6F9"
 PAGE_WIDTH_DXA = 9360
+MATH_NAMESPACE = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+EQUATION_CATALOG: PandocEquationCatalog | None = None
+ROMAN_MATH_TOKENS = (
+    "CountContracts",
+    "CitationPrecision",
+    "SupportRate",
+    "ChangeHash",
+    "UnexpectedLoss",
+    "Reconciliation",
+    "BaseScore",
+    "BaseOdds",
+    "CumPD",
+    "maxDPD",
+    "LossRate",
+    "Entropy",
+    "Brier",
+    "logit",
+    "Gini",
+    "Gain",
+    "RAROC",
+    "Release",
+    "Allowed",
+    "Policy",
+    "Security",
+    "Approval",
+    "Tests",
+    "Trigger",
+    "Finding",
+    "Downturn",
+    "Revenue",
+    "Economic",
+    "Capital",
+    "Opening",
+    "Closing",
+    "Offset",
+    "Factor",
+    "Deploy",
+    "Score",
+    "Stage",
+    "Floor",
+    "SHA256",
+    "CECL",
+    "ECL",
+    "MPD",
+    "mPD",
+    "LGD",
+    "EAD",
+    "SICR",
+    "WOE",
+    "PDO",
+    "RWA",
+    "CCF",
+    "EIR",
+    "CVA",
+    "BM25",
+    "MoC",
+    "LRA",
+    "OOT",
+    "AUC",
+    "PSI",
+    "SSE",
+    "Beta",
+    "criterion",
+    "evidence",
+    "severity",
+    "watchlist",
+    "thresholds",
+    "mandatory",
+    "violations",
+    "historical",
+    "supported",
+    "critical",
+    "all",
+    "previous",
+    "approval",
+    "exposure",
+    "writeoffs",
+    "transfers",
+    "threshold",
+    "default",
+    "claims",
+    "record",
+    "change",
+    "metric",
+    "config",
+    "action",
+    "scope",
+    "owner",
+    "losses",
+    "credit",
+    "cited",
+    "charge",
+    "ratio",
+    "hash",
+    "role",
+    "time",
+    "date",
+    "data",
+    "code",
+    "Cost",
+    "pass",
+    "due",
+    "FX",
+    "UL",
+    "EL",
+    "PD",
+    "IV",
+    "DF",
+    "EE",
+    "KS",
+)
+ROMAN_MATH_PATTERN = re.compile(
+    rf"(?<![A-Za-z\\])({'|'.join(map(re.escape, ROMAN_MATH_TOKENS))})(?![A-Za-z])"
+)
+TEXT_MATH_PATTERN = re.compile(r"\\text\{[^{}]*\}")
 
 
 def set_cell_shading(cell, fill: str) -> None:
@@ -166,7 +286,9 @@ def add_inline(paragraph, text: str, *, size: float | None = None) -> None:
             set_run_font(paragraph.add_run(text[position : match.start()]), size=size)
         token = match.group(0)
         if token.startswith("$"):
-            add_math(paragraph, token[1:-1].replace(r"\sum", r"\Sigma"), is_italic=False)
+            if EQUATION_CATALOG is None:
+                raise RuntimeError("The native Word equation catalogue has not been initialised")
+            EQUATION_CATALOG.append(paragraph, token[1:-1])
         elif token.startswith("**"):
             set_run_font(paragraph.add_run(token[2:-2]), size=size, bold=True)
         elif token.startswith("*"):
@@ -191,7 +313,9 @@ def configure_styles(doc: Document) -> None:
     normal.paragraph_format.space_after = Pt(6)
     normal.paragraph_format.line_spacing = 1.25
     normal.paragraph_format.widow_control = True
-    normal.paragraph_format.keep_together = True
+    # Body paragraphs must be allowed to flow across pages. Keeping every
+    # paragraph together created large artificial gaps throughout the book.
+    normal.paragraph_format.keep_together = False
     tokens = {
         "Heading 1": (16, BLUE, 18, 10),
         "Heading 2": (13, BLUE, 14, 7),
@@ -209,7 +333,8 @@ def configure_styles(doc: Document) -> None:
         )
         style.paragraph_format.keep_with_next = True
         style.paragraph_format.keep_together = True
-    doc.styles["Heading 1"].paragraph_format.page_break_before = True
+    # Parts, rather than all 72 short teaching chapters, control page starts.
+    doc.styles["Heading 1"].paragraph_format.page_break_before = False
     for name in ("Header", "Footer"):
         style = doc.styles[name]
         style.font.name, style.font.size = "Calibri", Pt(8.5)
@@ -303,7 +428,7 @@ def configure_page(doc: Document) -> None:
     section.header_distance = section.footer_distance = Inches(0.492)
     section.different_first_page_header_footer = True
     paragraph = section.header.paragraphs[0]
-    run = paragraph.add_run("INTELLIGENT CREDIT RISK MODELING WITH PYTHON  •  EXPANDED REVIEW")
+    run = paragraph.add_run("INTELLIGENT CREDIT RISK MODELING WITH PYTHON  •  TEACHING EDITION")
     set_run_font(run, size=8.5, color=MUTED, bold=True)
     add_page_field(section.footer.paragraphs[0])
     section.first_page_header.paragraphs[0].clear()
@@ -354,6 +479,7 @@ def add_cover(doc: Document) -> None:
 def add_toc(doc: Document) -> None:
     title = doc.add_paragraph("Contents", style="Heading 1")
     title.paragraph_format.page_break_before = False
+    add_bookmark(title, "book_contents", 10000)
     note = doc.add_paragraph()
     note.paragraph_format.space_after = Pt(8)
     set_run_font(
@@ -439,33 +565,58 @@ def add_toc(doc: Document) -> None:
             set_cell_margins(cell, top=20, start=35, bottom=20, end=45)
             cell.paragraphs[0].paragraph_format.space_after = Pt(0)
             cell.paragraphs[0].paragraph_format.line_spacing = 1.0
-        set_run_font(
-            row.cells[0].paragraphs[0].add_run(label),
-            size=8.5,
-            color=GOLD if is_part else DARK_BLUE,
-            bold=True,
-        )
         if anchor:
+            add_internal_hyperlink(row.cells[0].paragraphs[0], label, anchor)
             add_internal_hyperlink(row.cells[1].paragraphs[0], item, anchor)
+            if page:
+                add_internal_hyperlink(row.cells[2].paragraphs[0], page, anchor)
         else:
+            set_run_font(
+                row.cells[0].paragraphs[0].add_run(label),
+                size=8.5,
+                color=GOLD if is_part else DARK_BLUE,
+                bold=True,
+            )
             set_run_font(row.cells[1].paragraphs[0].add_run(item), size=8.5)
         row.cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        set_run_font(row.cells[2].paragraphs[0].add_run(page), size=8.5, color=MUTED)
+        if not anchor or not page:
+            set_run_font(row.cells[2].paragraphs[0].add_run(page), size=8.5, color=MUTED)
         if is_part:
             for cell in row.cells:
                 set_cell_shading(cell, CALLOUT_FILL)
     doc.add_page_break()
 
 
-def add_part_page(doc: Document, label: str, title: str) -> None:
+def set_paragraph_bottom_border(paragraph, *, color: str = "C8D4DF", size: int = 8) -> None:
+    p_pr = paragraph._p.get_or_add_pPr()
+    borders = p_pr.find(qn("w:pBdr"))
+    if borders is None:
+        borders = OxmlElement("w:pBdr")
+        p_pr.append(borders)
+    bottom = borders.find(qn("w:bottom"))
+    if bottom is None:
+        bottom = OxmlElement("w:bottom")
+        borders.append(bottom)
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), str(size))
+    bottom.set(qn("w:space"), "5")
+    bottom.set(qn("w:color"), color)
+
+
+def add_part_banner(doc: Document, label: str, title: str, *, first_part: bool) -> None:
+    """Start a part compactly on the same page as its first chapter."""
+
     part = doc.add_paragraph()
-    part.paragraph_format.page_break_before, part.paragraph_format.space_before = True, Pt(150)
-    part.paragraph_format.space_after, part.alignment = Pt(18), WD_ALIGN_PARAGRAPH.CENTER
-    set_run_font(part.add_run(label.upper()), size=11, color=GOLD, bold=True)
+    part.paragraph_format.page_break_before = False
+    part.paragraph_format.space_before = Pt(0 if first_part else 16)
+    part.paragraph_format.space_after = Pt(2)
+    part.paragraph_format.keep_with_next = True
+    set_run_font(part.add_run(label.upper()), size=9.0, color=GOLD, bold=True)
     heading = doc.add_paragraph()
-    heading.alignment, heading.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(10)
-    set_run_font(heading.add_run(title), size=24, color=INK, bold=True)
-    doc.add_page_break()
+    heading.paragraph_format.space_after = Pt(10)
+    heading.paragraph_format.keep_with_next = True
+    set_run_font(heading.add_run(title), size=15.5, color=INK, bold=True)
+    set_paragraph_bottom_border(heading, color="B9C9D8", size=8)
 
 
 def table_geometry(table, widths: list[int], indent_dxa=120) -> None:
@@ -508,8 +659,11 @@ def add_code_block(doc: Document, code: str, language: str = "code") -> None:
     table = doc.add_table(rows=2, cols=1)
     table_geometry(table, [PAGE_WIDTH_DXA])
     set_table_borders(table, color=header_fill, size=5)
-    for row in table.rows:
-        row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+    header_properties = table.rows[0]._tr.get_or_add_trPr()
+    header_properties.append(OxmlElement("w:cantSplit"))
+    repeat = OxmlElement("w:tblHeader")
+    repeat.set(qn("w:val"), "true")
+    header_properties.append(repeat)
     header = table.cell(0, 0)
     set_cell_width(header, PAGE_WIDTH_DXA)
     set_cell_margins(header, 50, 140, 45, 140)
@@ -546,8 +700,8 @@ def add_table(doc: Document, rows: list[list[str]]) -> None:
     table_geometry(table, widths)
     for row_index, (word_row, values) in enumerate(zip(table.rows, rows, strict=False)):
         tr_pr = word_row._tr.get_or_add_trPr()
-        tr_pr.append(OxmlElement("w:cantSplit"))
         if row_index == 0:
+            tr_pr.append(OxmlElement("w:cantSplit"))
             repeat = OxmlElement("w:tblHeader")
             repeat.set(qn("w:val"), "true")
             tr_pr.append(repeat)
@@ -595,90 +749,15 @@ def add_figure(doc: Document, source: str, caption: str) -> None:
     set_run_font(label.add_run(caption), size=9.5, color=MUTED, italic=True)
 
 
-def _replace_braced_command(text: str, command: str, formatter) -> str:
-    """Replace simple or nested TeX braced commands without a TeX dependency."""
-
-    token = f"\\{command}"
-    while token in text:
-        start = text.index(token)
-        cursor = start + len(token)
-        groups = []
-        required = 2 if command == "frac" else 1
-        valid = True
-        for _ in range(required):
-            if cursor >= len(text) or text[cursor] != "{":
-                valid = False
-                break
-            depth, end = 0, cursor
-            while end < len(text):
-                if text[end] == "{":
-                    depth += 1
-                elif text[end] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        break
-                end += 1
-            if depth != 0:
-                valid = False
-                break
-            groups.append(text[cursor + 1 : end])
-            cursor = end + 1
-        if not valid:
-            break
-        text = text[:start] + formatter(*groups) + text[cursor:]
-    return text
-
-
-def readable_equation(value: str) -> str:
-    value = " ".join(line.strip() for line in value.splitlines())
-    value = _replace_braced_command(
-        value,
-        "frac",
-        lambda numerator, denominator: (
-            f"({readable_equation(numerator)})/({readable_equation(denominator)})"
-        ),
-    )
-    value = _replace_braced_command(
-        value, "sqrt", lambda argument: f"√({readable_equation(argument)})"
-    )
-    value = value.replace("\\begin{bmatrix}", "[").replace("\\end{bmatrix}", "]")
-    value = value.replace("\\\\", "; ").replace("&", " ")
-    replacements = {
-        "\\times": "×",
-        "\\sum": "Σ",
-        "\\prod": "Π",
-        "\\chi": "χ",
-        "\\beta": "β",
-        "\\ell": "ℓ",
-        "\\log": "log",
-        "\\exp": "exp",
-        "\\left": "",
-        "\\right": "",
-        "\\infty": "∞",
-        "\\in": "∈",
-        "\\mid": " | ",
-        "\\sim": "~",
-        "\\qquad": "    ",
-        "\\quad": "   ",
-        "\\,": " ",
-        "\\ ": " ",
-    }
-    for source, target in replacements.items():
-        value = value.replace(source, target)
-    value = re.sub(r"_\{([^{}]+)\}", r"_\1", value)
-    value = re.sub(r"\^\{([^{}]+)\}", r"^\1", value)
-    value = value.replace("{,}", ",").replace("\\{", "{").replace("\\}", "}")
-    value = value.replace("\\", "")
-    return re.sub(r"\s+", " ", value).strip()
-
-
 def add_equation(doc: Document, value: str) -> None:
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.space_before = Pt(4)
     paragraph.paragraph_format.space_after = Pt(8)
-    equation = " ".join(line.strip() for line in value.splitlines()).replace(r"\sum", r"\Sigma")
-    add_math(paragraph, equation, is_italic=False)
+    paragraph.paragraph_format.keep_together = True
+    if EQUATION_CATALOG is None:
+        raise RuntimeError("The native Word equation catalogue has not been initialised")
+    EQUATION_CATALOG.append(paragraph, value)
 
 
 def markdown_blocks(text: str):
@@ -779,6 +858,157 @@ def markdown_blocks(text: str):
         yield item
 
 
+def normalize_equation(value: str) -> str:
+    """Return the stable key used for source TeX and generated Word mathematics."""
+
+    return " ".join(line.strip() for line in value.splitlines()).strip()
+
+
+def prepare_equation_for_word(value: str) -> str:
+    """Typeset domain acronyms as named quantities rather than letter products."""
+
+    protected: list[str] = []
+
+    def protect(match: re.Match[str]) -> str:
+        protected.append(match.group(0))
+        return f"@@CRBPROTECTED{len(protected) - 1}@@"
+
+    prepared = TEXT_MATH_PATTERN.sub(protect, normalize_equation(value))
+    prepared = ROMAN_MATH_PATTERN.sub(lambda match: rf"\text{{{match.group(1)}}}", prepared)
+    for index, original in enumerate(protected):
+        prepared = prepared.replace(f"@@CRBPROTECTED{index}@@", original)
+    return prepared
+
+
+def _inline_equations(text: str):
+    for match in INLINE.finditer(text):
+        token = match.group(0)
+        if token.startswith("$"):
+            yield normalize_equation(token[1:-1])
+
+
+def collect_source_equations() -> list[str]:
+    """Collect equations from rendered prose while deliberately ignoring code fences."""
+
+    equations: set[str] = set()
+    for directory in (MANUSCRIPT, GUIDED_LABS):
+        for path in sorted(directory.glob("*.md")):
+            for kind, value in markdown_blocks(path.read_text(encoding="utf-8")):
+                if kind == "equation":
+                    equations.add(normalize_equation(value))
+                elif kind == "table":
+                    for row in value:
+                        for cell in row:
+                            equations.update(_inline_equations(cell))
+                elif kind in {
+                    "paragraph",
+                    "bullet",
+                    "number",
+                    "callout",
+                    "h1",
+                    "h2",
+                    "h3",
+                }:
+                    equations.update(_inline_equations(value))
+    if not equations:
+        raise RuntimeError("No source equations were found")
+    return sorted(equations)
+
+
+class PandocEquationCatalog:
+    """Compile TeX once and reuse native, editable Office Math objects.
+
+    Pandoc translates each source expression to OMML, Word's native equation
+    representation. This preserves fractions, radicals, matrices, n-ary
+    operators and limits; it also avoids the former lossy Sigma substitution.
+    """
+
+    def __init__(self, equations: list[str]) -> None:
+        self._elements: dict[str, etree._Element] = {}
+        markdown = "\n\n".join(
+            f"EQ{index:04d}\n\n$$\n{prepare_equation_for_word(equation)}\n$$"
+            for index, equation in enumerate(equations)
+        )
+        with tempfile.TemporaryDirectory(prefix="credit-risk-equations-") as directory:
+            directory_path = Path(directory)
+            source = directory_path / "equations.md"
+            output = directory_path / "equations.docx"
+            source.write_text(markdown, encoding="utf-8")
+            try:
+                subprocess.run(
+                    [
+                        "pandoc",
+                        str(source),
+                        "--from=markdown+tex_math_dollars",
+                        "--to=docx",
+                        f"--output={output}",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            except FileNotFoundError as exc:
+                raise RuntimeError(
+                    "Pandoc is required to build native Word equations; install pandoc first"
+                ) from exc
+            except subprocess.CalledProcessError as exc:
+                raise RuntimeError(f"Pandoc equation conversion failed: {exc.stderr}") from exc
+            with zipfile.ZipFile(output) as archive:
+                root = etree.fromstring(archive.read("word/document.xml"))
+
+        namespaces = {"m": MATH_NAMESPACE, "w": WORD_NAMESPACE}
+        generated: dict[int, etree._Element] = {}
+        current_index: int | None = None
+        for paragraph in root.xpath("//w:body/w:p", namespaces=namespaces):
+            visible_text = "".join(paragraph.xpath(".//w:t/text()", namespaces=namespaces))
+            marker = re.fullmatch(r"EQ(\d{4})", visible_text.strip())
+            if marker:
+                current_index = int(marker.group(1))
+                continue
+            math_objects = paragraph.xpath(".//m:oMath", namespaces=namespaces)
+            if math_objects and current_index is not None:
+                if len(math_objects) != 1:
+                    raise RuntimeError(
+                        f"Expected one Word math object for equation {current_index}, "
+                        f"found {len(math_objects)}"
+                    )
+                generated[current_index] = math_objects[0]
+                current_index = None
+        if len(generated) != len(equations):
+            missing = [
+                equation for index, equation in enumerate(equations) if index not in generated
+            ]
+            raise RuntimeError(
+                f"Equation conversion count mismatch: {len(equations)} source expressions, "
+                f"{len(generated)} Word equations. Missing: {missing[:3]}"
+            )
+        for index, equation in enumerate(equations):
+            element = generated[index]
+            self._audit_operator_structure(equation, element)
+            self._elements[equation] = copy.deepcopy(element)
+
+    @staticmethod
+    def _audit_operator_structure(equation: str, element: etree._Element) -> None:
+        xml = etree.tostring(element, encoding="unicode")
+        requirements = {
+            r"\sum": ("∑", "summation"),
+            r"\prod": ("∏", "product"),
+            r"\frac": ("<m:f>", "fraction"),
+            r"\sqrt": ("<m:rad>", "radical"),
+        }
+        for command, (marker, label) in requirements.items():
+            if command in equation and marker not in xml:
+                raise RuntimeError(f"Native Word {label} structure missing for: {equation}")
+
+    def append(self, paragraph, equation: str) -> None:
+        key = normalize_equation(equation)
+        try:
+            element = self._elements[key]
+        except KeyError as exc:
+            raise KeyError(f"Equation was not precompiled: {key}") from exc
+        paragraph._p.append(copy.deepcopy(element))
+
+
 def _chapter_lab_blocks(chapter_number: int):
     path = GUIDED_LABS / f"chapter_{chapter_number:02d}.md"
     if not path.exists():
@@ -800,7 +1030,8 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
     section_number = 0
     subsection_number = 0
     bookmark_id = 1
-    for file_index, path in enumerate(sorted(MANUSCRIPT.glob("*.md"))):
+    rendered_part_count = 0
+    for path in sorted(MANUSCRIPT.glob("*.md")):
         content = path.read_text(encoding="utf-8")
         if path.name == "00_front_matter.md":
             content = content[content.index("## Preface") :]
@@ -823,7 +1054,12 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
                 section_number = 0
                 subsection_number = 0
                 if match and int(match.group(1)) in parts:
-                    add_part_page(doc, *parts[int(match.group(1))])
+                    add_part_banner(
+                        doc,
+                        *parts[int(match.group(1))],
+                        first_part=rendered_part_count == 0,
+                    )
+                    rendered_part_count += 1
                 paragraph = doc.add_paragraph(value, style="Heading 1")
                 if match:
                     add_bookmark(paragraph, f"chapter_{int(match.group(1)):03d}", bookmark_id)
@@ -840,8 +1076,7 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
                     anchor = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
                     add_bookmark(paragraph, f"section_{anchor}", bookmark_id)
                     bookmark_id += 1
-                if file_index == 0:
-                    paragraph.paragraph_format.page_break_before = False
+                paragraph.paragraph_format.page_break_before = False
             elif kind == "h2":
                 section_number += 1
                 subsection_number = 0
@@ -906,6 +1141,8 @@ def audit_document(doc: Document) -> None:
 
 
 def build(output: Path) -> None:
+    global EQUATION_CATALOG
+    EQUATION_CATALOG = PandocEquationCatalog(collect_source_equations())
     doc = Document()
     configure_styles(doc)
     configure_page(doc)
