@@ -412,6 +412,28 @@ References were checked for this edition in August 2026. Links point to the publ
 
 [R40] Gritzalis, Konstantinos; Kottas, Ferdinantos; and co-authors. “Credit Scoring and Explainable Artificial Intelligence.” *Journal of Risk and Financial Management* 18(5), 2025. https://www.mdpi.com/1911-8074/18/5/282
 
+[R41] International Accounting Standards Board. *Post-implementation Review of IFRS 9—Impairment: Project Summary and Feedback Statement*. 4 July 2024. https://www.ifrs.org/projects/completed-projects/2024/post-implementation-review-of-ifrs-9-impairment/
+
+[R42] Financial Accounting Standards Board. *Accounting Standards Update 2025-05—Financial Instruments—Credit Losses (Topic 326): Measurement of Credit Losses for Accounts Receivable and Contract Assets*. July 2025. https://www.fasb.org/Page/Document?pdf=ASU%202025-05.pdf&title=Accounting%20Standards%20Update%202025-05
+
+[R43] European Banking Authority. *Follow-up Report on the Use of Machine Learning for Internal Ratings-Based Models*. 4 August 2023. https://www.eba.europa.eu/publications-and-media/press-releases/eba-publishes-follow-report-use-machine-learning-internal
+
+[R44] Consumer Financial Protection Bureau. *Consumer Financial Protection Circular 2022-03: Adverse action notification requirements in connection with credit decisions based on complex algorithms*. 26 May 2022. https://www.consumerfinance.gov/compliance/circulars/circular-2022-03-adverse-action-notification-requirements-in-connection-with-credit-decisions-based-on-complex-algorithms/
+
+[R45] Consumer Financial Protection Bureau. *Consumer Financial Protection Circular 2023-03: Adverse action notification requirements and the proper use of the CFPB's sample forms provided in Regulation B*. 19 September 2023. https://files.consumerfinance.gov/f/documents/cfpb_adverse_action_notice_circular_2023-09.pdf
+
+[R46] Lessmann, Stefan; Baesens, Bart; Seow, Hsin-Vonn; and Thomas, Lyn C. “Benchmarking state-of-the-art classification algorithms for credit scoring: An update of research.” *European Journal of Operational Research* 247(1), 2015, pp. 124–136. https://doi.org/10.1016/j.ejor.2015.05.030
+
+[R47] Louzada, Francisco; Ara, Anderson; and Fernandes, Guilherme B. “Classification methods applied to credit scoring: Systematic review and overall comparison.” *Surveys in Operations Research and Management Science* 21(2), 2016, pp. 117–134. https://doi.org/10.1016/j.sorms.2016.10.001
+
+[R48] Dastile, Xolani; Çelik, Turgay; and Potsane, Moshe. “Statistical and machine learning models in credit scoring: A systematic literature survey.” *Applied Soft Computing* 91, 2020, 106263. https://doi.org/10.1016/j.asoc.2020.106263
+
+[R49] Kozodoi, Nikita; Jacob, Johannes; and Lessmann, Stefan. “Fairness in Credit Scoring: Assessment, Implementation and Profit Implications.” *European Journal of Operational Research* 297(3), 2022, pp. 1083–1094. https://doi.org/10.1016/j.ejor.2021.06.023
+
+[R50] Bussmann, Niklas; Giudici, Paolo; Marinelli, Dimitri; and Papenbrock, Jochen. “Explainable Machine Learning in Credit Risk Management.” *Computational Economics* 57, 2021, pp. 203–216. https://doi.org/10.1007/s10614-020-10042-0
+
+[R51] Fuster, Andreas; Goldsmith-Pinkham, Paul; Ramadorai, Tarun; and Walther, Ansgar. “Predictably Unequal? The Effects of Machine Learning on Credit Markets.” *Journal of Finance* 77(1), 2022, pp. 5–47. https://doi.org/10.1111/jofi.13090
+
 ## Appendix K — Limits of the teaching implementation
 
 The repository and book are educational. They are not legal, accounting, regulatory or investment advice; not a certified capital or impairment system; and not an authorisation to use a variable or dataset in a credit decision. Examples omit institution-specific policies, local law, complete accounting entries, tax, disclosures, security architecture, privacy impact assessment, production resilience and supervisory approvals.

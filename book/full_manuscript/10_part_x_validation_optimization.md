@@ -6,6 +6,8 @@ Validation asks whether a model is conceptually sound, empirically supported, co
 
 A validation plan starts with model purpose, materiality, regulatory/accounting context, decision impact, change history, dependencies and prior findings. Work covers data and lineage; target and sample; methodology; performance; calibration; stability; implementation; use; monitoring; governance and documentation. Agentic components require tool, permission and evaluation review.
 
+The US federal banking agencies issued revised interagency model-risk guidance on 17 April 2026, identified by the Federal Reserve as SR 26-2 [R9]. The revision retains the core disciplines of model development, implementation and use; validation; and governance, while reflecting advances in modelling practice and proportionality to risk and use. A 2026 inventory should therefore map policy and validation templates to the revised text rather than citing SR 11-7 as if it were still the sole current interagency reference. Applicability and supervisory expectations remain institution-specific.
+
 ```python
 from creditriskbook.agents import GovernedAgentOrchestrator
 

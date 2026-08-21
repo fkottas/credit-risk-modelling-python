@@ -1,5 +1,5 @@
-registry_version: 1
-last_reviewed: 2026-08-02
+registry_version: 2
+last_reviewed: 2026-08-21
 policy: >-
   A dataset may be used only after provenance, licence, access conditions,
   redistribution, attribution, and material limitations have been recorded.
@@ -24,6 +24,19 @@ datasets:
     status: approved
     cases: [ead, ccf, utilisation, credit_limits, monitoring]
     limitations: Synthetic drawdowns are simplified and do not reproduce a real revolving portfolio.
+
+  synthetic_behavioral_history:
+    title: CreditRiskBook Synthetic Behavioural and Bureau History
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated relational synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally; no original customer record is used
+    status: approved
+    cases: [relational_data, point_in_time_joins, data_cleaning, dpd_features, utilisation, payment_behaviour, bureau_features, target_construction]
+    limitations: >-
+      Original synthetic relationships are deliberately simplified and are not calibrated to a
+      lender, protected group, legal jurisdiction, default policy, product economics or macro regime.
+      They demonstrate mechanics and expected directions, not empirical performance.
 
   synthetic_recovery:
     title: CreditRiskBook Synthetic Recovery Cash-Flow Ledger
@@ -190,6 +203,41 @@ datasets:
     limitations: >-
       Public files are privacy-modified application and origination records, not loan-performance
       or default data. They support decision and access analysis, not PD estimation.
+
+  fannie_mae_single_family_performance:
+    title: Fannie Mae Single-Family Loan Performance Data
+    publisher: Fannie Mae
+    official_url: https://capitalmarkets.fanniemae.com/credit-risk-transfer/single-family-credit-risk-transfer/fannie-mae-single-family-loan-performance-data
+    licence: provider data terms and user acknowledgement; recheck before each download
+    redistribution: not bundled; each reader obtains files from the official provider under current terms
+    status: conditional_not_bundled
+    cases: [mortgage_vintages, monthly_performance, delinquency_transitions, prepayment, survival]
+    limitations: >-
+      Population covers loans acquired or guaranteed by Fannie Mae, fields and release vintages can
+      change, privacy transformations apply, and provider terms govern use. It is not a universal
+      mortgage population or a retail-unsecured PD dataset.
+
+  freddie_mac_single_family_loan_level:
+    title: Freddie Mac Single-Family Loan-Level Dataset
+    publisher: Freddie Mac
+    official_url: https://www.freddiemac.com/research/datasets/sf-loanlevel-dataset
+    licence: provider terms of use; recheck and record the accepted version before access
+    redistribution: not bundled; code expects a reader-supplied official download
+    status: conditional_not_bundled
+    cases: [mortgage_vintages, monthly_dpd, default, prepayment, competing_risks, stress_testing]
+    limitations: >-
+      Dataset represents Freddie Mac purchases or guarantees and has product, acquisition and
+      censoring constraints. A download entitlement is not permission to republish raw files.
+
+  fhfa_public_use_database:
+    title: FHFA Enterprise Public Use Database
+    publisher: Federal Housing Finance Agency
+    official_url: https://www.fhfa.gov/data/public-use-database-fannie-mae-and-freddie-mac
+    licence: United States government public-use data subject to the current file notice
+    redistribution: prefer download-by-code from the official release page
+    status: approved_after_release_notice_review
+    cases: [mortgage_acquisition, borrower_characteristics, product_segmentation, access_analysis]
+    limitations: Public-use fields are privacy-protected and do not provide a complete performance history.
 
   fred_macro:
     title: FRED macroeconomic series

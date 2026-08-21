@@ -78,7 +78,43 @@ A master scale maps risk to grades with defined PD ranges and naming. Migration 
 
 A decision tree recursively partitions features to reduce impurity or loss. It captures thresholds and interactions but is unstable and prone to overfit. Random forests average many bootstrapped trees with feature subsampling, reducing variance. Gradient boosting fits new trees to residual information; XGBoost adds regularisation, shrinkage, row and column sampling, missing-direction handling and efficient optimisation.
 
+For a node $N$ containing $n$ observations with default share $p$, common binary-classification impurities are
+
+\[
+Gini(N)=1-p^2-(1-p)^2=2p(1-p),
+\]
+
+\[
+Entropy(N)=-p\log p-(1-p)\log(1-p).
+\]
+
+Both equal zero in a pure node and are largest near $p=0.5$. For candidate split $s$ producing left and right children, impurity reduction is
+
+\[
+Gain(s)=I(N)-\frac{n_L}{n}I(N_L)-\frac{n_R}{n}I(N_R).
+\]
+
+The tree selects the eligible split with largest gain, subject to minimum child size, depth and other constraints. Consider ten loans with outcomes $[0,0,0,0,0,0,1,1,1,1]$ ordered by utilisation. The parent has $p=0.4$ and Gini $0.48$. A split after the sixth loan gives two pure children and gain $0.48$. A split after the fifth gives a pure left child and right default share $0.8$; weighted child impurity is $0.5(0)+0.5(0.32)=0.16$, so gain is $0.32$. The first split wins on training impurity, but a minimum-child or stability rule may reject a seemingly perfect threshold when it is supported by too few or temporally concentrated observations.
+
+For regression trees, squared-error impurity is the within-node sum of squares
+
+\[
+SSE(N)=\sum_{i\in N}(y_i-\bar y_N)^2.
+\]
+
+Other objectives include absolute-error, Poisson and survival losses. A credit model must match objective to outcome; a Gini split does not directly estimate calibrated PD.
+
+Random forests fit trees $T_b(x)$ on bootstrap samples and average probabilities
+
+\[
+\widehat p(x)=\frac{1}{B}\sum_{b=1}^{B}T_b(x).
+\]
+
+Feature subsampling decorrelates trees; averaging reduces variance but does not automatically calibrate probabilities. Gradient boosting instead builds an additive score $F_M(x)=F_0(x)+\sum_{m=1}^{M}\eta f_m(x)$, where each new tree follows the negative gradient of the chosen loss. For Bernoulli log loss, the initial score is log odds and boosting updates the logit. XGBoost adds second-order approximations and a regularised objective. This mathematical difference explains why bagging and boosting have different tuning and failure modes.
+
 Credit-risk tuning should include depth, learning rate, tree count, minimum child support, subsampling, regularisation and class treatment. Class weights alter the fitted objective and often require probability recalibration. Monotonic constraints can encode directional knowledge but must be justified and tested for interaction effects.
+
+Benchmark evidence should be interpreted with the literature rather than a single leaderboard. Lessmann et al. compare a broad classifier set across multiple credit datasets [R46]; Louzada et al. and Dastile et al. review classical and machine-learning credit-scoring methods [R47–R48]. Their results motivate disciplined benchmarking, but no public benchmark determines performance, legality or governance for a new lender population.
 
 ```python
 from xgboost import XGBClassifier
@@ -124,7 +160,9 @@ from creditriskbook.scorecard import ModelScoreMapper
 # print(reasons)
 ```
 
-Fairness diagnostics include group approval, error, calibration and outcome measures. Conflicting criteria are common when base rates differ. Protected attributes may be needed for auditing even when excluded from prediction, subject to lawful handling. Small intersectional groups require uncertainty.
+Fairness diagnostics include group approval, error, calibration and outcome measures. Conflicting criteria are common when base rates differ. Protected attributes may be needed for auditing even when excluded from prediction, subject to lawful handling. Small intersectional groups require uncertainty. Kozodoi, Jacob and Lessmann analyse fairness criteria and implementation in credit scoring [R49], while Fuster et al. show why flexible prediction can have distributional effects in credit markets [R51]. These studies inform investigation; they do not replace jurisdiction-specific protected-class, adverse-impact, business-necessity and customer-remedy analysis. Supervisory practice also requires specific adverse-action reasons and management of model risk, not only parity metrics [R9, R44–R45].
+
+Explainability literature likewise distinguishes a technically plausible attribution from an operationally valid reason. Bussmann et al. discuss explainable machine learning in credit-risk management [R50], and the EBA's follow-up report on machine learning for IRB models emphasises governance, interpretability and prudent model use [R43]. The book therefore tests fidelity, stability and actionability separately.
 
 ## Explanation governance
 

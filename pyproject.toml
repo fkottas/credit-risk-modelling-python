@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "creditriskbook"
-version = "0.4.0"
+version = "0.5.0"
 description = "Tested libraries and examples for Intelligent Credit Risk Modeling with Python"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -116,6 +116,8 @@ print(assign_stages(accounts, StagingPolicy())[["account_id", "stage", "stage_re
 
 The function exposes every trigger and one primary reason. A real engine also needs cure and probation, modification, POCI, revolving-life, collateral and write-off policies.
 
+The IASB completed its Post-implementation Review of IFRS 9 impairment in July 2024 and concluded that the requirements are working as intended, while identifying matters for targeted follow-up and continuing attention to credit-risk disclosures and application questions [R41]. This is not evidence that every implementation is comparable or well controlled. The engine must still document SICR judgement, forward-looking information, model changes, overlays and disclosure reconciliations.
+
 ## Control framework
 
 Reconcile stage counts and balances to the ledger. Monitor transfers, cures and manual overrides. Backtest both stage assignment and ECL outcomes. Validate data lineage from source event to disclosure.
@@ -128,7 +130,19 @@ Reconcile stage counts and balances to the ledger. Monitor transfers, cures and 
 
 US current expected credit losses recognise expected lifetime credit losses for assets in scope, using historical experience, current conditions and reasonable and supportable forecasts, followed by reversion where relevant. Unlike the IFRS 9 general model, CECL does not use Stage 1 and Stage 2 to switch between twelve-month and lifetime ECL. Scope, methods and presentation differ, so one engine should not merely rename fields [R7].
 
+| Dimension | IFRS 9 general approach | CECL |
+|---|---|---|
+| Initial allowance | twelve-month ECL in Stage 1 | expected lifetime loss from initial recognition for assets in scope |
+| Credit deterioration | SICR transfers Stage 1 to lifetime Stage 2; credit-impaired Stage 3 | no equivalent Stage 1/Stage 2 switch |
+| Forecast | reasonable and supportable forward-looking information, often probability-weighted scenarios | reasonable and supportable forecast with reversion beyond the forecastable period as applicable |
+| Interest and presentation | Stage 3 changes the interest-revenue basis; separate IFRS presentation rules | US GAAP scope, presentation and write-off requirements apply |
+| Simplified cases | lifetime provision matrix may apply to eligible receivables | methods include loss-rate, vintage, roll-rate, PD×LGD and DCF where appropriate |
+
+The distinction is architectural: IFRS 9 staging changes the loss horizon, whereas CECL normally begins with lifetime expected loss. Shared utilities for time, curves and reconciliation are useful; shared accounting configuration is not.
+
 Permitted methods may include loss-rate, vintage, roll-rate, probability-of-default, discounted-cash-flow and other approaches appropriate to the asset. The method must capture contractual term, expected prepayments and relevant recoveries according to applicable guidance and policy.
+
+FASB's post-implementation work continues to generate targeted amendments. ASU 2025-05 addresses measurement of credit losses for accounts receivable and contract assets, including a practical expedient and an accounting policy election for entities within its scope; its effective-date and transition provisions must be read from the issued standard [R42]. It is a narrow update, not a replacement for Topic 326 or permission to generalise a receivables expedient to lending assets.
 
 For trade receivables under IFRS 9’s simplified approach, a provision matrix can estimate lifetime ECL by aging bucket, adjusted for forward-looking information. It is not a shortcut to avoid data validation.
 
@@ -157,9 +171,9 @@ Document why a method fits product behaviour, data and forecast. Reconcile chang
 
 Credit models operate within consumer, discrimination, privacy, data-protection and AI rules. Requirements depend on jurisdiction, product, customer and use. A variable can be statistically predictive yet unlawful, unfair, non-actionable, unstable or impossible to explain. Proxy risk matters because removing a protected attribute does not remove information correlated with it.
 
-The EU AI Act lists specified AI systems used to evaluate creditworthiness or establish credit scores of natural persons as high risk, subject to stated exceptions and detailed conditions [R8]. High-risk classification creates lifecycle obligations concerning risk management, data governance, documentation, logging, transparency, human oversight, accuracy, robustness and cybersecurity. The legal text and implementation timeline must be checked directly; this book does not make a legal classification.
+Annex III 5(b) of the EU AI Act identifies AI systems intended to evaluate the creditworthiness of natural persons or establish their credit score as high risk, except AI systems used to detect financial fraud [R8]. Classification is use-specific: a generic language model is not classified only by its name, and an exception cannot be assumed from a vendor label. For a high-risk use, the operating design must address Article 9 risk management, Article 10 data and data governance, Article 11 documentation, Article 12 automatic record-keeping, Article 13 information to deployers, Article 14 effective human oversight, and Article 15 accuracy, robustness and cybersecurity. Readers must check the consolidated legal text, applicable dates and institutional facts.
 
-US and other jurisdictions may require specific adverse-action reasons. Generic feature importance is not automatically an adequate reason. For nonlinear models, the repository labels sensitivity-based reason codes honestly instead of presenting them as logistic bin points.
+US and other jurisdictions may require specific adverse-action reasons. CFPB Circulars 2022-03 and 2023-03 state that creditors using complex algorithms remain responsible for specific and accurate principal reasons; opacity or a closest sample-form checklist is not a substitute [R44–R45]. Generic feature importance is not automatically an adequate reason. For nonlinear models, the repository labels sensitivity-based reason codes honestly instead of presenting them as logistic bin points.
 
 ```python
 from creditriskbook.agents import ActionProposal, PolicyEngine

@@ -2,16 +2,19 @@
 
 Raw and processed datasets are intentionally excluded from Git. Use a registered loader or place a legally obtained file under `data/raw/<dataset-key>/`.
 
-The repository's earlier synthetic generators for BNPL/microloans, fraud, LGD, EAD, and IFRS 9 cohorts remain under `data/generators/`. They are preserved and will be brought into the common dataset contract after their assumptions, schemas, licences, and tests are reviewed. The new `synthetic_retail` generator is the first generator covered by the package test suite.
+The repository's earlier synthetic generators for BNPL/microloans and fraud remain under `data/generators/`. Reviewed package generators now cover retail applications, relational behavioural histories, LGD recoveries, EAD/CCF, IFRS 9 schedules, IRB portfolios and counterparty profiles. Each reviewed generator has deterministic tests and an explicit synthetic-data limitation.
 
 ## Supported teaching datasets
 
 | Key | Access | Default use |
 |---|---|---|
 | `synthetic_retail` | Generated locally | Tests, data quality, deployment, monitoring, IFRS 9 demonstrations |
+| `synthetic_behavioral_history` | Generated locally as four relational tables | Cleaning, point-in-time joins, DPD/utilisation/payment/bureau features |
 | `uci_south_german` | UCI downloader | Small PD, scorecard, cost-sensitive classification, fairness discussion |
 | `uci_taiwan_credit_card` | UCI downloader | Behavioural PD, calibration, ML comparison |
 | `kaggle_credit_risk` | Student downloads `credit_risk_dataset.csv` | Dataset switching, missing data, model benchmarking |
+
+The registry also records conditional, non-bundled official mortgage sources from Fannie Mae, Freddie Mac and FHFA. Readers obtain provider-controlled files under the current official terms; the repository does not republish them.
 
 South German Credit uses only the core dependencies. Install optional Excel support for the Taiwan dataset with `python -m pip install -e '.[datasets]'`.
 

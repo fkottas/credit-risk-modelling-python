@@ -1,70 +1,42 @@
-## Mathematics-to-code laboratory — build the library with the student
+## Mathematics-to-code laboratory — behavioural features from first principles
 
-### 1. Start with the decision, observation unit, and estimand
+### 1. Compute one cured borrower by hand
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Missingness, Outliers, Leakage, and Selection Bias** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We use `synthetic_retail` throughout the derivation, implementation, and test. Before calculating anything, inspect its unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+Use monthly DPD $[60,30,0]$ and two contracts, one opened inside the six-month window. Before code, calculate `max_dpd_6m=60`, `last_dpd=0`, `count_dpd30_6m=2` and `count_contracts_last_6m=1`. Explain why maximum and last DPD must not be confused.
 
-The chapter's principal mathematical object is
+### 2. Implement the four core features
 
-\[
-\mathbb{E}[Y\mid X,R=1]\ne\mathbb{E}[Y\mid X]
-\]
+Write `scratch_core_features` exactly from the set definitions. Aggregate multiple contracts to one customer-month before DPD counts. Use the open-left, closed-right boundary $(t-6m,t]`. Return history length and missing history explicitly.
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
+### 3. Extend the mathematics
 
-### 2. Derive before implementing
+Implement utilisation $U_s=\sum_j Balance_{j,s}/\sum_j Limit_{j,s}$, payment ratio, DPD threshold counts, recency and the closed-form OLS utilisation slope. Reconcile the slope against a sequence $[0.1,0.2,\ldots,0.6]$, whose slope per month is $0.1$.
 
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
+### 4. Test point-in-time invariance
 
-For a hand audit, select five records from `synthetic_retail`, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
+Append a future row with DPD 999, a future contract and a future enquiry. Every feature at the original reference date must be bitwise identical. Add two contracts delinquent in the same month and verify one delinquent month is counted. Test the exact six-month boundary.
 
-### 3. Implement the first transparent component
+### 5. Promote, call and evaluate rationality
 
-The first implementation is deliberately small. Students create the data contract, preserve the source frame, expose intermediate values, and return a table that a reviewer can recompute. Only after this component passes tests is it moved into `src/creditriskbook/`. The code below is therefore a construction step, not an illustration of a library that appeared before the course.
+After scratch tests pass, move the implementation into `creditriskbook.features.behavioral` and call it:
 
 ```python
-from __future__ import annotations
+from creditriskbook.features import build_behavioral_features
 
-import numpy as np
-import pandas as pd
-
-from creditriskbook.data import load_dataset
-
-
-def chapter_24_audit_table(seed: int = 824) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = load_dataset("synthetic_retail", n_rows=1_500, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        })
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_24_audit_table()
-print(audit.to_string(index=False))
+features = build_behavioral_features(
+    clean_performance,
+    contracts,
+    reference_dates,
+    enquiries=enquiries,
+)
+print(features[[
+    "max_dpd_6m", "last_dpd", "count_dpd30_6m",
+    "count_contracts_last_6m", "utilisation_slope_6m",
+]].head())
 ```
 
-### 4. Test mathematics, data, and policy separately
+Create characteristic tables by feature band with count, event count, event rate, confidence interval, missingness and time/segment split. Investigate direction; do not force monotonicity because the feature name sounds risky.
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+### 6. Evidence pack
 
-### 5. Extend and document
-
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+Submit formulas, hand calculation, scratch code, unit tests, library diff, output table, characteristic analysis, point-in-time proof, limitations and prohibited-use statement. These features support a model; they are not policy rules by themselves.

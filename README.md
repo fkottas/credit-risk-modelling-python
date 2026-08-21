@@ -19,9 +19,11 @@ The examples deliberately distinguish:
 - a reproducible synthetic dataset from a redistributed third-party dataset;
 - agent assistance from autonomous authority.
 
+The teaching sequence is also deliberate. Each substantial method is introduced as intuition and mathematics, implemented in transparent scratch Python, checked against hand calculations and edge cases, and only then promoted into `src/creditriskbook/`. Later chapters import the tested library. The package therefore emerges from the course; it is not a black box presented before the student sees the calculation.
+
 ## Dataset switching
 
-Students are not locked into one dataset. A common interface supports six primary PD/public modes:
+Students are not locked into one dataset. A common interface supports seven primary PD/public modes:
 
 1. `synthetic_retail` - generated entirely by this repository and safe for unrestricted exercises;
 2. `uci_south_german` - a corrected, small CC BY 4.0 benchmark;
@@ -29,9 +31,11 @@ Students are not locked into one dataset. A common interface supports six primar
 4. `uci_credit_approval` - an anonymised CC BY 4.0 approval case used only for missing-data and decision-pipeline labs;
 5. `uci_polish_bankruptcy` - a CC BY 4.0 low-event corporate-failure case;
 6. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
-6. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
+7. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
 
-Five original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
+Six original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
+
+- `synthetic_behavioral_history` for applications, contracts, monthly DPD/payment histories and bureau enquiries;
 
 - `synthetic_revolving` for CCF and EAD;
 - `synthetic_recovery` for workout LGD and cure;
@@ -82,6 +86,8 @@ tests/                   deterministic unit and integration tests
 ```
 
 The earlier top-level utilities in `src/*.py`, dataset generators in `data/generators/`, configuration, and notebooks remain available. They are preserved during the migration to the tested package structure and will be reviewed and integrated case by case rather than deleted.
+
+The behavioural build is available in `creditriskbook.data.behavioral`, auditable cleaning and quarantine in `creditriskbook.data.cleaning`, and point-in-time features in `creditriskbook.features.behavioral`. The feature library includes `max_dpd`, `last_dpd`, DPD threshold counts, recency, persistence, utilisation and payment trends, over-limit months, active balances, bureau enquiries, and `count_contracts_last_6m` (business name `CountContractsLast6Months`).
 
 See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) and [`book/structure.json`](book/structure.json) for the complete 72-chapter structure.
 

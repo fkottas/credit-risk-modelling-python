@@ -7,8 +7,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.patches import FancyBboxPatch
 
-from creditriskbook.data import load_case_dataset, load_dataset
+from creditriskbook.data import load_case_dataset, load_dataset, make_behavioral_credit_history
 from creditriskbook.ifrs9 import constant_hazard_curve
 from creditriskbook.irb import irb_capital
 
@@ -204,7 +205,118 @@ def main() -> None:
         "Governed agent: evidence, proposal, gate, and human authority", color=NAVY, weight="bold"
     )
     save(fig, "part-12-agent-governance.png")
-    print(f"Generated 12 original figures in {OUT}")
+
+    behavioural = make_behavioral_credit_history(n_customers=300, months=18, seed=920)
+    fig, ax = plt.subplots(figsize=(8.0, 4.4))
+    ax.axis("off")
+    boxes = [
+        (0.05, 0.64, "Application\n1 row / decision"),
+        (0.39, 0.64, "Contract\n1 row / facility"),
+        (0.70, 0.64, "Monthly history\n1 row / facility-month"),
+        (0.39, 0.18, "Bureau enquiry\n1 row / event"),
+    ]
+    for x, y, label in boxes:
+        ax.add_patch(
+            plt.Rectangle((x, y), 0.25, 0.18, facecolor="#EEF3F7", edgecolor=BLUE, linewidth=1.6)
+        )
+        ax.text(x + 0.125, y + 0.09, label, ha="center", va="center", color=NAVY, weight="bold")
+    for start, end in [
+        ((0.30, 0.73), (0.39, 0.73)),
+        ((0.64, 0.73), (0.70, 0.73)),
+        ((0.175, 0.64), (0.48, 0.36)),
+    ]:
+        ax.annotate(
+            "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
+        )
+    ax.set_title(
+        "Relational credit data: keys and units come before features", color=NAVY, weight="bold"
+    )
+    save(fig, "data-relational-architecture.png")
+
+    selected = behavioural.applications.iloc[0]
+    customer_id = selected["customer_id"]
+    history = behavioural.monthly_performance.loc[
+        behavioural.monthly_performance["customer_id"] == customer_id
+    ]
+    monthly = history.groupby("snapshot_date", as_index=False).agg(dpd=("dpd", "max"))
+    reference = pd.Timestamp(selected["reference_date"])
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.step(monthly["snapshot_date"], monthly["dpd"], where="mid", color=BLUE, linewidth=2.2)
+    ax.axvspan(
+        reference - pd.DateOffset(months=6),
+        reference,
+        color=GOLD,
+        alpha=0.16,
+        label="six-month window",
+    )
+    ax.axvline(reference, color=NAVY, linestyle="--", label="reference date")
+    ax.axhline(30, color=GREY, linestyle=":", label="30 DPD threshold")
+    ax.set(
+        title="DPD path becomes max, last, count and recency features",
+        xlabel="snapshot date",
+        ylabel="days past due",
+    )
+    ax.legend(frameon=False, ncol=2)
+    save(fig, "behavioral-dpd-window.png")
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.axis("off")
+    steps = [
+        (0.03, "Preserve\nraw row"),
+        (0.27, "Apply\nrule"),
+        (0.51, "Record\nissue"),
+        (0.75, "Clean or\nquarantine"),
+    ]
+    for x, label in steps:
+        ax.add_patch(
+            FancyBboxPatch(
+                (x, 0.42),
+                0.18,
+                0.22,
+                boxstyle="round,pad=0.02",
+                facecolor="#EEF3F7",
+                edgecolor=BLUE,
+                linewidth=1.6,
+            )
+        )
+        ax.text(x + 0.09, 0.53, label, ha="center", va="center", color=NAVY, weight="bold")
+    for x in (0.21, 0.45, 0.69):
+        ax.annotate(
+            "",
+            xy=(x + 0.06, 0.53),
+            xytext=(x, 0.53),
+            arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2},
+        )
+    ax.text(
+        0.50,
+        0.20,
+        "No silent imputation, capping or overwriting",
+        ha="center",
+        color="#A33",
+        weight="bold",
+    )
+    ax.set_title(
+        "Auditable cleaning is a controlled disposition process", color=NAVY, weight="bold"
+    )
+    save(fig, "data-cleaning-quarantine-flow.png")
+
+    contracts = behavioural.contracts.loc[
+        behavioural.contracts["customer_id"] == customer_id
+    ].sort_values("open_date")
+    fig, ax = plt.subplots(figsize=(8.0, 4.0))
+    y = np.arange(len(contracts))
+    ax.scatter(contracts["open_date"], y, s=70, color=BLUE)
+    ax.axvspan(reference - pd.DateOffset(months=6), reference, color=GOLD, alpha=0.18)
+    ax.axvline(reference, color=NAVY, linestyle="--")
+    ax.set_yticks(y, contracts["contract_id"].str[-2:])
+    ax.set(
+        title="Contract openings inside the six-month lookback",
+        xlabel="open date",
+        ylabel="contract suffix",
+    )
+    save(fig, "behavioral-contract-window.png")
+
+    print(f"Generated 16 original figures in {OUT}")
 
 
 if __name__ == "__main__":

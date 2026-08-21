@@ -41,10 +41,22 @@ def make_synthetic_retail_portfolio(n_rows: int = 5_000, seed: int = 42) -> pd.D
     utilisation = np.clip(rng.beta(2.0, 2.6, n_rows), 0.0, 1.0)
     credit_history_years = np.minimum(rng.gamma(2.4, 3.2, n_rows), np.maximum(age - 18, 0))
     enquiries_6m = np.clip(rng.poisson(1.4, n_rows), 0, 12)
-    loan_amount = np.clip(rng.lognormal(np.log(8_000), 0.65, n_rows), 500, 80_000)
-    term_months = rng.choice(
-        [6, 12, 24, 36, 48, 60], n_rows, p=[0.05, 0.16, 0.18, 0.31, 0.10, 0.20]
+    # ``loan_amount`` is the requested amount for instalment products and requested
+    # facility limit for cards.  Product-specific supports prevent impossible BNPL sizes
+    # and meaningless six-month revolving-card maturities.
+    loan_amount = np.empty(n_rows)
+    term_months = np.empty(n_rows, dtype=int)
+    personal = product == "personal_loan"
+    cards = product == "credit_card"
+    bnpl = product == "bnpl"
+    loan_amount[personal] = np.clip(
+        rng.lognormal(np.log(11_000), 0.62, personal.sum()), 1_000, 80_000
     )
+    loan_amount[cards] = np.clip(rng.lognormal(np.log(6_000), 0.55, cards.sum()), 500, 35_000)
+    loan_amount[bnpl] = np.clip(rng.lognormal(np.log(650), 0.65, bnpl.sum()), 50, 4_000)
+    term_months[personal] = rng.choice([12, 24, 36, 48, 60], personal.sum())
+    term_months[cards] = 120  # modelling horizon proxy for an open-ended facility
+    term_months[bnpl] = rng.choice([3, 4, 6, 12], bnpl.sum(), p=[0.25, 0.25, 0.40, 0.10])
 
     year_fraction = (
         application_date.year.to_numpy() - 2018
@@ -55,17 +67,17 @@ def make_synthetic_retail_portfolio(n_rows: int = 5_000, seed: int = 42) -> pd.D
     )
 
     risk_logit = (
-        -4.25
-        + 1.70 * debt_to_income
-        + 1.55 * utilisation
-        + 0.16 * enquiries_6m
+        -4.80
+        + 2.60 * debt_to_income
+        + 2.40 * utilisation
+        + 0.22 * enquiries_6m
         - 0.035 * employment_years
         - 0.22 * np.log(income / 30_000)
         + 0.16 * (macro_unemployment - 5.0)
         + 0.38 * (product == "bnpl")
         + 0.22 * (home_ownership == "rent")
         + 0.15 * (purpose == "debt_consolidation")
-        + rng.normal(0, 0.22, n_rows)
+        + rng.normal(0, 0.10, n_rows)
     )
     true_pd = np.clip(_sigmoid(risk_logit), 0.002, 0.80)
     default_12m = rng.binomial(1, true_pd)

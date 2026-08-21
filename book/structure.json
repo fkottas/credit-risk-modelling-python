@@ -45,10 +45,10 @@
       "chapters": [
         {"number": 19, "title": "Internal, Bureau, Alternative, Public, and Synthetic Data", "code": "creditriskbook.data", "dataset": "dataset_registry"},
         {"number": 20, "title": "Data Licences, Attribution, Privacy, and Reproducibility", "code": "creditriskbook.data.datasets", "dataset": "uci_south_german"},
-        {"number": 21, "title": "Data Contracts, Lineage, and Point-in-Time Joins", "code": "creditriskbook.data.quality", "dataset": "synthetic_retail"},
-        {"number": 22, "title": "Sampling, Observation Windows, and Target Construction", "code": "creditriskbook.models", "dataset": "uci_taiwan_credit_card"},
-        {"number": 23, "title": "Data Quality Dimensions, Rules, and Quarantine", "code": "creditriskbook.data.quality", "dataset": "synthetic_retail"},
-        {"number": 24, "title": "Missingness, Outliers, Leakage, and Selection Bias", "code": "creditriskbook.data.quality", "dataset": "uci_credit_approval"}
+        {"number": 21, "title": "Relational Credit Data, Lineage, and Point-in-Time Joins", "code": "creditriskbook.data.behavioral", "dataset": "synthetic_behavioral_history"},
+        {"number": 22, "title": "Observation Windows, Targets, and Leakage-Safe Samples", "code": "creditriskbook.data.behavioral", "dataset": "synthetic_behavioral_history"},
+        {"number": 23, "title": "Data Profiling, Reconciliation, Cleaning, and Quarantine", "code": "creditriskbook.data.cleaning", "dataset": "synthetic_behavioral_history"},
+        {"number": 24, "title": "Behavioural and Bureau Feature Engineering", "code": "creditriskbook.features.behavioral", "dataset": "synthetic_behavioral_history"}
       ]
     },
     {

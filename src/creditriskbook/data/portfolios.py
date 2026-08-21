@@ -58,13 +58,14 @@ def make_revolving_facilities(n_facilities: int = 2_000, seed: int = 42) -> Case
     )
     default = rng.binomial(1, pd_12m)
     draw_propensity = np.clip(
-        0.15 + 0.65 * utilisation + rng.normal(0, 0.15, n_facilities), -0.3, 1.4
+        0.15 + 0.65 * utilisation + rng.normal(0, 0.15, n_facilities), 0.0, 1.0
     )
     ead_default = np.where(
         default == 1,
         drawn + (limit - drawn) * draw_propensity,
         drawn,
     )
+    ead_default = np.clip(ead_default, drawn, limit)
     frame = pd.DataFrame(
         {
             "facility_id": [f"REV-{seed:04d}-{i:06d}" for i in range(n_facilities)],
@@ -101,6 +102,7 @@ def make_recovery_ledger(n_defaults: int = 600, seed: int = 42) -> CaseDataset:
         total_recovery = ead * recovery_rate
         cashflow_count = int(rng.integers(1, 6))
         shares = rng.dirichlet(np.ones(cashflow_count))
+        workout_closed = bool(rng.random() >= 0.20)
         for cashflow, share in enumerate(shares, start=1):
             delay_days = int(60 + cashflow * rng.integers(90, 300))
             recovery = total_recovery * share
@@ -114,7 +116,7 @@ def make_recovery_ledger(n_defaults: int = 600, seed: int = 42) -> CaseDataset:
                     "ead_at_default": round(ead, 2),
                     "effective_interest_rate": round(eir, 6),
                     "secured_flag": secured,
-                    "workout_closed_flag": cashflow == cashflow_count,
+                    "workout_closed_flag": workout_closed and cashflow == cashflow_count,
                 }
             )
     return _bundle(
@@ -141,10 +143,13 @@ def make_ifrs9_schedule(
         pd_12m = float(np.clip(rng.lognormal(np.log(0.025), 0.9), 0.001, 0.65))
         if stage == 2:
             pd_12m = min(pd_12m * 2.2, 0.85)
+        elif stage == 3:
+            pd_12m = 0.999
         exposure = float(np.clip(rng.lognormal(np.log(20_000), 0.8), 500, 500_000))
         lgd = float(np.clip(rng.beta(3.2, 4.5), 0.05, 0.95))
         eir = float(np.clip(rng.normal(0.065, 0.02), 0.005, 0.25))
         curve = constant_hazard_curve(pd_12m, periods).reshape(-1)
+        segment = str(rng.choice(["prime", "subprime", "thin_file"], p=[0.55, 0.30, 0.15]))
         for period, marginal in enumerate(curve, start=1):
             rows.append(
                 {
@@ -155,7 +160,7 @@ def make_ifrs9_schedule(
                     "lgd": round(lgd, 6),
                     "ead": round(max(exposure * (1 - (period - 1) / (periods + 6)), 0), 2),
                     "effective_interest_rate": round(eir, 6),
-                    "segment": rng.choice(["prime", "subprime", "thin_file"]),
+                    "segment": segment,
                 }
             )
     return _bundle(
@@ -210,6 +215,8 @@ def make_counterparty_profiles(n_netting_sets: int = 120, seed: int = 42) -> Cas
         peak = float(rng.lognormal(np.log(2_000_000), 1.0))
         maturity = float(rng.uniform(1, 5))
         collateral = float(peak * rng.uniform(0, 0.65))
+        counterparty_pd = float(rng.uniform(0.001, 0.08))
+        counterparty_lgd = float(rng.uniform(0.35, 0.65))
         for horizon in horizons[horizons <= maturity]:
             profile = peak * (horizon / max(maturity, 0.25)) * np.exp(-1.5 * horizon / maturity)
             rows.append(
@@ -219,8 +226,8 @@ def make_counterparty_profiles(n_netting_sets: int = 120, seed: int = 42) -> Cas
                     "expected_exposure": round(max(profile * 0.65 - collateral, 0), 2),
                     "pfe_975": round(max(profile - collateral, 0), 2),
                     "collateral": round(collateral, 2),
-                    "counterparty_pd": round(float(rng.uniform(0.001, 0.08)), 6),
-                    "counterparty_lgd": round(float(rng.uniform(0.35, 0.65)), 6),
+                    "counterparty_pd": round(counterparty_pd, 6),
+                    "counterparty_lgd": round(counterparty_lgd, 6),
                 }
             )
     return _bundle(

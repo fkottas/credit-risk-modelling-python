@@ -24,6 +24,7 @@ MANUSCRIPT = ROOT / "book" / "full_manuscript"
 STRUCTURE = ROOT / "book" / "structure.json"
 GUIDED_LABS = ROOT / "book" / "guided_labs"
 FIGURES = ROOT / "book" / "figures"
+PAGE_MAP = ROOT / "book" / "page_map.json"
 BLUE, DARK_BLUE, INK = "2E74B5", "1F4D78", "203748"
 SUBTITLE, GOLD, MUTED = "2B5163", "8B6F28", "667788"
 TABLE_FILL, LIGHT_FILL, CALLOUT_FILL = "E8EEF5", "F2F4F7", "F4F6F9"
@@ -118,6 +119,36 @@ def add_hyperlink(paragraph, text: str, url: str) -> None:
     paragraph._p.append(hyperlink)
 
 
+def add_internal_hyperlink(paragraph, text: str, anchor: str) -> None:
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("w:anchor"), anchor)
+    hyperlink.set(qn("w:history"), "1")
+    run = OxmlElement("w:r")
+    properties = OxmlElement("w:rPr")
+    color = OxmlElement("w:color")
+    color.set(qn("w:val"), DARK_BLUE)
+    underline = OxmlElement("w:u")
+    underline.set(qn("w:val"), "single")
+    size = OxmlElement("w:sz")
+    size.set(qn("w:val"), "17")
+    properties.extend([color, underline, size])
+    text_node = OxmlElement("w:t")
+    text_node.text = text
+    run.extend([properties, text_node])
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+
+
+def add_bookmark(paragraph, name: str, bookmark_id: int) -> None:
+    start = OxmlElement("w:bookmarkStart")
+    start.set(qn("w:id"), str(bookmark_id))
+    start.set(qn("w:name"), name)
+    end = OxmlElement("w:bookmarkEnd")
+    end.set(qn("w:id"), str(bookmark_id))
+    paragraph._p.insert(0, start)
+    paragraph._p.append(end)
+
+
 INLINE = re.compile(r"(\$[^$\n]+\$|\*\*.*?\*\*|\*[^*]+\*|`.*?`|https?://[^\s)]+[\w/#])")
 
 
@@ -128,7 +159,7 @@ def add_inline(paragraph, text: str, *, size: float | None = None) -> None:
             set_run_font(paragraph.add_run(text[position : match.start()]), size=size)
         token = match.group(0)
         if token.startswith("$"):
-            add_math(paragraph, token[1:-1], is_italic=False)
+            add_math(paragraph, token[1:-1].replace(r"\sum", r"\Sigma"), is_italic=False)
         elif token.startswith("**"):
             set_run_font(paragraph.add_run(token[2:-2]), size=size, bold=True)
         elif token.startswith("*"):
@@ -273,96 +304,145 @@ def configure_page(doc: Document) -> None:
 
 
 def add_cover(doc: Document) -> None:
-    doc.add_paragraph().paragraph_format.space_after = Pt(28)
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
     kicker = doc.add_paragraph()
-    kicker.alignment, kicker.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(18)
-    set_run_font(kicker.add_run("APPLIED CREDIT RISK AND AI"), size=10.5, color=GOLD, bold=True)
+    kicker.alignment, kicker.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(3)
+    set_run_font(
+        kicker.add_run("AN ANALYTICAL AND APPLIED TEACHING EDITION"),
+        size=8.5,
+        color=GOLD,
+        bold=True,
+    )
     title = doc.add_paragraph()
-    title.alignment, title.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(8)
-    set_run_font(title.add_run("Intelligent Credit Risk"), size=30, color=INK, bold=True)
+    title.alignment, title.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(1)
+    set_run_font(title.add_run("Intelligent Credit Risk"), size=23, color=INK, bold=True)
     second_title = doc.add_paragraph()
     second_title.alignment, second_title.paragraph_format.space_after = (
         WD_ALIGN_PARAGRAPH.CENTER,
-        Pt(8),
+        Pt(2),
     )
-    set_run_font(second_title.add_run("Modeling with Python"), size=30, color=INK, bold=True)
-    for text in (
-        "From Data Quality and Scorecards to IFRS 9, Basel IRB,",
-        "Deployment, and Governed Agentic AI",
-    ):
-        paragraph = doc.add_paragraph()
-        paragraph.alignment, paragraph.paragraph_format.space_after = (
-            WD_ALIGN_PARAGRAPH.CENTER,
-            Pt(2),
-        )
-        set_run_font(paragraph.add_run(text), size=15, color=SUBTITLE)
+    set_run_font(second_title.add_run("Modeling with Python"), size=23, color=INK, bold=True)
+    author = doc.add_paragraph()
+    author.alignment, author.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(2)
+    set_run_font(
+        author.add_run("Dr. Ferdinantos Kottas  •  August 2026"),
+        size=10.5,
+        color=SUBTITLE,
+        bold=True,
+    )
     cover_art = FIGURES / "cover-intelligent-credit-risk.png"
     if cover_art.exists():
         picture = doc.add_paragraph()
         picture.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        picture.paragraph_format.space_before = Pt(8)
-        picture.paragraph_format.space_after = Pt(8)
-        picture.add_run().add_picture(str(cover_art), width=Inches(3.35))
-    strapline = doc.add_paragraph()
-    strapline.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    strapline.paragraph_format.space_before, strapline.paragraph_format.space_after = Pt(4), Pt(18)
-    set_run_font(
-        strapline.add_run("Seventy-two analytical chapters with tested Python"),
-        size=10.5,
-        color=GOLD,
-        italic=True,
-    )
-    author = doc.add_paragraph()
-    author.alignment, author.paragraph_format.space_after = WD_ALIGN_PARAGRAPH.CENTER, Pt(4)
-    set_run_font(author.add_run("Dr. Ferdinantos Kottas"), size=13, color=INK, bold=True)
-    edition = doc.add_paragraph()
-    edition.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    set_run_font(
-        edition.add_run("First-edition review manuscript  •  August 2026"), size=10.5, color=MUTED
-    )
+        picture.paragraph_format.space_before = Pt(1)
+        picture.paragraph_format.space_after = Pt(0)
+        picture.add_run().add_picture(str(cover_art), width=Inches(5.20))
     doc.add_page_break()
 
 
 def add_toc(doc: Document) -> None:
     title = doc.add_paragraph("Contents", style="Heading 1")
     title.paragraph_format.page_break_before = False
-    structure = json.loads(STRUCTURE.read_text(encoding="utf-8"))
-    entries = []
-    roman = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
-    for index, part in enumerate(structure["parts"]):
-        entries.append((f"PART {roman[index]}", part["title"]))
-        entries.extend(
-            (f"Chapter {chapter['number']}", chapter["title"]) for chapter in part["chapters"]
-        )
-    entries.extend(
-        [
-            ("Appendices", "APIs, policies, templates, legal data catalogue and references"),
-            ("Casebook", "Seventy-two worked assignments and evidence requirements"),
-            ("Workbook", "Twelve end-to-end Python implementation workshops"),
-            ("Numerical", "Twelve hand-auditable calculation examples"),
-            ("Policies", "Sixteen data, model, accounting, capital, and AI policies"),
-            ("Review", "Seventy-two viva questions with instructor notes"),
-            ("Glossary", "Technical terms and control-language reference"),
-        ]
+    note = doc.add_paragraph()
+    note.paragraph_format.space_after = Pt(8)
+    set_run_font(
+        note.add_run("Page numbers and chapter links are generated from the document headings."),
+        size=9.5,
+        color=MUTED,
+        italic=True,
     )
-    table = doc.add_table(rows=len(entries), cols=2)
-    table_geometry(table, [1650, 7710], indent_dxa=0)
-    for row, (label, item) in zip(table.rows, entries, strict=False):
-        is_part = label.startswith("PART")
-        for index, (cell, value) in enumerate(zip(row.cells, (label, item), strict=False)):
-            set_cell_width(cell, (1650, 7710)[index])
-            set_cell_margins(cell, top=45, start=40, bottom=45, end=80)
-            paragraph = cell.paragraphs[0]
-            paragraph.paragraph_format.space_after = Pt(0)
-            set_run_font(
-                paragraph.add_run(value),
-                size=9.5,
-                color=GOLD if is_part else (DARK_BLUE if index == 0 else "1F2933"),
-                bold=is_part or index == 0,
+    structure = json.loads(STRUCTURE.read_text(encoding="utf-8"))
+    page_map = json.loads(PAGE_MAP.read_text(encoding="utf-8")) if PAGE_MAP.exists() else {}
+    roman = ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII")
+    entries: list[tuple[str, str, str, str | None, bool]] = []
+    for index, part in enumerate(structure["parts"]):
+        first_chapter = part["chapters"][0]["number"]
+        entries.append(
+            (
+                f"PART {roman[index]}",
+                part["title"],
+                str(page_map.get(f"Chapter {first_chapter}", "")),
+                f"chapter_{first_chapter:03d}",
+                True,
             )
+        )
+        for chapter in part["chapters"]:
+            number = chapter["number"]
+            entries.append(
+                (
+                    f"Chapter {number}",
+                    chapter["title"],
+                    str(page_map.get(f"Chapter {number}", "")),
+                    f"chapter_{number:03d}",
+                    False,
+                )
+            )
+    for label, title_text, heading in (
+        (
+            "Appendices",
+            "APIs, policies, templates, legal data catalogue and references",
+            "Appendices",
+        ),
+        (
+            "Casebook",
+            "Seventy-two worked assignments and evidence requirements",
+            "Practice Casebook — Seventy-Two Worked Assignments",
+        ),
+        (
+            "Workbook",
+            "Twelve end-to-end Python implementation workshops",
+            "Technical Workbook — End-to-End Python Patterns",
+        ),
+        (
+            "Numerical",
+            "Twelve hand-auditable calculation examples",
+            "Numerical Examples — Calculation, Interpretation, and Audit",
+        ),
+        (
+            "Policies",
+            "Sixteen data, model, accounting, capital and AI policies",
+            "Credit Risk Policy Playbook",
+        ),
+        (
+            "Review",
+            "Seventy-two viva questions with instructor notes",
+            "Review and Viva Questions with Instructor Notes",
+        ),
+        (
+            "Glossary",
+            "Technical terms and control-language reference",
+            "Technical and Governance Glossary",
+        ),
+    ):
+        anchor = re.sub(r"[^a-z0-9]+", "_", heading.lower()).strip("_")
+        entries.append(
+            (label, title_text, str(page_map.get(heading, "")), f"section_{anchor}", False)
+        )
+
+    table = doc.add_table(rows=len(entries), cols=3)
+    table_geometry(table, [1450, 7150, 760], indent_dxa=0)
+    set_table_borders(table, color="D7E0E8", size=2)
+    for row, (label, item, page, anchor, is_part) in zip(table.rows, entries, strict=False):
+        for column, cell in enumerate(row.cells):
+            set_cell_width(cell, (1450, 7150, 760)[column])
+            set_cell_margins(cell, top=20, start=35, bottom=20, end=45)
+            cell.paragraphs[0].paragraph_format.space_after = Pt(0)
+            cell.paragraphs[0].paragraph_format.line_spacing = 1.0
+        set_run_font(
+            row.cells[0].paragraphs[0].add_run(label),
+            size=8.5,
+            color=GOLD if is_part else DARK_BLUE,
+            bold=True,
+        )
+        if anchor:
+            add_internal_hyperlink(row.cells[1].paragraphs[0], item, anchor)
+        else:
+            set_run_font(row.cells[1].paragraphs[0].add_run(item), size=8.5)
+        row.cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        set_run_font(row.cells[2].paragraphs[0].add_run(page), size=8.5, color=MUTED)
         if is_part:
-            set_cell_shading(row.cells[0], CALLOUT_FILL)
-            set_cell_shading(row.cells[1], CALLOUT_FILL)
+            for cell in row.cells:
+                set_cell_shading(cell, CALLOUT_FILL)
     doc.add_page_break()
 
 
@@ -554,7 +634,8 @@ def add_equation(doc: Document, value: str) -> None:
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.space_before = Pt(4)
     paragraph.paragraph_format.space_after = Pt(8)
-    add_math(paragraph, " ".join(line.strip() for line in value.splitlines()), is_italic=False)
+    equation = " ".join(line.strip() for line in value.splitlines()).replace(r"\sum", r"\Sigma")
+    add_math(paragraph, equation, is_italic=False)
 
 
 def markdown_blocks(text: str):
@@ -671,6 +752,10 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
     previous_kind = None
     current_decimal_num = decimal_num
     current_chapter: int | None = None
+    render_chapter: int | None = None
+    section_number = 0
+    subsection_number = 0
+    bookmark_id = 1
     for file_index, path in enumerate(sorted(MANUSCRIPT.glob("*.md"))):
         content = path.read_text(encoding="utf-8")
         if path.name == "00_front_matter.md":
@@ -690,15 +775,48 @@ def add_manuscript(doc: Document, bullet_num: int, decimal_num: int) -> None:
         for kind, value in expanded_blocks:
             if kind == "h1":
                 match = re.match(r"Chapter (\d+)\b", value)
+                render_chapter = int(match.group(1)) if match else None
+                section_number = 0
+                subsection_number = 0
                 if match and int(match.group(1)) in parts:
                     add_part_page(doc, *parts[int(match.group(1))])
                 paragraph = doc.add_paragraph(value, style="Heading 1")
+                if match:
+                    add_bookmark(paragraph, f"chapter_{int(match.group(1)):03d}", bookmark_id)
+                    bookmark_id += 1
+                elif value in {
+                    "Appendices",
+                    "Practice Casebook — Seventy-Two Worked Assignments",
+                    "Technical Workbook — End-to-End Python Patterns",
+                    "Numerical Examples — Calculation, Interpretation, and Audit",
+                    "Credit Risk Policy Playbook",
+                    "Review and Viva Questions with Instructor Notes",
+                    "Technical and Governance Glossary",
+                }:
+                    anchor = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+                    add_bookmark(paragraph, f"section_{anchor}", bookmark_id)
+                    bookmark_id += 1
                 if file_index == 0:
                     paragraph.paragraph_format.page_break_before = False
             elif kind == "h2":
-                doc.add_paragraph(value, style="Heading 2")
+                section_number += 1
+                subsection_number = 0
+                heading_text = re.sub(r"^\d+\.\s+", "", value)
+                label = (
+                    f"{render_chapter}.{section_number} {heading_text}"
+                    if render_chapter
+                    else heading_text
+                )
+                doc.add_paragraph(label, style="Heading 2")
             elif kind == "h3":
-                doc.add_paragraph(value, style="Heading 3")
+                subsection_number += 1
+                heading_text = re.sub(r"^\d+\.\s+", "", value)
+                label = (
+                    f"{render_chapter}.{section_number}.{subsection_number} {heading_text}"
+                    if render_chapter
+                    else heading_text
+                )
+                doc.add_paragraph(label, style="Heading 3")
             elif kind == "paragraph":
                 paragraph = doc.add_paragraph()
                 if value.startswith("[R"):
