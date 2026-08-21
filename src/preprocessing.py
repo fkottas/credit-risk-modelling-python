@@ -2,7 +2,6 @@
 Basic preprocessing utilities for credit risk modelling.
 """
 
-import numpy as np
 import pandas as pd
 
 
@@ -12,13 +11,11 @@ def identify_variable_types(df, target=None):
     """
     exclude = [target] if target else []
 
-    numerical = [
-        col for col in df.select_dtypes(include=["number"]).columns
-        if col not in exclude
-    ]
+    numerical = [col for col in df.select_dtypes(include=["number"]).columns if col not in exclude]
 
     categorical = [
-        col for col in df.select_dtypes(include=["object", "category", "bool"]).columns
+        col
+        for col in df.select_dtypes(include=["object", "category", "bool"]).columns
         if col not in exclude
     ]
 
@@ -29,10 +26,7 @@ def missing_value_report(df):
     """
     Create missing value summary.
     """
-    report = pd.DataFrame({
-        "missing_count": df.isna().sum(),
-        "missing_rate": df.isna().mean()
-    })
+    report = pd.DataFrame({"missing_count": df.isna().sum(), "missing_rate": df.isna().mean()})
 
     return report.sort_values("missing_rate", ascending=False)
 

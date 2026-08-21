@@ -4,7 +4,7 @@ Model evaluation metrics for credit risk modelling.
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score, confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_auc_score
 
 
 def gini_score(y_true, y_score):
@@ -19,10 +19,9 @@ def ks_statistic(y_true, y_score):
     """
     Kolmogorov-Smirnov statistic for binary classification.
     """
-    data = pd.DataFrame({
-        "y_true": y_true,
-        "y_score": y_score
-    }).sort_values("y_score", ascending=False)
+    data = pd.DataFrame({"y_true": y_true, "y_score": y_score}).sort_values(
+        "y_score", ascending=False
+    )
 
     data["cum_bad"] = (data["y_true"] == 1).cumsum() / (data["y_true"] == 1).sum()
     data["cum_good"] = (data["y_true"] == 0).cumsum() / (data["y_true"] == 0).sum()

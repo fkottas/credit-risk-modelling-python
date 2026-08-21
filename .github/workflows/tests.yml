@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main, "agent/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[book]"
+      - run: python -m unittest discover -s tests -v
+      - run: python tools/validate_notebooks.py
+      - run: python tools/validate_manuscript.py
+      - run: python tools/audit_pedagogy.py
+
+  quality-and-xgboost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev,ml,book]"
+      - run: python -m ruff check .
+      - run: python -m ruff format --check src tests tools examples
+      - run: python tools/validate_notebooks.py
+      - run: python tools/validate_manuscript.py
+      - run: python tools/audit_pedagogy.py
+      - run: python examples/document_underwriting_agent.py
+      - run: python tools/build_book_docx.py --output /tmp/intelligent-credit-risk-review.docx

@@ -1,0 +1,440 @@
+registry_version: 2
+last_reviewed: 2026-08-21
+policy: >-
+  A dataset may be used only after provenance, licence, access conditions,
+  redistribution, attribution, and material limitations have been recorded.
+
+datasets:
+  synthetic_retail:
+    title: CreditRiskBook Synthetic Retail Portfolio
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally; do not confuse with observed customer data
+    status: approved
+    cases: [data_quality, pd, lgd, ead, ifrs9, deployment, monitoring, agentic_ai]
+    limitations: Synthetic relationships are pedagogical and do not represent a real portfolio.
+
+  synthetic_revolving:
+    title: CreditRiskBook Synthetic Revolving Facilities
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [ead, ccf, utilisation, credit_limits, monitoring]
+    limitations: Synthetic drawdowns are simplified and do not reproduce a real revolving portfolio.
+
+  synthetic_behavioral_history:
+    title: CreditRiskBook Synthetic Behavioural and Bureau History
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated relational synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally; no original customer record is used
+    status: approved
+    cases: [relational_data, point_in_time_joins, data_cleaning, dpd_features, utilisation, payment_behaviour, bureau_features, target_construction]
+    limitations: >-
+      Original synthetic relationships are deliberately simplified and are not calibrated to a
+      lender, protected group, legal jurisdiction, default policy, product economics or macro regime.
+      They demonstrate mechanics and expected directions, not empirical performance.
+
+  synthetic_recovery:
+    title: CreditRiskBook Synthetic Recovery Cash-Flow Ledger
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [workout_lgd, discounting, cures, recovery_timing, incomplete_workouts]
+    limitations: Synthetic recoveries omit legal, collateral, guarantee and operational complexities.
+
+  synthetic_ifrs9_schedule:
+    title: CreditRiskBook Synthetic IFRS 9 Projection Schedule
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [staging, lifetime_pd, scenarios, ecl, overlays, reconciliation]
+    limitations: Pedagogical schedules omit product-specific contractual cash-flow mechanics.
+
+  synthetic_corporate_irb:
+    title: CreditRiskBook Synthetic Corporate IRB Portfolio
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [irb_pd, irb_lgd, maturity, sme_correlation, rwa, concentration]
+    limitations: Synthetic parameters are not approved regulatory estimates and omit facility hierarchy.
+
+  synthetic_counterparty_profiles:
+    title: CreditRiskBook Synthetic Counterparty Exposure Profiles
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [counterparty_risk, netting, collateral, pfe, cva]
+    limitations: Profiles are stylised and are not market-calibrated derivative simulations.
+
+  synthetic_credit_documents:
+    title: CreditRiskBook Synthetic Credit Application Document Packets
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic text and structured data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally; contains no real applicant or copied document text
+    status: approved
+    cases: [nlp, document_extraction, chunking, retrieval, structured_llm_output, agentic_underwriting, prompt_injection]
+    limitations: >-
+      Documents are deliberately simple and cannot reproduce handwriting, OCR, multilingual,
+      forgery, privacy, legal-form, cultural or underwriting complexity in real submissions.
+
+  synthetic_fraud_transactions:
+    title: CreditRiskBook Synthetic Fraud and Payment Transactions
+    publisher: Ferdinantos Kottas / project-generated
+    type: independently generated synthetic transaction data
+    licence: project copyright; generated outputs permitted for book exercises
+    redistribution: generated locally
+    status: approved
+    cases: [fraud_scorecard, anomaly_detection, class_imbalance, transaction_monitoring, graph_features]
+    limitations: >-
+      Synthetic fraud mechanisms demonstrate pipelines and controls; they do not represent a
+      payment network and must not be combined with default to create an undocumented target.
+
+  uci_south_german:
+    title: South German Credit
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/522/south+german+credit
+    doi: 10.24432/C5X89F
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved
+    cases: [data_quality, pd, scorecards, cost_sensitive_evaluation, fairness]
+    limitations: >-
+      Data are from 1973-1975, bad credits were oversampled, amounts were transformed,
+      and sensitive historical variables require careful fairness discussion.
+    attribution: South German Credit (2019), UCI ML Repository, DOI 10.24432/C5X89F.
+
+  uci_statlog_german:
+    title: Statlog (German Credit Data)
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data
+    doi: 10.24432/C5NC77
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved_with_warning
+    cases: [data_quality_failure, coding_errors, reproducibility, cost_sensitive_evaluation]
+    limitations: >-
+      UCI's South German Credit record reports severe coding-information errors in this older
+      version. It is not the primary benchmark and is used to teach source validation.
+    attribution: Hofmann, H. (1994), Statlog German Credit Data, UCI ML Repository, DOI 10.24432/C5NC77.
+
+  uci_taiwan_credit_card:
+    title: Default of Credit Card Clients
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients
+    doi: 10.24432/C55S3H
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved
+    cases: [behavioural_pd, calibration, machine_learning, explainability, fairness]
+    limitations: 2005 Taiwan credit-card sample; demographic fields and historical context limit generalisation.
+    attribution: Yeh, I. (2009), Default of Credit Card Clients, UCI ML Repository, DOI 10.24432/C55S3H.
+
+  uci_credit_approval:
+    title: Credit Approval
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/27/credit+approval
+    doi: 10.24432/C5FS30
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved_with_scope_limit
+    cases: [missing_data, mixed_types, pipeline_testing, approval_bias_discussion]
+    limitations: >-
+      The outcome is approval rather than default. Attribute names and values were anonymised;
+      there are no dates, economics, or protected-attribute definitions. It is not a PD dataset.
+    attribution: Quinlan, J. (1987), Credit Approval, UCI ML Repository, DOI 10.24432/C5FS30.
+
+  uci_polish_bankruptcy:
+    title: Polish Companies Bankruptcy
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/365/polish+companies+bankruptcy+data
+    doi: 10.24432/C5F600
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved
+    cases: [corporate_failure, low_default, missing_ratios, horizon_comparison, model_validation]
+    limitations: >-
+      Financial ratios came from EMIS and are provided by UCI under CC BY 4.0. The adapter uses
+      the one-year-ahead 5th-year file. Missing ratios, class imbalance, and absent entity dates
+      constrain validation; bankruptcy is not identical to bank default.
+    attribution: Tomczak, S. (2016), Polish Companies Bankruptcy, UCI ML Repository, DOI 10.24432/C5F600.
+
+  uci_taiwan_bankruptcy:
+    title: Taiwanese Bankruptcy Prediction
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/572/taiwanese+bankruptcy+prediction
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses checksum-verified download-by-code
+    status: approved
+    cases: [corporate_failure, low_event_models, machine_learning, calibration]
+    limitations: >-
+      Company data cover 1999-2009 and contain no observation-date field. Bankruptcy follows
+      Taiwanese exchange rules and must not be relabelled as regulatory default.
+    attribution: Taiwanese Bankruptcy Prediction (2020), UCI ML Repository, dataset 572.
+
+  uci_bank_marketing:
+    title: Bank Marketing
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/222/bank+marketing
+    doi: 10.24432/C5K306
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved_with_scope_limit
+    cases: [target_definition, campaign_selection, repeated_contacts, categorical_encoding, leakage_discussion]
+    limitations: >-
+      The outcome is term-deposit subscription after a marketing campaign, not credit approval,
+      default, affordability or loss. Call-duration fields can leak post-contact information.
+    attribution: Moro, Rita and Cortez (2014), Bank Marketing, UCI ML Repository, DOI 10.24432/C5K306.
+
+  kaggle_credit_risk:
+    title: Credit Risk Dataset
+    publisher: Kaggle dataset page by laotse
+    official_url: https://www.kaggle.com/datasets/laotse/credit-risk-dataset
+    licence: CC0 1.0 as displayed by Kaggle on 2026-08-02
+    licence_url: https://creativecommons.org/publicdomain/zero/1.0/
+    redistribution: not bundled; each student downloads through their own Kaggle account
+    status: approved_for_education
+    cases: [pd, missing_data, dataset_switching, model_comparison]
+    limitations: >-
+      The page describes simulated credit-bureau-style data. Kaggle metadata and provenance
+      must be rechecked before each book release. It is not evidence about a live lender.
+    attribution: Credit Risk Dataset, Kaggle, dataset owner laotse, accessed 2026-08-02.
+
+  world_bank_wdi:
+    title: World Development Indicators
+    publisher: World Bank
+    official_url: https://data.worldbank.org/
+    terms_url: https://data.worldbank.org/summary-terms-of-use
+    licence: CC BY 4.0 plus World Bank mandatory additions; indicator-level terms may vary
+    redistribution: verify and record the licence displayed for each selected indicator
+    status: conditional_per_indicator
+    cases: [ifrs9_forward_looking, stress_testing, macroeconomic_scenarios]
+    limitations: Country-level macro data require release-vintage and revision controls.
+
+  cfpb_hmda:
+    title: Home Mortgage Disclosure Act modified loan/application register
+    publisher: CFPB / FFIEC
+    official_url: https://www.consumerfinance.gov/data-research/hmda/
+    access_url: https://ffiec.cfpb.gov/data-publication/modified-lar
+    licence: United States government public data; verify current site terms and file notices
+    redistribution: do not bundle national extracts; code downloads user-selected years/geographies
+    status: approved_for_fair_lending_and_decision_analysis
+    cases: [mortgage_applications, approval_outcomes, pricing, fair_lending, geography]
+    limitations: >-
+      Public files are privacy-modified application and origination records, not loan-performance
+      or default data. They support decision and access analysis, not PD estimation.
+
+  cfpb_consumer_complaints:
+    title: Consumer Complaint Database
+    publisher: U.S. Consumer Financial Protection Bureau
+    official_url: https://www.consumerfinance.gov/data-research/consumer-complaints/
+    access_url: https://www.consumerfinance.gov/data-research/consumer-complaints/search/
+    licence: official United States government public database; review current database notice and website terms
+    redistribution: download-by-code for selected fields; do not bundle complaint narratives in the repository
+    status: approved_after_current_notice_review
+    cases: [complaint_nlp, taxonomy, retrieval, response_monitoring, document_governance, drift]
+    limitations: >-
+      Complaints are not statistically representative of all consumer experiences; narratives are
+      published only where consent and scrubbing conditions are met, may contain residual sensitive
+      content, and are not evidence for applicant creditworthiness or an automated lending decision.
+
+  sba_7a_504_foia:
+    title: SBA 7(a) and 504 FOIA Loan-Level Data
+    publisher: U.S. Small Business Administration
+    official_url: https://data.sba.gov/dataset/7a-504-foia
+    dictionary_url: https://www.sba.gov/document/support--7a-504-loan-data-dictionary
+    licence: official U.S. government open-data/FOIA release; verify current file notice and website terms
+    redistribution: prefer official download-by-code; repository does not bundle quarterly raw files
+    status: approved_after_release_notice_review
+    cases: [sme_portfolios, vintage_analysis, chargeoff_outcomes, geography, loan_program_segmentation]
+    limitations: >-
+      Program, guarantee, lender, field and outcome definitions must be mapped from the current data
+      dictionary. The release is an SBA-program population, not a universal SME underwriting sample,
+      and historical policy changes can dominate apparent model relationships.
+
+  sec_edgar_companyfacts:
+    title: SEC EDGAR Companyfacts and Submissions APIs
+    publisher: U.S. Securities and Exchange Commission
+    official_url: https://data.sec.gov/
+    documentation_url: https://www.sec.gov/search-filings/edgar-application-programming-interfaces
+    licence: public SEC API access subject to SEC privacy, security and fair-access policies
+    redistribution: cache reviewed numeric facts and metadata only; respect rate limits and filing-level rights
+    status: approved_for_api_exercises
+    cases: [corporate_ratios, filing_dates, point_in_time_fundamentals, financial_statement_nlp, distress_indicators]
+    limitations: >-
+      XBRL concepts, units, periods, amendments, entity changes and filing dates require reconciliation.
+      Public filing access does not make every exhibit or third-party document unrestricted content.
+
+  federal_reserve_scf:
+    title: Survey of Consumer Finances Public Data
+    publisher: Board of Governors of the Federal Reserve System
+    official_url: https://www.federalreserve.gov/econres/scfindex.htm
+    licence: official public-use survey data subject to Federal Reserve website and data notices
+    redistribution: prefer official download; preserve weights, replicate structure and disclosure controls
+    status: approved_for_household_finance_analysis
+    cases: [household_debt, affordability_context, segmentation, survey_weights, uncertainty]
+    limitations: >-
+      SCF is a triennial household survey, not applicant-level credit performance. The public data use
+      five publisher-created imputation implicates and survey weights; the book does not replace missing
+      values itself and must analyse the official design rather than selecting one convenient replicate.
+
+  eba_pillar3_edap:
+    title: EBA European Data Access Portal Pillar 3 Data
+    publisher: European Banking Authority
+    official_url: https://www.eba.europa.eu/regulation-and-policy/transparency-and-pillar-3
+    licence: EBA website and data-reuse terms; verify the notice attached to each release
+    redistribution: download release tables from the official portal and record taxonomy/version
+    status: conditional_per_release
+    cases: [bank_level_credit_risk, capital_ratios, asset_quality, benchmarking, stress_context]
+    limitations: >-
+      These are institution-level disclosures rather than borrower-level development data. Taxonomy,
+      consolidation perimeter and reporting-date changes require controlled mapping. The prior EU-wide
+      transparency exercise was discontinued from June 2025 in favour of Pillar 3 data access.
+
+  fannie_mae_single_family_performance:
+    title: Fannie Mae Single-Family Loan Performance Data
+    publisher: Fannie Mae
+    official_url: https://capitalmarkets.fanniemae.com/credit-risk-transfer/single-family-credit-risk-transfer/fannie-mae-single-family-loan-performance-data
+    licence: provider data terms and user acknowledgement; recheck before each download
+    redistribution: not bundled; each reader obtains files from the official provider under current terms
+    status: conditional_not_bundled
+    cases: [mortgage_vintages, monthly_performance, delinquency_transitions, prepayment, survival]
+    limitations: >-
+      Population covers loans acquired or guaranteed by Fannie Mae, fields and release vintages can
+      change, privacy transformations apply, and provider terms govern use. It is not a universal
+      mortgage population or a retail-unsecured PD dataset.
+
+  freddie_mac_single_family_loan_level:
+    title: Freddie Mac Single-Family Loan-Level Dataset
+    publisher: Freddie Mac
+    official_url: https://www.freddiemac.com/research/datasets/sf-loanlevel-dataset
+    licence: provider terms of use; recheck and record the accepted version before access
+    redistribution: not bundled; code expects a reader-supplied official download
+    status: conditional_not_bundled
+    cases: [mortgage_vintages, monthly_dpd, default, prepayment, competing_risks, stress_testing]
+    limitations: >-
+      Dataset represents Freddie Mac purchases or guarantees and has product, acquisition and
+      censoring constraints. A download entitlement is not permission to republish raw files.
+
+  fhfa_public_use_database:
+    title: FHFA Enterprise Public Use Database
+    publisher: Federal Housing Finance Agency
+    official_url: https://www.fhfa.gov/data/public-use-database-fannie-mae-and-freddie-mac
+    licence: United States government public-use data subject to the current file notice
+    redistribution: prefer download-by-code from the official release page
+    status: approved_after_release_notice_review
+    cases: [mortgage_acquisition, borrower_characteristics, product_segmentation, access_analysis]
+    limitations: Public-use fields are privacy-protected and do not provide a complete performance history.
+
+  fred_macro:
+    title: FRED macroeconomic series
+    publisher: Federal Reserve Bank of St. Louis and underlying series providers
+    official_url: https://fred.stlouisfed.org/docs/api/fred/
+    licence: series-specific; API metadata exposes copyright and citation information
+    redistribution: only series individually reviewed as public-domain or permissively licensed
+    status: conditional_per_series
+    cases: [ifrs9_forward_looking, cecl, stress_testing, scenario_design]
+    limitations: Real-time vintages, revisions, frequency alignment, and underlying-provider terms must be recorded.
+
+  home_credit_competition:
+    title: Home Credit Default Risk competition data
+    publisher: Kaggle / Home Credit
+    official_url: https://www.kaggle.com/competitions/home-credit-default-risk
+    licence: competition-specific rules
+    redistribution: prohibited by project policy unless the current rules explicitly permit it
+    status: conditional_not_bundled
+    cases: [relational_data, feature_engineering, advanced_machine_learning]
+    limitations: Student must accept current competition rules; examples cannot redistribute files.
+
+  fico_heloc_challenge:
+    title: FICO Explainable Machine Learning Challenge HELOC Data
+    publisher: FICO Community / challenge provider
+    official_url: https://community.fico.com/s/explainable-machine-learning-challenge
+    licence: challenge/source terms not sufficiently explicit for repository redistribution
+    redistribution: never bundled; reader must obtain the data from the official source and retain current terms
+    status: conditional_not_bundled
+    cases: [credit_bureau_features, monotonicity, explainability, reason_codes, counterfactuals]
+    limitations: >-
+      Mirrors on OpenML or GitHub do not resolve original rights. The historic HELOC sample is useful
+      for explainability exercises only after source terms are accepted and cannot establish current policy validity.
+
+  amex_default_prediction_competition:
+    title: American Express Default Prediction Competition
+    publisher: Kaggle / American Express
+    official_url: https://www.kaggle.com/competitions/amex-default-prediction
+    licence: competition-specific rules and Kaggle account terms
+    redistribution: never bundled; each reader accepts current rules and downloads independently
+    status: conditional_not_bundled
+    cases: [large_scale_behavioral_modeling, sequences, class_imbalance, validation_design]
+    limitations: >-
+      Anonymised competition fields, host rules and leaderboard design constrain interpretation;
+      competition success is not validation for a real credit decision.
+
+  ieee_cis_fraud_detection_competition:
+    title: IEEE-CIS Fraud Detection Competition
+    publisher: Kaggle / IEEE-CIS competition providers
+    official_url: https://www.kaggle.com/competitions/ieee-fraud-detection
+    licence: competition-specific rules and Kaggle account terms
+    redistribution: never bundled; each reader accepts current rules and downloads independently
+    status: conditional_not_bundled
+    cases: [fraud, identity_linkage, missingness, drift, class_imbalance, graph_features]
+    limitations: >-
+      Fraud is a separate target from credit default. Anonymisation and competition sampling limit
+      causal interpretation, fairness analysis and production transfer.
+
+  give_me_some_credit_competition:
+    title: Give Me Some Credit competition data
+    publisher: Kaggle competition host and data provider
+    official_url: https://www.kaggle.com/competitions/GiveMeSomeCredit
+    licence: competition-specific rules
+    redistribution: never bundled; student must accept the current rules in their own account
+    status: conditional_not_bundled
+    cases: [class_imbalance, delinquency_features, leaderboard_overfitting]
+    limitations: A competition download is not permission to republish the files in a book repository.
+
+  paysim_kaggle:
+    title: PaySim synthetic mobile-money transactions
+    publisher: Kaggle mirror; original simulator authors must be cited
+    official_url: https://www.kaggle.com/datasets/ealaxi/paysim1
+    licence: verify current Kaggle licence and original-paper terms before every release
+    redistribution: not bundled by project policy
+    status: conditional_not_bundled
+    cases: [fraud, imbalanced_learning, transaction_monitoring]
+    limitations: Synthetic fraud data are not a credit-default outcome and should not be used to estimate PD.
+
+  lending_club_archives:
+    title: LendingClub historical loan data and mirrors
+    publisher: varies
+    licence: unclear or source-specific
+    redistribution: not permitted by project policy without documented source terms
+    status: excluded_pending_legal_review
+    cases: []
+    limitations: Public availability or a Kaggle mirror is not evidence of reuse rights.
+
+  openml_mirrors:
+    title: Credit datasets mirrored on OpenML
+    publisher: OpenML and original dataset owners
+    licence: dataset-specific
+    redistribution: follow the original dataset licence, not only the aggregator metadata
+    status: conditional
+    cases: [benchmarking]
+    limitations: Resolve provenance and licence back to the original publisher before use.
