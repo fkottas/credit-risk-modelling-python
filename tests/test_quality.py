@@ -6,6 +6,7 @@ from creditriskbook.data.datasets import load_dataset
 from creditriskbook.data.quality import (
     assess_quality,
     inject_teaching_defects,
+    inject_teaching_defects_with_manifest,
     quarantine_invalid_rows,
 )
 
@@ -33,6 +34,23 @@ class DataQualityTests(unittest.TestCase):
         _ = inject_teaching_defects(self.bundle, seed=3)
         self.assertEqual(len(self.bundle.frame), original_rows)
         self.assertNotIn("target_derived_score", self.bundle.frame)
+
+    def test_defect_manifest_explains_every_injection_type(self) -> None:
+        result = inject_teaching_defects_with_manifest(self.bundle, seed=9, rate=0.01)
+        types = set(result.manifest["defect_type"])
+        self.assertEqual(
+            types,
+            {
+                "missing_value",
+                "range_violation",
+                "domain_violation",
+                "future_date",
+                "target_leakage_column",
+                "duplicate_record",
+            },
+        )
+        self.assertTrue(result.manifest["detection_rule"].str.len().gt(0).all())
+        self.assertEqual(result.manifest["seed"].nunique(), 1)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-# Chapter 1 — Credit Risk as Uncertain Cash Flows
+# Chapter 1 — Credit Loss as a Cash-Flow Problem
 
 ## The decision problem
 
-Credit risk is the possibility that contractual cash flows are not received in the amount or at the time expected. That definition is broader than binary default. A borrower may pay late, prepay, cure after delinquency, enter forbearance, draw an unused line shortly before default, or repay only after expensive recovery work. The economic loss depends on the path of cash flows and not merely on the final label.
+Credit risk is the possibility that contractual cash flows are not received in the amount or at the time expected. That definition is broader than binary default. A borrower may pay late, prepay, cure after delinquency, enter forbearance, draw an unused line shortly before default, or repay only after recovery work. The economic loss depends on the cash-flow path, not merely on the final default label. This distinction underlies pricing, accounting-loss and capital calculations, although each framework defines the relevant cash flows and horizon differently [R5, R14, R78].
 
 For a single exposure, separate normal payments from post-default recovery proceeds. Let $C_t$ be the contractual cash flow due at month $t$, $P_t$ the regular payment received, $Rec_t$ eligible recovery proceeds, $K_t$ direct workout cost and $r$ the annual effective discount rate. With month-end timing, the discounted cash-flow loss is
 
@@ -34,7 +34,7 @@ This notation prevents a common sign error: recovery proceeds reduce loss, while
 | $d_t$ | present-value factor at the reference date | dimensionless; $d_0=1$ |
 | $L$ | discounted raw cash-flow loss | currency; can be negative before policy treatment |
 
-For the visible three-month fixture used in the Chapter 1 Python window, $r=12\%$. Month 1 has no shortfall. Month 2 has $350-200-0+5=155$ and month 3 has $350-0-120+15=245$. Therefore
+In the three-month example, $r=12\%$. Month 1 has no shortfall. Month 2 has $350-200-0+5=155$ and month 3 has $350-0-120+15=245$. Therefore
 
 \[
 L=0(1.12)^{-1/12}+155(1.12)^{-2/12}+245(1.12)^{-3/12}
@@ -49,7 +49,7 @@ The familiar product $PD\times LGD\times EAD$ is a useful conditional expectatio
 
 A one-year loan has EAD of EUR 10,000, PD of 3% and LGD of 45%. Expected loss is EUR 135. If the performing margin after funding and operating cost is EUR 500, the simplified expected value is EUR 365. This does not mean that EUR 365 will be earned. In 97% of the stylised outcomes the account may perform; in 3% a loss near EUR 4,500 may occur. Pricing, capital and liquidity must address that distribution, while affordability and consumer law constrain which transactions should be offered.
 
-The standalone Python laboratory begins with a five-value tuple for each period and a plain `for` loop. It calculates the contractual shortfall, discount factor and present-value loss one line at a time before aggregation. There is no dataframe and no modelling package to hide the arithmetic. The exact source is also committed as an executable Chapter 1 script so that a reader can change receipts, recoveries, costs and timing and inspect the resulting output.
+The first Python implementation stores five values for each period and uses a `for` loop. It calculates the contractual shortfall, discount factor and present-value loss before aggregation. This elementary form allows the reader to change a receipt, recovery, cost or payment month and determine the expected direction from the equation before running the code.
 
 The model output is an input to a decision, not the decision itself. A policy also needs eligibility, affordability, fraud, sanctions, concentration, pricing, product and customer-treatment rules. Those rules must be versioned independently so that a change in business appetite is not misreported as a model redevelopment.
 
@@ -59,17 +59,24 @@ Reconcile contractual balances to the finance system before modelling. State whe
 
 **Lab.** Use `synthetic_retail`. Calculate expected loss and expected value by product and risk decile. Change LGD and margin assumptions separately. Explain why ranking may remain unchanged while the economically optimal cutoff moves.
 
-# Chapter 2 — Expected Loss, Unexpected Loss, and the Loss Distribution
+# Chapter 2 — Expected and Unexpected Credit Loss
 
 ## Mean loss is not capital
 
 Expected loss is the probability-weighted average loss over repeated comparable exposures. Unexpected loss concerns dispersion around that mean, especially severe portfolio outcomes. Provisions, pricing and capital have different purposes; using the same number for all three obscures risk.
 
-Let account loss be $L_i=D_i\times LGD_i\times EAD_i$, where $D_i$ is a default indicator. Portfolio loss is $L=\sum_{i=1}^{n}L_i$. Even if individual default probabilities are accurate, the portfolio tail depends on default dependence, concentration and the relationship between default, recovery and exposure. Under independence, idiosyncratic variation diversifies rapidly. Under a common downturn, many obligors deteriorate together and recovery values may fall at the same time.
+Let account loss be $L_i=D_i\times LGD_i\times EAD_i$, where $D_i$ is a default indicator. Portfolio loss is $L=\sum_{i=1}^{n}L_i$. Its variance is
+
+\[
+\operatorname{Var}(L)=\sum_{i=1}^{n}\operatorname{Var}(L_i)
++2\sum_{i<j}\operatorname{Cov}(L_i,L_j).
+\]
+
+The covariance terms explain why accurate individual PDs do not determine portfolio tail risk. Under independence, idiosyncratic variation diversifies as the portfolio grows. Under a common downturn, many obligors deteriorate together, utilisation can rise and recovery values can fall. Concentration magnifies this effect because a small number of large losses dominate the sum [R14, R32].
 
 Suppose 1,000 equal exposures each have EAD EUR 10,000, PD 2% and LGD 40%. Expected loss is EUR 80,000. If defaults were independent, the standard deviation of default count would be about $\sqrt{1000\times0.02\times0.98}=4.43$, but a systematic factor can make a count far above 20 plausible in a severe state. The Basel asymptotic single-risk-factor framework represents this effect through asset correlation and a 99.9% conditional default probability.
 
-The laboratory starts with two exposures and enumerates all four possible joint default states exactly. For each state it multiplies Bernoulli probabilities, calculates loss, accumulates the loss distribution and locates the 95% quantile. Expected and unexpected loss therefore emerge from visible arithmetic rather than from a simulation call. Only after this exact example should students increase portfolio size and introduce Monte Carlo methods. The Basel calculation is deliberately postponed until the regulatory formula has been derived in Part IX.
+The worked example starts with two exposures and enumerates all four joint default states. For each state it calculates the probability and loss, forms the loss distribution and identifies its 95th percentile. If $q_{\alpha}(L)$ denotes the $\alpha$-quantile, a simple teaching definition is $UL_{\alpha}=q_{\alpha}(L)-\mathbb{E}[L]$. This is not a universal regulatory definition, but it makes the distinction between the mean and the tail explicit before Monte Carlo simulation is introduced. The prescribed Basel calculation is derived separately in Part IX [R1–R4].
 
 The reported capital is not a forecast loss and the risk-weighted asset amount is not EAD. In the base formula, capital rate is the stressed conditional loss less expected loss, with a maturity adjustment for corporate exposures. Eligibility, floors, output-floor effects, provision treatment and jurisdictional changes remain outside the teaching function.
 
@@ -79,11 +86,21 @@ A model-development policy should distinguish central-tendency estimation from t
 
 **Lab.** Generate `synthetic_corporate_irb`. Compare a granular portfolio with one in which the largest ten EADs are multiplied by ten. Expected loss per euro may change little, but the Herfindahl index and economic concentration risk increase.
 
-# Chapter 3 — Dependence Between PD, LGD, and EAD
+# Chapter 3 — Joint Behaviour of PD, LGD, and EAD
 
 ## Why multiplication is not enough
 
-The identity $EL=\mathbb{E}[D\times LGD\times EAD]$ does not generally equal $\mathbb{E}[D]\,\mathbb{E}[LGD]\,\mathbb{E}[EAD]$. The latter factorisation assumes independence or uses parameters already defined conditionally in a compatible way. In downturns, obligors default more often, collateral values fall, recovery takes longer, and revolving borrowers may draw available limits. The three components can therefore move adversely together.
+The identity $EL=\mathbb{E}[D\times LGD\times EAD]$ does not generally equal $\mathbb{E}[D]\,\mathbb{E}[LGD]\,\mathbb{E}[EAD]$. Let $X=D$, $Y=LGD$ and $Z=EAD$, with means $\mu_X,\mu_Y,\mu_Z$. Then
+
+\[
+\mathbb{E}[XYZ]=\mu_X\mu_Y\mu_Z
++\mu_X\operatorname{Cov}(Y,Z)
++\mu_Y\operatorname{Cov}(X,Z)
++\mu_Z\operatorname{Cov}(X,Y)
++\mathbb{E}[(X-\mu_X)(Y-\mu_Y)(Z-\mu_Z)].
+\]
+
+The product of marginal means is valid only when the covariance and higher-order dependence terms vanish, or when the parameters are already conditional on a common information set. In downturns, obligors default more often, collateral values fall, recovery takes longer and revolving borrowers may draw unused limits. The three components can therefore move adversely together.
 
 A practical scenario engine preserves account-level relationships. For scenario $s$, period $t$ and account $i$, an ECL contribution is
 
@@ -93,7 +110,7 @@ ECL_{i,t,s}=mPD_{i,t,s}\times LGD_{i,t,s}\times EAD_{i,t,s}\times DF_{i,t}\times
 
 Here marginal PD is the probability of first default in period $t$, not the conditional hazard and not cumulative PD. Confusing these quantities double-counts default. The scenario weight $w_s$ is applied after scenario-consistent parameter paths are built.
 
-The laboratory uses three visible macroeconomic scenarios. PD, LGD and EAD rise together from base to severe conditions, so students can calculate the scenario-consistent weighted expected loss and compare it with the product of three separately weighted averages. Their difference is a direct, hand-auditable dependence effect. A common-factor simulation is introduced later, after this conditional-expectation calculation is understood.
+The worked example uses three macroeconomic scenarios. PD, LGD and EAD rise together from base to severe conditions, allowing comparison of scenario-consistent expected loss with the product of three separately weighted averages. Their difference isolates the dependence introduced by scenario co-movement. The accounting chapters later add requirements for reasonable and supportable forward-looking information and probability weighting [R5, R16].
 
 The library scales conditional hazard rather than directly multiplying marginal probability. This keeps the curve in the probability domain and reconstructs scenario marginal PD consistently. LGD is bounded only in the model layer, while raw workout observations remain available elsewhere.
 
@@ -103,7 +120,7 @@ Check whether scenarios affect the same economic drivers across PD, LGD and EAD.
 
 **Lab.** Compare three engines: independent average parameters, account-level correlated scenarios, and a deliberately incoherent engine that uses cumulative PD in every period. Quantify the overstatement from double counting.
 
-# Chapter 4 — Time, Cohorts, Transitions, and Competing Events
+# Chapter 4 — Credit Risk Through Time
 
 ## The time axis is part of the target
 
@@ -111,9 +128,15 @@ A default label without a reference date and horizon is incomplete. Application 
 
 For a cohort originated in month $v$, vintage analysis tracks cumulative default by months on book. It separates maturation from calendar conditions. A 2025 vintage observed for six months cannot be compared directly with a 2021 vintage observed for thirty-six months. Calendar analysis instead aligns exposures by economic time; both views are needed.
 
-Transition matrices describe movements among states such as current, 1–29 DPD, 30–59 DPD, 60–89 DPD, default, cure, prepayment and closure. Rows must have the same interval and population definition. Treating prepayment as non-default forever can bias lifetime risk because it is a competing event that removes exposure.
+Transition matrices describe movements among states such as current, 1–29 DPD, 30–59 DPD, 60–89 DPD, default, cure, prepayment and closure. For state $j$, the one-period estimator is
 
-The laboratory constructs transition counts and row probabilities directly from an account-month table. Readers must show how the risk set changes, why each row sums to one, and where closure or prepayment removes an account. Kaplan–Meier, cause-specific hazards and cumulative-incidence estimators are introduced only after these counts are understood.
+\[
+\widehat P_{jk}=\frac{N_{jk}}{\sum_{\ell}N_{j\ell}},
+\]
+
+where $N_{jk}$ counts observations that begin the interval in $j$ and end in $k$. Every row therefore requires the same interval, risk-set rule and state precedence. Treating prepayment as non-default forever biases lifetime interpretation because prepayment is a competing event that removes exposure.
+
+The worked example constructs transition counts and row probabilities directly from an account-month table. The risk set changes whenever an account defaults, prepays, closes or becomes censored. For event times $t_j$, the Kaplan–Meier estimator is $\widehat S(t)=\prod_{t_j\le t}(1-d_j/n_j)$, where $n_j$ is the risk set immediately before $t_j$ and $d_j$ the defaults at that time [R31]. Cause-specific hazards and cumulative incidence are introduced after the reader can reconcile these counts.
 
 Kaplan–Meier handles right censoring when the event process and censoring mechanism are appropriately interpreted. It does not solve selection bias, cure definitions, left truncation or informative closure automatically. Competing-risk methods are preferable when different exit causes have distinct meaning.
 
@@ -123,7 +146,7 @@ All features must be available by the decision timestamp. Outcome windows must n
 
 **Lab.** Construct monthly vintages from the synthetic retail data. Produce cohort size, default rate and months of available performance. Then create a misleading comparison that ignores maturity and explain why it fails.
 
-# Chapter 5 — Classification, Regression, Survival, and Multi-State Formulations
+# Chapter 5 — Statistical Formulations of Credit Risk
 
 ## Choose the estimand before the algorithm
 
@@ -133,7 +156,7 @@ For binary PD, logistic regression models log odds as $\beta_0+x^\top\beta$. A t
 
 The public UCI Credit Approval dataset illustrates a crucial warning. Its outcome is approval, not default. It can teach mixed data types and missingness, but relabelling `approved` as PD would change the meaning of the evidence. Likewise, corporate bankruptcy is related to but not identical with a bank’s regulatory default definition.
 
-The laboratory implements the logistic transform with `math.exp` and builds cumulative PD by multiplying survival probabilities inside a loop. It prints classification probabilities, example LGD values and a lifetime curve. The extension asks the reader to define a linear-probability benchmark, a continuous-severity model, an ordinal delinquency model and a competing-risk estimand using the same miniature records, making the difference a matter of mathematics rather than library syntax.
+The worked example implements the logistic transform with `math.exp` and builds cumulative PD by multiplying survival probabilities inside a loop. It then contrasts a fixed-horizon binary probability, continuous loss severity, ordered delinquency state and time-to-event formulation. Credit-scoring research has long emphasised that assessment depends on the lending population, sample-selection process and operational use, not only on the classifier [R46–R48, R78–R80].
 
 ## Model-selection policy
 
@@ -141,15 +164,15 @@ Start with a transparent benchmark. Compare candidates on out-of-time discrimina
 
 **Lab.** For one business question, write four possible estimands: twelve-month default, time to first 90 DPD, loss severity after default and transition to cure. Specify the unit, risk set, censoring, features, label and validation metric for each.
 
-# Chapter 6 — The Credit Model Operating System
+# Chapter 6 — The End-to-End Model Lifecycle
 
 ## From model to controlled service
 
-An end-to-end credit model has at least nine connected layers: source data; data contract and quality gate; sample and target construction; feature pipeline; estimation and calibration; score or parameter output; policy and decision layer; implementation service; and monitoring/governance. A weakness in any layer can dominate algorithmic performance.
+An end-to-end credit model connects source data, data definitions and quality controls, sample and target construction, feature calculation, estimation and calibration, score or parameter output, credit policy, production implementation, and monitoring. A weakness in any one of these elements can dominate algorithmic performance. For example, a temporally leaked target cannot be repaired by better calibration, while an incorrectly implemented score can invalidate an otherwise sound model.
 
-The repository’s baseline workflow demonstrates the chain. It loads a registered dataset, creates a teaching copy with deterministic defects, assesses quality, quarantines invalid rows under explicit rules, applies an out-of-time split where possible, fits a PD benchmark, calculates monitoring metrics, produces a simplified ECL illustration for the compatible synthetic case, and asks a bounded agent for a recommendation. It writes a manifest rather than only displaying a chart.
+The companion workflow demonstrates the complete sequence on a controlled case. It loads a registered dataset, creates a labelled copy with deterministic defects, assesses quality, separates invalid rows under stated rules, applies an out-of-time split where dates exist, fits a PD benchmark, calculates monitoring measures and produces a simplified ECL illustration for a compatible synthetic case. The run record captures the data, code, configuration and results needed for reproduction.
 
-The laboratory writes `reproducible_run_id` from elementary JSON canonicalisation and SHA-256 hashing. Every input is visible, and changing one policy field changes the identifier. The end-to-end workflow and manifest classes are built much later, after the reader has created the individual data, model, validation and approval artifacts that a run manifest must reference.
+The worked example writes `reproducible_run_id` from canonical JSON and SHA-256 hashing. Every included input is explicit, and changing one policy field changes the identifier. A hash identifies content; it does not prove correctness, approval or lawful use. The integrated workflow appears only after the reader has constructed and tested the underlying data, model, validation and approval records [R9, R13–R14].
 
 The run manifest should include code version, dataset hash, environment, configuration, timestamps, row counts, exclusions, metrics and approvals. A production registry additionally needs owner, intended use, materiality, validation status, effective dates, dependencies, deployment endpoints and retirement status.
 
@@ -157,6 +180,6 @@ The run manifest should include code version, dataset hash, environment, configu
 
 Development, validation, approval, deployment and audit should be distinct responsibilities proportionate to model risk. Automated tests can confirm formulas and data contracts; they cannot approve judgemental policy. A model owner may accept business risk but should not rewrite validation conclusions. An agent may draft an issue but cannot close it without authority.
 
-**Lab.** Draw the operating system for an application scorecard and for an IFRS 9 engine. Identify which artifacts are common and which require different owners, horizons, controls and approvals.
+**Lab.** Draw the lifecycle for an application scorecard and for an IFRS 9 engine. Identify which records are common and which require different owners, horizons, controls and approvals.
 
 > Part I establishes the central idea used throughout the book: every number must be traceable to a defined cash-flow question, time horizon, population, policy and controlled implementation.

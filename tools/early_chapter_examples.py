@@ -396,7 +396,7 @@ class DatasetLicenceRecord:
     attribution: str
 
 
-def licence_gate(record: DatasetLicenceRecord) -> tuple[bool, tuple[str, ...]]:
+def review_licence_record(record: DatasetLicenceRecord) -> tuple[bool, tuple[str, ...]]:
     issues = []
     for field in ("publisher", "official_url", "licence", "redistribution", "attribution"):
         if not getattr(record, field).strip():
@@ -409,8 +409,8 @@ def licence_gate(record: DatasetLicenceRecord) -> tuple[bool, tuple[str, ...]]:
 approved = DatasetLicenceRecord("uci_south_german", "UCI", "https://archive.ics.uci.edu/",
                                 "CC BY 4.0", "download by code", "UCI dataset and DOI")
 blocked = DatasetLicenceRecord("mystery_csv", "", "", "unknown", "", "")
-print("Approved record:", licence_gate(approved))
-print("Blocked record:", licence_gate(blocked))""",
+print("Approved record:", review_licence_record(approved))
+print("Blocked record:", review_licence_record(blocked))""",
     21: r"""import pandas as pd
 
 

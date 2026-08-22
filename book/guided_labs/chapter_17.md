@@ -1,28 +1,21 @@
-## Mathematics-to-code laboratory — standalone construction: no project-library imports
+## Worked calculation — How does CECL differ from IFRS 9 despite a shared expected-loss objective?
 
-### 1. Start with the decision, observation unit, and estimand
+CECL generally recognises lifetime expected loss from initial recognition, whereas IFRS 9 changes horizon by stage.
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **CECL and Its Relationship to IFRS 9** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with an original miniature fixture whose values are visible in the Python window. The extension exercise then repeats the calculation on `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `synthetic_ifrs9_schedule`. **Implementation level:** From first principles: the calculation is written in full; NumPy or pandas is used only for transparent array and table operations.
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \[
 CECL=\mathbb{E}[\text{contractual cash shortfalls over life}]
 \]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-### 2. Derive before implementing
+![Figure 17.1 — IFRS 9 changes the measurement horizon by stage; the CECL illustration begins with lifetime loss.](book/figures/ifrs9-cecl-horizon.png)
 
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
-
-![Figure 17.1 — Original teaching visual generated from repository data.](book/figures/ifrs9-cecl-horizon.png)
-
-### 3. Implement the first transparent component
-
-The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
 import pandas as pd
@@ -46,9 +39,7 @@ print(pools.to_string(index=False))
 print("Total CECL:", pools["lifetime_cecl"].sum())
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
 pool  exposure  historical_loss_rate  qualitative_adjustment  lifetime_cecl
@@ -58,10 +49,14 @@ near_prime    600000                 0.035                   0.005        24000.
 Total CECL: 64000.0
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+The calculated lifetime allowance is exposure multiplied by the historically based rate plus the stated qualitative adjustment. The adjustment is displayed separately so it can be challenged and removed.
 
-### 6. Extend, compare datasets, and document
+**Validation:** Keep the same contractual schedule and isolate the effect of horizon, staging, forecast, and reversion assumptions.
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **a synthetic receivables schedule and a synthetic staged-loan schedule** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.

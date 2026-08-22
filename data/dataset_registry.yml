@@ -384,10 +384,10 @@ datasets:
     title: Fannie Mae Single-Family Loan Performance Data
     publisher: Fannie Mae
     official_url: https://capitalmarkets.fanniemae.com/credit-risk-transfer/single-family-credit-risk-transfer/fannie-mae-single-family-loan-performance-data
-    licence: provider data terms and user acknowledgement; recheck before each download
-    redistribution: not bundled; each reader obtains files from the official provider under current terms
-    status: conditional_not_bundled
-    cases: [mortgage_vintages, monthly_performance, delinquency_transitions, prepayment, survival]
+    licence: provider terms restrict use and redistribution; separate written permission would be required for an open commercial teaching repository
+    redistribution: no bundling and no project downloader
+    status: excluded_by_project_policy
+    cases: [conceptual_reference_only]
     limitations: >-
       Population covers loans acquired or guaranteed by Fannie Mae, fields and release vintages can
       change, privacy transformations apply, and provider terms govern use. It is not a universal
@@ -397,10 +397,10 @@ datasets:
     title: Freddie Mac Single-Family Loan-Level Dataset
     publisher: Freddie Mac
     official_url: https://www.freddiemac.com/research/datasets/sf-loanlevel-dataset
-    licence: provider terms of use; recheck and record the accepted version before access
-    redistribution: not bundled; code expects a reader-supplied official download
-    status: conditional_not_bundled
-    cases: [mortgage_vintages, monthly_dpd, default, prepayment, competing_risks, stress_testing]
+    licence: provider terms restrict use and redistribution; separate written permission would be required for an open commercial teaching repository
+    redistribution: no bundling and no project downloader
+    status: excluded_by_project_policy
+    cases: [conceptual_reference_only]
     limitations: >-
       Dataset represents Freddie Mac purchases or guarantees and has product, acquisition and
       censoring constraints. A download entitlement is not permission to republish raw files.

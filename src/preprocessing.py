@@ -44,7 +44,7 @@ def fill_missing_values(df, numerical_strategy="median", categorical_strategy="m
             df[col] = df[col].fillna(df[col].median())
         elif numerical_strategy == "mean":
             df[col] = df[col].fillna(df[col].mean())
-        elif isinstance(numerical_strategy, (int, float)):
+        elif isinstance(numerical_strategy, int | float):
             df[col] = df[col].fillna(numerical_strategy)
 
     for col in categorical_cols:

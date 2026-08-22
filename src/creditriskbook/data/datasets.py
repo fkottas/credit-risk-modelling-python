@@ -65,6 +65,12 @@ TAIWAN_BANKRUPTCY_URL = (
     "https://archive.ics.uci.edu/static/public/572/taiwanese+bankruptcy+prediction.zip"
 )
 TAIWAN_BANKRUPTCY_ZIP_SHA256 = "c346f5ad2618cb198e7ed8306cf2f31fe3bb2ec60acdbbe1736788d50f269aac"
+STATLOG_GERMAN_URL = (
+    "https://archive.ics.uci.edu/static/public/144/statlog%2Bgerman%2Bcredit%2Bdata.zip"
+)
+STATLOG_GERMAN_ZIP_SHA256 = "e12d9d5def6845c0622634a1cd2ab87fa470668c4298f1ec52a4e403376a435b"
+BANK_MARKETING_URL = "https://archive.ics.uci.edu/static/public/222/bank%2Bmarketing.zip"
+BANK_MARKETING_ZIP_SHA256 = "e0bf5f5de5b846e2f18e9d90606637267d46dfa260e0f17bb12e605db5efbeb4"
 
 
 def _sha256_bytes(content: bytes) -> str:
@@ -213,6 +219,60 @@ def _south_german_bundle(cache_dir: Path) -> DatasetBundle:
                 column: frozenset(frame[column].dropna().unique()) for column in categorical
             },
             forbidden_model_columns=frozenset({"age", "personal_status_sex", "foreign_worker"}),
+        ),
+    )
+
+
+def _statlog_german_bundle(cache_dir: Path) -> DatasetBundle:
+    """Load the legacy German record for source-validation exercises.
+
+    UCI's South German Credit documentation identifies serious coding-information
+    problems in this older version. It is therefore exposed as a comparison source,
+    not as the preferred German-credit benchmark.
+    """
+
+    archive = _download_checked(
+        STATLOG_GERMAN_URL,
+        STATLOG_GERMAN_ZIP_SHA256,
+        cache_dir / "uci_statlog_german" / "statlog_german.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
+        raw = zipped.read("german.data")
+    columns = [f"a{i}" for i in range(1, 21)] + ["credit_risk"]
+    frame = pd.read_csv(io.BytesIO(raw), sep=r"\s+", names=columns)
+    frame.insert(0, "application_id", [f"GCR-{i:04d}" for i in range(len(frame))])
+    frame["default_12m"] = (frame.pop("credit_risk") == 2).astype(int)
+    numeric = tuple(f"a{i}" for i in (2, 5, 8, 11, 16, 18))
+    protected = ("a9", "a13", "a20")
+    categorical = tuple(f"a{i}" for i in range(1, 21) if f"a{i}" not in {*numeric, *protected})
+    return DatasetBundle(
+        key="uci_statlog_german",
+        frame=frame,
+        target="default_12m",
+        numeric_features=numeric,
+        categorical_features=categorical,
+        protected_attributes=protected,
+        id_column="application_id",
+        date_column=None,
+        split_strategy="stratified_random_no_time_available",
+        source_url="https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data",
+        licence="CC BY 4.0",
+        attribution=(
+            "Hofmann, H. (1994), Statlog German Credit Data, UCI ML Repository, "
+            "DOI 10.24432/C5NC77."
+        ),
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "Legacy record used only for source-validation exercises. UCI's South German Credit "
+            "documentation reports severe coding-information errors in this version; no dates are "
+            "available, protected historical fields require review, and it is not the preferred benchmark."
+        ),
+        quality_spec=QualitySpec(
+            ranges={"a2": (1.0, 120.0), "a5": (0.0, None)},
+            allowed_values={
+                column: frozenset(frame[column].dropna().unique()) for column in categorical
+            },
+            forbidden_model_columns=frozenset(protected),
         ),
     )
 
@@ -504,15 +564,92 @@ def _taiwan_bankruptcy_bundle(cache_dir: Path) -> DatasetBundle:
     )
 
 
+def _bank_marketing_bundle(cache_dir: Path) -> DatasetBundle:
+    """Load the dated-order Bank Marketing file for non-credit exercises.
+
+    The response is term-deposit subscription, not loan approval or default. The
+    post-call duration field is retained for a leakage exercise but excluded from
+    admissible model features.
+    """
+
+    archive = _download_checked(
+        BANK_MARKETING_URL,
+        BANK_MARKETING_ZIP_SHA256,
+        cache_dir / "uci_bank_marketing" / "bank_marketing.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as outer:
+        nested = outer.read("bank-additional.zip")
+    with zipfile.ZipFile(io.BytesIO(nested)) as inner:
+        raw = inner.read("bank-additional/bank-additional-full.csv")
+    frame = pd.read_csv(io.BytesIO(raw), sep=";")
+    frame.columns = [_normalise_name(column) for column in frame.columns]
+    frame.insert(0, "contact_id", [f"BMK-{i:05d}" for i in range(len(frame))])
+    frame["subscribed"] = (frame.pop("y") == "yes").astype(int)
+    protected = ("age", "marital")
+    numeric = (
+        "campaign",
+        "pdays",
+        "previous",
+        "emp_var_rate",
+        "cons_price_idx",
+        "cons_conf_idx",
+        "euribor3m",
+        "nr_employed",
+    )
+    categorical = (
+        "job",
+        "education",
+        "default",
+        "housing",
+        "loan",
+        "contact",
+        "month",
+        "day_of_week",
+        "poutcome",
+    )
+    return DatasetBundle(
+        key="uci_bank_marketing",
+        frame=frame,
+        target="subscribed",
+        numeric_features=numeric,
+        categorical_features=categorical,
+        protected_attributes=protected,
+        id_column="contact_id",
+        date_column=None,
+        split_strategy="ordered_source_sequence_no_exact_dates",
+        source_url="https://archive.ics.uci.edu/dataset/222/bank+marketing",
+        licence="CC BY 4.0",
+        attribution=(
+            "Moro, S., Rita, P., & Cortez, P. (2014), Bank Marketing, "
+            "UCI ML Repository, DOI 10.24432/C5K306."
+        ),
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "The target is term-deposit subscription, not credit approval, bankruptcy or default. "
+            "Rows are ordered by source chronology but exact dates are unavailable. Contact duration "
+            "is known only after the call and is excluded from any pre-call model."
+        ),
+        quality_spec=QualitySpec(
+            ranges={"campaign": (1.0, None), "previous": (0.0, None)},
+            allowed_values={
+                column: frozenset(frame[column].dropna().unique()) for column in categorical
+            },
+            forbidden_model_columns=frozenset({"age", "marital", "duration"}),
+        ),
+    )
+
+
 def available_datasets() -> tuple[str, ...]:
     return (
         "synthetic_retail",
         "uci_south_german",
+        "uci_statlog_german",
         "uci_taiwan_credit_card",
         "uci_credit_approval",
         "uci_australian_credit_approval",
         "uci_polish_bankruptcy",
         "uci_taiwan_bankruptcy",
+        "uci_bank_marketing",
         "kaggle_credit_risk",
     )
 
@@ -531,6 +668,8 @@ def load_dataset(
         return _synthetic_bundle(n_rows=n_rows, seed=seed)
     if key == "uci_south_german":
         return _south_german_bundle(Path(cache_dir))
+    if key == "uci_statlog_german":
+        return _statlog_german_bundle(Path(cache_dir))
     if key == "uci_taiwan_credit_card":
         return _taiwan_bundle(Path(cache_dir))
     if key == "uci_credit_approval":
@@ -541,6 +680,8 @@ def load_dataset(
         return _polish_bankruptcy_bundle(Path(cache_dir))
     if key == "uci_taiwan_bankruptcy":
         return _taiwan_bankruptcy_bundle(Path(cache_dir))
+    if key == "uci_bank_marketing":
+        return _bank_marketing_bundle(Path(cache_dir))
     if key == "kaggle_credit_risk":
         path = Path(data_path) if data_path else Path(cache_dir) / key / "credit_risk_dataset.csv"
         return _kaggle_bundle(path)

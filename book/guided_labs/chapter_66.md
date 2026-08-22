@@ -1,86 +1,52 @@
-## Mathematics-to-code laboratory — construction and controlled promotion
+## Worked calculation — How does the model inventory support ownership, change control, and audit?
 
-### 1. Start with the decision, observation unit, and estimand
+An inventory connects each model to purpose, data, version, validation, deployment, dependencies, findings, and retirement status.
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Model Inventory, Documentation, Change Control, and Audit** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `synthetic_retail`. **Implementation level:** Applied implementation: the code creates a reproducible validation, deployment, or governance record while keeping measurement separate from policy authority.
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \[
 ChangeHash=SHA256(previous\ hash\Vert change\ record)
 \]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-### 2. Derive before implementing
-
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
-
-### 3. Implement the first transparent component
-
-The chapter keeps the estimator visible. Reusable data access may now be imported, while the method being taught is derived, implemented, tested, and reviewed before promotion. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
-from __future__ import annotations
-
-import numpy as np
-import pandas as pd
-
-from creditriskbook.data import load_dataset
+import hashlib
+import json
 
 
-def chapter_66_audit_table(seed: int = 866) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = load_dataset("synthetic_retail", n_rows=1_500, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        })
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_66_audit_table()
-print(audit.to_string(index=False))
+changes = [
+    {"version": "1.0", "change": "initial approval", "approver": "committee-A"},
+    {"version": "1.1", "change": "calibration update", "approver": "committee-B"},
+]
+previous = "0" * 64
+for change in changes:
+    payload = json.dumps(change, sort_keys=True, separators=(",", ":"))
+    current = hashlib.sha256((previous + payload).encode()).hexdigest()
+    print(change["version"], current[:20])
+    previous = current
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
-variable    n  missing         mean          std          p05        p50         p95
-                 age 1500        0    42.092667    11.675800    22.000000    42.0000    61.00000
-              income 1500        0 44597.372040 26053.363957 15864.195000 38267.6500 95033.82200
-    employment_years 1500        0     6.430460     4.644609     0.929500     5.3650    15.07600
-      debt_to_income 1500        0     0.418481     0.219851     0.109200     0.3888     0.81921
-         utilisation 1500        0     0.436182     0.204768     0.114965     0.4351     0.78641
-credit_history_years 1500        0     7.056220     4.708668     1.160000     6.2800    15.95250
-        enquiries_6m 1500        0     1.400000     1.186987     0.000000     1.0000     4.00000
-         loan_amount 1500        0  8778.604193  8307.932877   427.220000  7122.0900 24402.08900
+1.0 f72c19052824fe70487a
+1.1 1685c7c41f78a2fd0de5
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+Versions 1.0 and 1.1 have different linked hashes. Verification detects a changed record, while ownership and approval still require independent access and identity controls.
 
-### 6. Extend, compare datasets, and document
+**Validation:** Follow one change from request through testing, approval, implementation, monitoring, and immutable history.
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **a synthetic model inventory and hash-linked change records** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.

@@ -1,10 +1,10 @@
-# Chapter 25 — Exploratory and Characteristic Analysis
+# Chapter 25 — Exploratory Analysis for Scorecards
 
 ## Explore the process, not only distributions
 
-Scorecard development begins after the population, target and split are frozen. Exploration should describe volumes, dates, products, channels, missingness, event rates and feature behaviour across time. A variable with a strong full-sample relationship may reverse by vintage or represent a policy rule already applied to accepted cases.
+Scorecard development begins after the population, target and sample partitions have been defined and versioned. Exploration describes volumes, dates, products, channels, missingness, event rates and feature behaviour across time. A variable with a strong full-sample relationship may reverse by vintage or may represent an earlier policy rule already applied to accepted cases. Established scorecard practice therefore treats exploratory analysis as investigation of the lending process, not a search for attractive plots [R77–R79].
 
-Characteristic analysis evaluates one predictor across interpretable groups. For each bin report count, population share, goods, bads, bad rate, WOE, IV component and eventual points. Add time and segment views. A summary slide should not hide zero-event bins, sparse bins or missing values.
+Characteristic analysis evaluates one predictor across interpretable groups. For each bin report count, population share, goods, bads, bad rate, WOE, IV component and eventual points. Add time and segment views. For $d_j$ defaults among $n_j$ observations, the estimated bad rate is $\widehat p_j=d_j/n_j$ with standard error approximately $\sqrt{\widehat p_j(1-\widehat p_j)/n_j}$ away from boundaries. Confidence intervals or a suitable exact alternative make sparse-bin uncertainty apparent; a plot of rates alone does not.
 
 The first characteristic table is written without the project package. Its tiny fixture makes every denominator visible.
 
@@ -53,7 +53,7 @@ Review plots by development, validation and out-of-time sample using the develop
 
 ## Why manual binning remains important
 
-Manual bins encode product knowledge, operational thresholds and stable interpretation. Examples include DPD backstops, utilisation bands, term options and documented income ranges. Manual does not mean arbitrary: each cut requires evidence, minimum counts, event support, monotonicity review and validation.
+Manual bins encode product knowledge, operational thresholds and stable interpretation. Examples include DPD backstops, utilisation bands, term options and documented income ranges. Manual does not mean arbitrary: each cut requires evidence, minimum counts, event support, monotonicity review and validation. The bin specification is an estimated model input and is derived on the training sample, then applied unchanged to validation and production data [R77–R78].
 
 Numeric bins should cover $(-\infty,+\infty)$, with missing and special values explicit. Special values such as -999 must not be treated as economic numbers. Categorical grouping combines levels with similar risk and meaning; rare categories may be grouped, but protected or materially different categories should not be hidden merely to smooth bad rates. Unseen production levels require a defined `OTHER` policy.
 
@@ -64,7 +64,7 @@ import pandas as pd
 
 
 def manual_numeric_bin(value, edges, special_values=(-999.0,)):
-    """Apply frozen right-closed cuts; never learn an edge while scoring."""
+    """Apply fixed right-closed cuts; never learn an edge while scoring."""
     if pd.isna(value):
         return "MISSING"
     if value in special_values:
@@ -104,7 +104,7 @@ The binning memo should include variable definition, available time, raw distrib
 
 **Lab.** Manually bin utilisation using business bands and compare with equal-frequency bins. Apply both to an out-of-time sample. Choose based on stability and meaning, not maximum development IV.
 
-# Chapter 27 — Automated Quantile, Equal-Width, ChiMerge, and Monotonic Binning
+# Chapter 27 — Automated and Monotonic Binning
 
 ## Candidate algorithms
 
@@ -172,13 +172,13 @@ The first two pre-bins merge because their good/bad compositions are most simila
 
 Automatic trend choice can be unstable when the true relationship is flat or U-shaped. Compare increasing and decreasing alternatives, bootstrap edges, and challenge business plausibility. A monotonic variable is not necessarily causal.
 
-## Freeze and validate
+## Estimate on training data and validate
 
-Fit bins only on training data. Persist the complete specification. Test boundary values, infinities, missing, special and unseen categories. Calculate population stability using fixed development bins. Monitor share in `OTHER`; a spike may indicate a source change.
+Fit bins only on training data. Persist the complete specification. Test boundary values, infinities, missing, special and unseen categories. Calculate population stability using fixed development bins. Monitor the share assigned to `OTHER`; a sudden increase may indicate a source-system or product change.
 
 **Lab.** Fit quantile, uniform, ChiMerge and monotonic bins to the same six variables. Compare bin counts, IV, out-of-time PSI, minimum events and interpretation. Select a specification under a written policy.
 
-# Chapter 28 — Weight of Evidence and Information Value from First Principles
+# Chapter 28 — Weight of Evidence and Information Value
 
 ## Definition and convention
 
@@ -189,7 +189,7 @@ p^G_j=\frac{G_j+a}{\sum_{m=1}^{k}G_m+ak},\qquad
 p^B_j=\frac{B_j+a}{\sum_{m=1}^{k}B_m+ak}.
 \]
 
-This book defines $WOE_j=\log(p^G_j/p^B_j)$. Positive WOE therefore indicates relatively more goods. Some software uses the opposite sign. Mixing conventions reverses coefficients and points; record the convention in every artifact.
+This book defines $WOE_j=\log(p^G_j/p^B_j)$. Positive WOE therefore indicates relatively more goods. Some software uses the opposite sign. Mixing conventions reverses coefficients and points; record the convention in the model specification [R77–R78].
 
 Information value is
 
@@ -240,7 +240,7 @@ Investigate high IV, zero goods/bads, small bins, non-business ordering and miss
 
 **Lab.** Calculate WOE by hand for three bins with and without smoothing. Reverse the event convention and verify how WOE changes. Explain why the final predicted PD can remain equivalent if coefficient signs change consistently.
 
-# Chapter 29 — Logistic Regression by Maximum Likelihood and IRLS
+# Chapter 29 — Logistic Regression from First Principles
 
 ## Model and likelihood
 
@@ -383,7 +383,7 @@ Beta after one update: [0.         1.42857143]
 {'beta': [-0.725133, 2.861941], 'iterations': 7}
 ```
 
-Changing from a summed likelihood to an average likelihood changes the numerical meaning of $\lambda$ unless the penalty is rescaled. State the convention in every model artefact. L2 regularisation reduces unstable magnitudes and produces finite estimates under many separation cases, but it changes inference. Full column rank is needed for the ordinary unpenalised inverse; a strictly positive ridge term can stabilise penalised slope directions, although an unidentified intercept or malformed design can still fail. Approximate standard errors rely on model assumptions and do not account for bin search, repeated observations or temporal dependence. Use bootstrap or clustered methods where appropriate.
+Changing from a summed likelihood to an average likelihood changes the numerical meaning of $\lambda$ unless the penalty is rescaled. State the convention in every model specification. L2 regularisation reduces unstable magnitudes and produces finite estimates under many separation cases, but it changes inference. Full column rank is needed for the ordinary unpenalised inverse; a strictly positive ridge term can stabilise penalised slope directions, although an unidentified intercept or malformed design can still fail. Approximate standard errors rely on model assumptions and do not account for bin search, repeated observations or temporal dependence. Use bootstrap or clustered methods where appropriate.
 
 Implementation invariants include an unpenalised intercept, probabilities within numerical bounds, a non-increasing objective under an accepted Newton step and nearly zero final score. A convergence flag proves only numerical optimisation. It does not prove correct labels, linear log odds, stable coefficients, calibration or fitness for use.
 
@@ -446,7 +446,7 @@ The expected coefficient sign depends on the WOE convention. With good-to-bad WO
 
 **Lab.** Fit IRLS with L2 values from zero to 0.1. Compare convergence, coefficients, calibration and out-of-time performance. Identify unstable variables rather than choosing the smallest training loss.
 
-# Chapter 30 — PDO Scaling, Bin Points, Ratings, and Reason Codes
+# Chapter 30 — Score Scaling, Ratings, and Reason Codes
 
 ## From log odds to a score
 
@@ -458,9 +458,9 @@ Score=Offset+Factor\log O,
 
 where $Factor=PDO/\log 2$ and $Offset=BaseScore-Factor\log(BaseOdds)$. If base score is 600 at good-to-bad odds 20 and PDO is 50, doubling good odds increases score by 50.
 
-Because the logistic model uses bad log odds $z=\log[p/(1-p)]$, score equals `offset - factor*z`. The intercept contributes base points and each characteristic contributes `-factor*beta*WOE`. The repository reconciles row components to total score before rounding and clipping.
+Because the logistic model uses bad log odds $z=\log[p/(1-p)]$, score equals `offset - factor*z`. The intercept contributes base points and each characteristic contributes `-factor*beta*WOE`. The implementation reconciles row components to total score before rounding and clipping [R77–R78].
 
-This is the promotion checkpoint. The reader has already written characteristic summaries, frozen manual bins, an adjacent-bin ChiMerge loop, WOE/IV and IRLS. Those functions are moved into modules, given dataclasses and serialisable specifications, and surrounded by unit tests for event sign, boundaries, missing, special and unseen values, convergence and reconciliation. Only now do we call the assembled `LogisticScorecard`; the import is a reviewed version of the code just constructed, not a hidden scorecard dependency.
+At this stage the reader has written characteristic summaries, fixed manual bins, an adjacent-bin ChiMerge loop, WOE/IV and IRLS. These functions are now moved into modules with typed, serialisable specifications and unit tests for event sign, boundaries, missing, special and unseen values, convergence and reconciliation. The assembled `LogisticScorecard` is therefore the reusable form of the calculations developed in the preceding chapters, not an unexplained specialist dependency.
 
 ```python
 from creditriskbook.scorecard import LogisticScorecard, ScoreScale

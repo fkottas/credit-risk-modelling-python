@@ -1,88 +1,56 @@
-## Mathematics-to-code laboratory — construction and controlled promotion
+## Worked calculation — Which sample design gives credible development and out-of-time evidence?
 
-### 1. Start with the decision, observation unit, and estimand
+Random cross-validation can mix periods and policies, whereas future use requires evidence from later observations with mature outcomes.
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Train, Validation, Test, Out-of-Time, and Cross-Validation Design** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with `synthetic_retail`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `synthetic_retail`. **Implementation level:** Reference implementation: the code evaluates the displayed expression directly and provides expected intermediate values for later library tests.
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \[
 \widehat{R}_{OOT}=\frac{1}{n_{OOT}}\sum_{i\in OOT}\ell(y_i,\widehat p_i)
 \]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-### 2. Derive before implementing
-
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
-
-![Figure 31.1 — Original teaching visual generated from repository data.](book/figures/part-06-calibration.png)
-
-### 3. Implement the first transparent component
-
-The chapter keeps the estimator visible. Reusable data access may now be imported, while the method being taught is derived, implemented, tested, and reviewed before promotion. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
-from __future__ import annotations
-
-import numpy as np
 import pandas as pd
 
-from creditriskbook.data import load_dataset
 
-
-def chapter_31_audit_table(seed: int = 831) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = load_dataset("synthetic_retail", n_rows=1_500, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        })
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_31_audit_table()
-print(audit.to_string(index=False))
+dates = pd.date_range("2022-01-31", periods=36, freq="ME")
+sample = pd.DataFrame({"observation_date": dates})
+sample["outcome_end"] = sample["observation_date"] + pd.DateOffset(months=12)
+as_of = pd.Timestamp("2025-06-30")
+sample["mature"] = sample["outcome_end"] <= as_of
+sample["partition"] = pd.cut(
+    sample["observation_date"],
+    [pd.Timestamp("2021-12-31"), pd.Timestamp("2023-06-30"),
+     pd.Timestamp("2024-06-30"), pd.Timestamp("2025-12-31")],
+    labels=["development", "validation", "out_of_time"],
+)
+print(sample.groupby(["partition", "mature"], observed=False).size().unstack(fill_value=0))
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
-variable    n  missing         mean          std          p05         p50          p95
-                 age 1500        0    42.382667    11.573887    22.000000    43.00000    62.000000
-              income 1500        0 43471.625747 25353.477409 14831.806500 37834.74000 92716.832000
-    employment_years 1500        0     6.620540     4.735466     1.000000     5.52000    15.874000
-      debt_to_income 1500        0     0.417095     0.220809     0.105190     0.39140     0.821790
-         utilisation 1500        0     0.439413     0.212020     0.115375     0.43165     0.816735
-credit_history_years 1500        0     7.138640     4.665848     1.109500     6.33000    16.031500
-        enquiries_6m 1500        0     1.389333     1.151218     0.000000     1.00000     3.000000
-         loan_amount 1500        0  8997.973047  8776.543986   406.820500  6744.46000 25418.877500
+mature       False  True
+partition
+development      0     18
+validation       0     12
+out_of_time      6      0
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+The partition table separates chronology and outcome maturity. Rows without a complete performance window cannot contribute to an out-of-time performance estimate.
 
-### 6. Extend, compare datasets, and document
+**Validation:** Verify chronology, maturity, entity separation, and transformation fitting within the development partition.
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **synthetic retail dates and a no-date UCI benchmark** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.

@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from advanced_chapter_examples import EXAMPLES as ADVANCED_EXAMPLES
+from chapter_lab_context import LAB_CONTEXT, RESULT_INTERPRETATION
 from early_chapter_examples import EXAMPLES as EARLY_EXAMPLES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +55,7 @@ FORMULAS = [
     r"\widehat S(t)=\prod_{u=1}^{t}\left(1-\frac{d_u}{n_u}\right)",
     r"CumPD_t=1-\prod_{k=1}^{t}(1-h_k)",
     r"PD\mid D\sim Beta(a+D,b+n-D)",
-    r"LGD=1-\frac{\sum_{t=1}^{T} CF_t(1+EIR)^{-t}}{EAD_0}",
+    r"LGD=1-\frac{\sum_{t=1}^{T} CF_t(1+EIR)^{-u_t}}{EAD_0}",
     r"\widehat{LGD}=\Pr(LGD>0\mid x)\,\mathbb{E}[LGD\mid LGD>0,x]",
     r"CCF=\frac{EAD-D}{L-D}",
     r"ECL_{acct}=\sum_{s=1}^{S} w_s\sum_{t=1}^{T} MPD_{s,t}LGD_{s,t}EAD_{s,t}DF_t",
@@ -61,14 +63,14 @@ FORMULAS = [
     r"\sum_{s=1}^{S}w_s=1,\quad ECL=\sum_{s=1}^{S}w_sECL_s",
     r"DF_t=(1+EIR)^{-t/12}",
     r"LossRate_b=\frac{historical\ credit\ losses_b}{exposure_b}",
-    r"\Delta ECL=ECL_{stress}-ECL_{base}",
+    r"A_{close}=A_{open}+\sum_k\Delta A_k-WriteOffs",
     r"K=LGD[N(z)-PD]MA",
     r"K_{retail}=LGD[N(z)-PD]",
     r"\sum_{g=1}^{G}w_g\widehat{PD}_g=LRA",
     r"\theta_{final}=\max(\theta_{raw}+MoC+Downturn,Floor)",
     r"L_q=LGD\,N\left(\frac{G(PD)+\sqrt{R}\,G(q)}{\sqrt{1-R}}\right)",
     r"CVA\approx(1-RR)\sum_{t=1}^{T}EE_t\,\Delta PD_t\,DF_t",
-    r"Finding=(criterion,evidence,severity,owner,due\ date)",
+    r"Unresolved=\sum_j\mathbf{1}\{test_j=fail\}",
     r"Brier=\frac1n\sum_{i=1}^{n}(y_i-\widehat p_i)^2",
     r"e_i=actual_i-predicted_i",
     r"\Delta_i=implementation_i-reference_i",
@@ -76,7 +78,7 @@ FORMULAS = [
     r"Q(s,a)=r(s,a)+\gamma\max_{a'}Q(s',a')",
     r"run\_id=SHA256(data\ hash\Vert code\ hash\Vert config)",
     r"\widehat p_i=f_{version}(x_i)",
-    r"Deploy=Tests\cap Approval\cap Security\cap Reconciliation",
+    r"Release=I_{tests}I_{approval}I_{security}I_{reconciliation}",
     r"PSI=\sum_{j=1}^{J}(a_j-e_j)\log(a_j/e_j)",
     r"Trigger=\mathbf{1}\{metric>threshold\}\times severity",
     r"ChangeHash=SHA256(previous\ hash\Vert change\ record)",
@@ -92,32 +94,65 @@ FIGURES = {
     1: "cash-flow-loss-decomposition.png",
     2: "part-01-loss-distribution.png",
     7: "part-02-product-risk.png",
-    13: "part-03-stages.png",
+    16: "part-03-stages.png",
     17: "ifrs9-cecl-horizon.png",
-    19: "part-04-data-quality.png",
+    23: "part-04-data-quality.png",
     20: "dataset-licence-decision-gate.png",
     22: "observation-performance-windows.png",
     25: "part-05-characteristic.png",
     28: "woe-logodds-characteristic.png",
     29: "irls-objective-convergence.png",
     30: "pdo-score-scale.png",
-    31: "part-06-calibration.png",
+    33: "part-06-calibration.png",
     37: "part-07-lifetime-pd.png",
     38: "hazard-marginal-cumulative-pd.png",
     43: "part-08-scenario-ecl.png",
     49: "part-09-irb-sensitivity.png",
-    55: "part-10-cutoff-economics.png",
-    61: "part-11-monitoring-layers.png",
-    67: "part-12-agent-governance.png",
+    59: "part-10-cutoff-economics.png",
+    64: "part-11-monitoring-layers.png",
+    70: "part-12-agent-governance.png",
+}
+
+FIGURE_CAPTIONS = {
+    1: "Contractual amounts, receipts, recoveries, and discounted shortfalls in the worked example.",
+    2: "Realised loss is right-skewed; the mean does not describe the upper tail.",
+    7: "Observed default rates across the project-generated product cases.",
+    16: "Account counts by IFRS 9 stage in the synthetic calculation case.",
+    17: "IFRS 9 changes the measurement horizon by stage; the CECL illustration begins with lifetime loss.",
+    23: "Missing-value and rule-violation rates after controlled defect injection.",
+    20: "Source terms and analytical suitability determine whether data are bundled, downloaded, or excluded.",
+    22: "Features are measured before the reference date and the 12-month outcome afterwards.",
+    25: "Observed default rate across ordered bins of a candidate characteristic.",
+    28: "WOE compares conditional distributions; bad rate is the within-bin event proportion.",
+    29: "The penalised negative log-likelihood decreases over the displayed IRLS iterations.",
+    30: "With PDO equal to 20, doubling good-to-bad odds increases score by 20 points.",
+    33: "Observed default rate is compared with mean predicted PD by probability band.",
+    37: "Illustrative lifetime cumulative PD curves derived from different 12-month levels.",
+    38: "Conditional hazard generates marginal first-default probabilities and cumulative PD.",
+    43: "Scenario-specific ECL is calculated before applying scenario probabilities.",
+    49: "Corporate IRB risk weight increases nonlinearly with PD under fixed LGD and maturity.",
+    59: "Expected value changes with the PD approval threshold in the synthetic decision case.",
+    64: "Input and score evidence are immediate; calibration and defaults require mature outcomes.",
+    70: "Evidence, analysis, policy evaluation, and human authority remain separate.",
 }
 
 
 def dataset_for(chapter: int) -> tuple[str, str]:
+    if chapter == 1:
+        return "synthetic_recovery", "load_case_dataset"
+    if chapter in {2, 8, 13, 14, 15, 39}:
+        return "synthetic_corporate_irb", "load_case_dataset"
+    if chapter in {3, 16, 17, 38}:
+        return "synthetic_ifrs9_schedule", "load_case_dataset"
+    if chapter in {4, 11, 21, 22, 23, 24, 37}:
+        return "synthetic_behavioral_history", "make_behavioral_credit_history"
+    if chapter in {19, 20}:
+        return "dataset_registry.yml", "registry_review"
     if chapter >= 67:
         return "synthetic_credit_documents", "make_synthetic_credit_document_case"
-    if chapter in range(37, 42):
+    if chapter in {40, 41, 57}:
         return "synthetic_recovery", "load_case_dataset"
-    if chapter == 42:
+    if chapter in {42, 60}:
         return "synthetic_revolving", "load_case_dataset"
     if chapter in range(43, 49):
         return "synthetic_ifrs9_schedule", "load_case_dataset"
@@ -131,6 +166,8 @@ def dataset_for(chapter: int) -> tuple[str, str]:
 def code_for(chapter: int, dataset: str, loader: str) -> str:
     if chapter <= 24:
         return EARLY_EXAMPLES[chapter]
+    if chapter <= 66:
+        return ADVANCED_EXAMPLES[chapter]
     if chapter == 67:
         return '''import math
 import re
@@ -211,7 +248,7 @@ ALLOWED = {"request_missing_evidence", "refer_for_human_review", "no_automated_a
 
 def validate_memo(memo, evidence_ids, policy_ids):
     if memo.recommendation not in ALLOWED:
-        raise ValueError("recommendation outside bounded authority")
+        raise ValueError("recommendation is not authorised")
     if set(memo.evidence_ids) - set(evidence_ids):
         raise ValueError("invented evidence citation")
     if set(memo.policy_citations) - set(policy_ids):
@@ -272,44 +309,8 @@ for action in attacks:
     results.append((action, decision.decision))
 assert all(decision == "DENY" for _, decision in results)
 print(results)
-print({"critical_violations": 0, "release_gate": "PASS"})"""
-    size_arg = "n_rows=1_500" if loader == "load_dataset" else "n_rows=500"
-    return f'''from __future__ import annotations
-
-import numpy as np
-import pandas as pd
-
-from creditriskbook.data import {loader}
-
-
-def chapter_{chapter:02d}_audit_table(seed: int = {800 + chapter}) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = {loader}("{dataset}", {size_arg}, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({{
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        }})
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_{chapter:02d}_audit_table()
-print(audit.to_string(index=False))'''
+print({"critical_violations": 0, "mandatory_release_criteria": "PASS"})"""
+    raise KeyError(f"No executable example is defined for Chapter {chapter}")
 
 
 def execute_code(code: str) -> str:
@@ -338,81 +339,72 @@ def lab(chapter: int, title: str) -> str:
     formula = FORMULAS[chapter - 1]
     code = code_for(chapter, dataset, loader)
     output = execute_code(code)
+    question, reason, validation, extension = LAB_CONTEXT[chapter]
+    interpretation = RESULT_INTERPRETATION[chapter]
     if chapter <= 6:
-        phase_heading = "foundational arithmetic in plain Python"
-        data_text = (
-            "a deliberately tiny, hand-checkable fixture whose values are visible in the Python "
-            "window. The extension exercise then repeats the calculation on "
-            f"`{dataset}`"
-        )
         implementation_text = (
-            "The first six chapters use scalar arithmetic, lists, loops, and only Python's standard "
-            "library. NumPy, pandas, modelling packages, and `creditriskbook` are intentionally "
-            "absent so that every intermediate value can be checked by hand."
+            "From first principles: scalar values, lists, and the Python standard library; "
+            "intermediate quantities remain visible."
         )
     elif chapter <= 24:
-        phase_heading = "standalone construction: no project-library imports"
-        data_text = (
-            "an original miniature fixture whose values are visible in the Python window. "
-            f"The extension exercise then repeats the calculation on `{dataset}`"
-        )
         implementation_text = (
-            "The complete calculation is written in the chapter. It may import Python, NumPy, or "
-            "pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit."
+            "From first principles: the calculation is written in full; NumPy or pandas is used "
+            "only for transparent array and table operations."
+        )
+    elif chapter <= 54:
+        implementation_text = (
+            "Reference implementation: the code evaluates the displayed expression directly and "
+            "provides expected intermediate values for later library tests."
         )
     else:
-        phase_heading = "construction and controlled promotion"
-        data_text = f"`{dataset}`"
         implementation_text = (
-            "The chapter keeps the estimator visible. Reusable data access may now be imported, "
-            "while the method being taught is derived, implemented, tested, and reviewed before promotion."
+            "Applied implementation: the code creates a reproducible validation, deployment, or "
+            "governance record while keeping measurement separate from policy authority."
         )
     figure = ""
     if chapter in FIGURES:
-        figure = f"\n![Figure {chapter}.1 — Original teaching visual generated from repository data.](book/figures/{FIGURES[chapter]})\n"
-    return f"""## Mathematics-to-code laboratory — {phase_heading}
+        figure = (
+            f"\n![Figure {chapter}.1 — {FIGURE_CAPTIONS[chapter]}]"
+            f"(book/figures/{FIGURES[chapter]})\n"
+        )
+    return f"""## Worked calculation — {question}
 
-### 1. Start with the decision, observation unit, and estimand
+{reason}
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **{title}** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with {data_text}. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `{dataset}`. **Implementation level:** {implementation_text}
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \\[
 {formula}
 \\]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
-
-### 2. Derive before implementing
-
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
 {figure}
-### 3. Implement the first transparent component
-
-{implementation_text} Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
 {code}
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
 {output}
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+{interpretation}
 
-### 6. Extend, compare datasets, and document
+**Validation:** {validation}
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **{extension}** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.
 """
 
 

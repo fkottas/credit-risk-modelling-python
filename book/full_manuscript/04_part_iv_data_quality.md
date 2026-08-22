@@ -1,4 +1,4 @@
-# Chapter 19 — Internal, Bureau, Alternative, Public, and Synthetic Data
+# Chapter 19 — Credit Data Sources and Suitability
 
 ## Begin with the decision and the population
 
@@ -29,25 +29,67 @@ Public datasets are teaching and infrastructure assets, not automatic evidence f
 | Dataset or generator | Unit and useful case | What it cannot establish |
 |---|---|---|
 | UCI South German Credit, CC BY 4.0 | application; manual scorecard and cost-sensitive PD | current population validity or out-of-time stability |
+| UCI Statlog German Credit, CC BY 4.0 | application; comparison of source documentation and coding | preferred German benchmark, because UCI reports coding-information errors |
 | UCI Taiwan credit card, CC BY 4.0 | customer; repayment-status features and ML comparison | current policy, geography or prospective time split |
 | UCI Credit Approval, CC BY 4.0 | application; missing and mixed data types | default probability, because the outcome is approval |
 | UCI Australian Credit Approval, CC BY 4.0 | application; screening-model comparison and decision-bias discussion | default probability, because the outcome is an application decision |
+| UCI Bank Marketing, CC BY 4.0 | customer contact; leakage and ordered-source classification | credit approval or default, because the outcome is deposit subscription |
 | UCI Polish/Taiwan bankruptcy, CC BY 4.0 | firm; failure and low-event exercises | Basel default without a mapped default definition |
+| CFPB Consumer Complaint Database | complaint; taxonomy, trend and NLP exercises | a representative customer sample, underwriting outcome or default label |
 | HMDA public files | mortgage application; access, decision and pricing analysis | subsequent loan default |
-| Fannie Mae/Freddie Mac performance files | mortgage-month; vintage, delinquency and prepayment | universal mortgage behaviour; raw redistribution rights |
+| Fannie Mae/Freddie Mac performance files | conceptual reference only in this edition | project policy excludes raw files and download code because reviewed terms do not support this repository |
 | BLS Consumer Expenditure PUMD | consumer unit; affordability, household budgets and survey-weight exercises | loan approval, default, LGD or EAD |
 | World Bank, Eurostat, ECB and FRED series | country/period or market/period; macro paths and satellite-model inputs | borrower-level causality or ready-made IFRS 9 scenario probabilities |
 | Federal Reserve stress scenarios | macro-variable/quarter; severity, consistency and stress-transmission exercises | a forecast or occurrence probability |
 | Project synthetic behavioural history | application, contract, facility-month and enquiry | empirical claims about any institution |
 | Project recovery, IFRS 9, IRB and counterparty cases | specialist ledgers unavailable in a single open source | regulatory approval or accounting policy evidence |
 
-The UCI Australian case and the macro, household and supervisory-scenario sources are governed by their official records and reuse notices [R23, R70–R74]. Each adapter must preserve the selected series or release identifier, access date and analytical limitation; inclusion in this table is not permission to merge unlike outcomes into a single benchmark.
+The UCI records, CFPB complaints, and the macro, household and supervisory-scenario sources are governed by their official records and reuse notices [R18–R23, R52, R57, R70–R74, R82–R83]. Each adapter preserves the selected file, series or release identifier, access date and analytical limitation; inclusion in this table is not permission to merge unlike outcomes into one benchmark.
+
+The implementation status is reported separately from the catalogue. The common loader exposes ten keys, including eight UCI records, a generated retail case and an optional local Kaggle file. Eight additional generated cases cover behavioural history, revolving EAD, recovery, IFRS 9, corporate IRB, counterparty risk, credit documents and fraud. The World Bank adapter retrieves a dated country-indicator panel, while the CFPB adapter validates a locally downloaded extract and excludes narratives by default. This distinction prevents a long source list from being mistaken for a set of models that have all been executed.
+
+## A public macroeconomic extract without relabelling
+
+The World Development Indicators API supplies country-level macroeconomic history under the dataset's stated CC BY 4.0 licence [R70, R81]. The first version uses only the Python standard library so that the requested country, indicator, period and response metadata remain explicit:
+
+```python
+import json
+from urllib.request import urlopen
+
+url = (
+    "https://api.worldbank.org/v2/country/GRC/indicator/"
+    "NY.GDP.MKTP.KD.ZG;SL.UEM.TOTL.ZS"
+    "?source=2&format=json&date=2024:2025&per_page=100"
+)
+with urlopen(url, timeout=120) as response:
+    metadata, observations = json.load(response)
+
+rows = sorted(
+    (int(x["date"]), x["indicator"]["id"], x["value"])
+    for x in observations
+)
+print("last updated:", metadata["lastupdated"])
+for row in rows:
+    print(row)
+```
+
+Executed on 22 August 2026:
+
+```output
+last updated: 2026-07-13
+(2024, 'NY.GDP.MKTP.KD.ZG', 2.0865743380603)
+(2024, 'SL.UEM.TOTL.ZS', 10.02)
+(2025, 'NY.GDP.MKTP.KD.ZG', 2.07306882481713)
+(2025, 'SL.UEM.TOTL.ZS', 8.54)
+```
+
+These observations describe annual Greek GDP growth and modelled ILO unemployment. They are neither borrower outcomes nor probability-weighted IFRS 9 scenarios. A satellite-model exercise must align frequency, geography, release timing and forecast construction with the portfolio; the extraction date is retained because values can be revised.
 
 ## Synthetic data with an explicit mechanism
 
 Synthetic does not mean arbitrary. A useful generator specifies support, dependencies, time and limitations. For example, an open contract must not have a closing date before its opening date; a monthly snapshot must not occur before opening; $DPD\ge 90$ should reconcile to the chosen default-status rule; balances should normally be non-negative; and future labels should depend on past risk, not on a random target unrelated to the features.
 
-The course generator creates four separate tables: applications, contracts, monthly performance and bureau enquiries. It uses a latent propensity only to produce rational teaching directions. Recent DPD, utilisation and new-credit intensity increase generated default probability, while income reduces it. The laboratory first constructs miniature rows explicitly; the complete generator is then assembled progressively in the Chapter 19 source script and subsequent data chapters. This mechanism is original project code and is not estimated from a real lender.
+The course generator creates four separate tables: applications, contracts, monthly performance and bureau enquiries. It uses a latent propensity only to produce rational teaching directions. Recent DPD, utilisation and new-credit intensity increase generated default probability, while income reduces it. The worked example first constructs miniature rows explicitly; the complete generator is then assembled progressively in the Chapter 19 source script and subsequent data chapters. This mechanism is original project code and is not estimated from a real lender.
 
 Representative output for the fixed seed:
 
@@ -66,7 +108,7 @@ For every field record the owner, original purpose, collection process, effectiv
 
 **Applied investigation.** Build a source inventory for application, bureau, fraud, servicing and outcome systems. Mark fields unavailable at decision time, fields that are policy outputs, fields that can proxy protected characteristics, and fields requiring legal review. Reject any source whose rights or purpose cannot be evidenced.
 
-# Chapter 20 — Data Licences, Attribution, Privacy, and Reproducibility
+# Chapter 20 — Legal Use of Public and Synthetic Data
 
 ## Public access is not permission
 
@@ -88,9 +130,9 @@ The book's dataset registry records publisher, official URL, licence, redistribu
 
 Checksums protect reproducibility, not legality. A hash proves which bytes were used. It does not prove a right to use them. Conversely, a permissive licence does not establish representativeness, target validity or fairness.
 
-The laboratory defines `DatasetLicenceRecord` and `licence_gate` directly. Empty publisher, official URL, licence, redistribution rule or attribution blocks the record; an unresolved licence never becomes permission through silence. The live UCI adapter is introduced after readers can review this evidence structure themselves.
+The worked example defines `DatasetLicenceRecord` and `review_licence_record` directly. An absent publisher, official URL, licence, redistribution rule or attribution fails the review; an unresolved licence never becomes permission through silence. The live UCI adapter is introduced after readers can examine this evidence structure themselves.
 
-The expected licence is `CC BY 4.0`, and the attribution includes UCI and DOI `10.24432/C5X89F`. The adapter downloads from the reviewed UCI archive and rejects a file whose SHA-256 no longer matches. The repository does not quietly update the checksum; a changed file triggers human review.
+The expected licence is `CC BY 4.0`, and the attribution includes UCI and DOI `10.24432/C5X89F`. The adapter downloads from the reviewed UCI archive and rejects a file whose SHA-256 no longer matches. A checksum change requires source review rather than an automatic update.
 
 ## Reproducibility manifest
 
@@ -112,7 +154,7 @@ There is an important copyright and provenance distinction between two kinds of 
 
 **Applied investigation.** Compare UCI South German, a conditional Kaggle competition and Freddie Mac performance data. Decide separately whether analysis, download-by-code, local retention and redistribution are allowed. Record the evidence and the date of the decision.
 
-# Chapter 21 — Relational Credit Data, Lineage, and Point-in-Time Joins
+# Chapter 21 — Relational Data and Point-in-Time Lineage
 
 ## One wide CSV hides the process
 
@@ -200,7 +242,7 @@ After the fundamentals are clear, the student expands the hand table into an ori
 
 **Applied investigation.** Draw the key and cardinality map, make a deliberately multiplying join, reconcile its balance inflation, then replace it with an aggregation at the correct point in time.
 
-# Chapter 22 — Observation Windows, Targets, and Leakage-Safe Samples
+# Chapter 22 — Target Construction and Leakage Prevention
 
 ## Observation, buffer and performance windows
 
@@ -278,7 +320,7 @@ Unweighted sample prevalence is not portfolio default rate. Logistic slopes may 
 
 **Applied investigation.** Create monthly observations and twelve-month labels, remove immature outcomes, then compare random-row, grouped-customer and out-of-time splits. Explain which apparent performance increase is leakage.
 
-# Chapter 23 — Data Profiling, Reconciliation, Cleaning, and Quarantine
+# Chapter 23 — Data Quality, Cleaning, and Reconciliation
 
 ## Cleaning begins with diagnosis
 
@@ -323,7 +365,7 @@ default,&DPD\ge90.
 
 This is a teaching convention, not a universal regulatory default definition.
 
-![Cleaning rules preserve raw evidence and produce a controlled disposition](book/figures/data-cleaning-quarantine-flow.png)
+![Cleaning rules preserve raw values and record the disposition of each exception](book/figures/data-cleaning-quarantine-flow.png)
 
 ## Write the first cleaner in the chapter
 
@@ -373,11 +415,11 @@ An exact duplicate and a later correction are different. For business key $K=(cu
 r_K^*=\arg\max_{r:key(r)=K} processing\_time(r).
 \]
 
-Earlier versions are not erased. They move to quarantine with action `retain_latest_ingestion_and_quarantine_prior_version`. If authority is ambiguous, halt. Choosing the value most favourable to model performance is never a cleaning rule.
+Earlier versions are not erased. They move to an exception table with action `retain_latest_ingestion_and_quarantine_prior_version`. If source authority is ambiguous, processing stops for review. Choosing the value most favourable to model performance is never a cleaning rule.
 
-## Freeze the tested cleaning contract before promotion
+## Approve and version the cleaning contract
 
-Students now have enough information to specify the later package contract: raw rows in; accepted rows, quarantine rows and one issue record per failed rule out. The Chapter 23 standalone script implements this contract without project imports and prints the accepted indexes plus row-level reasons. The full version is promoted only after Chapters 21–24 are complete, adding customer-specific reference dates, processing-time versions, status-DPD consistency and source-row evidence without changing the visible contract.
+Students now have enough information to specify the later package contract: raw rows in; accepted rows, exception rows and one issue record per failed rule out. The Chapter 23 standalone script implements this contract without project imports and prints the accepted indexes plus row-level reasons. The reusable version is introduced only after Chapters 21–24 are complete, adding customer-specific reference dates, processing-time versions, status-DPD consistency and source-row evidence without changing the input and output definitions.
 
 Expected issue categories include `dpd_out_of_domain`, `negative_or_missing_payment_received`, `balance_exceeds_120pct_limit`, `status_out_of_domain`, `post_reference_snapshot`, `status_dpd_inconsistent` and `superseded_business_key`. Counts are generated and tested; they are not manually edited into a presentation.
 
@@ -385,7 +427,27 @@ Expected issue categories include `dpd_out_of_domain`, `negative_or_missing_paym
 
 MCAR, MAR and MNAR are descriptions of a data-generating process, not labels inferred from one missingness table. If $R=1$ means observed, MCAR states $R\perp(X,Y)$; MAR allows $\Pr(R=1\mid X_{obs},X_{mis},Y)=\Pr(R=1\mid X_{obs},Y)$; MNAR allows dependence on the missing value after conditioning. Real missing income can arise from an optional field, self-employment, system failure, policy path or refusal. A median does not solve the cause.
 
-The baseline policy is preserve raw, diagnose, then quarantine or use an explicit, approved missingness treatment. The same applies to outliers. Winsorisation changes values and can damage scorecard meaning. Store raw value, transformation, threshold, rationale and impact separately.
+The baseline policy is to preserve the raw value, diagnose the cause, and then exclude the observation or apply an explicit approved treatment. The same principle applies to outliers. Winsorisation changes values and can damage scorecard meaning. Store the raw value, transformation, threshold, rationale and measured impact separately.
+
+Deliberately defective data are created only from a copy and are accompanied by a manifest. Each manifest row identifies the source row, record identifier, field, defect type, source value, altered value, detection rule and random seed. Missing values, range breaches, category breaches, future dates, duplicate identifiers and a target-derived leakage column therefore become separate test hypotheses. A defect that is not linked to an expected rule is noise rather than a controlled teaching case.
+
+## Assess whether synthetic data are rational
+
+A generator can execute without producing a credible case. Rationality is assessed at three levels. First, structural identities must hold. Contract open dates precede snapshots, closed contracts do not produce later balances unless the case explicitly models corrections, component balances reconcile to customer totals, default precedes recoveries, and scenario weights sum to one. For rule $k$, define the structural violation rate
+
+\[
+V_k=\frac{1}{n_k}\sum_{i=1}^{n_k}\mathbb{1}\{\text{record }i\text{ violates rule }k\}.
+\]
+
+The clean generator requires $V_k=0$ for every hard identity. A non-zero value is a generator defect, not realistic noise. Deliberate errors are introduced only afterwards and must appear in the defect manifest.
+
+Second, directional relationships must agree with the documented mechanism. Holding other generated inputs fixed, increasing recent DPD or utilisation should not reduce the latent default propensity when the generator declares a positive effect. Increasing eligible recovery should not increase workout loss. Extending recovery time at a positive discount rate should not increase present value. These are controlled counterfactual tests of code, not empirical claims about the size of an effect in a real portfolio. A useful test generates paired records that differ in one driver and asserts the expected ordering before random outcome draws are applied.
+
+Third, aggregate behaviour must be plausible for the stated teaching purpose. Review target prevalence, missingness, quantiles, category shares, correlations, transition rates, cure rates, stage mix, utilisation, recovery timing and concentration. The question is not whether the synthetic distribution copies a bank. It is whether the exercise contains enough variation, events and edge cases to identify the intended calculation without impossible combinations. For example, a scorecard case needs both defaults and non-defaults in major segments; an LGD case needs resolved and unresolved workouts; an EAD case needs positive undrawn amounts and explicit zero-undrawn exceptions.
+
+Rationality also requires sensitivity and reproducibility. Repeat the generator across seeds and parameter settings. Hard identities should always hold, while sample statistics should vary within documented ranges. Increase the macroeconomic stress parameter and confirm that scenario loss changes in the intended direction without forcing every borrower to default. Record the seed, generator version and output hash so an unexpected change can be traced to code or configuration.
+
+No similarity measure can convert synthetic observations into evidence about an actual lender. A generated 8% default rate is a design choice unless calibrated against lawfully obtained portfolio data. Conversely, fitting a generator to restricted records can preserve licence, confidentiality or re-identification risks even when names are removed. The book therefore separates two conclusions: the generated case is internally coherent and suitable for testing the method; it is not externally validated for pricing, provisioning, capital or customer decisions.
 
 **Applied investigation.** Inject each documented defect, produce a rule-by-source quality table, quarantine without imputation, reconcile row counts, and draft an exception ticket with owner, expiry and compensating control.
 
@@ -539,11 +601,11 @@ This example prevents four common errors: taking last instead of maximum, counti
 
 Add a future row with $DPD=999$. Every feature at the earlier reference date must remain identical. Add a contract exactly at $t-6m$ and verify exclusion under the open-left convention. Add two contracts in one month and verify `count_dpd30_6m` still counts a month, not contracts. Add no-history and zero-limit cases; missing or quarantine policy must be explicit.
 
-## Freeze the feature contract before package reuse
+## Approve and version the feature definitions
 
-The Chapter 24 standalone script calculates `last_dpd`, `max_dpd_6m`, `count_dpd30_6m`, mean utilisation and `CountContractsLast6Months` from visible histories. The extension then adds 3-, 6- and 12-month severity/frequency, recency, persistence, current/mean/max/trend utilisation, payment ratios, over-limit months, active balances and bureau enquiries. Only after the hand cases and future-leakage tests pass is this contract promoted to the richer implementation used later in the book.
+The Chapter 24 standalone script calculates `last_dpd`, `max_dpd_6m`, `count_dpd30_6m`, mean utilisation and `CountContractsLast6Months` from explicit histories. The extension then adds 3-, 6- and 12-month severity/frequency, recency, persistence, current/mean/max/trend utilisation, payment ratios, over-limit months, active balances and bureau enquiries. Only after the hand calculations and future-leakage tests pass are these definitions implemented in the reusable package used later in the book.
 
-The cleaning result is passed into features so a model cannot quietly consume quarantined rows. Tests reconcile scratch and library results for hand cases, assert the closed-form utilisation slope, and prove that future rows do not change earlier features.
+The cleaning result is passed into feature construction so a model cannot consume rejected rows without an explicit override. Tests reconcile the standalone and package results for hand cases, assert the closed-form utilisation slope, and prove that future rows do not change earlier features.
 
 ## Evaluate rationality, not only execution
 
@@ -565,4 +627,4 @@ Characteristic analysis should report count, exposure, missing share, event coun
 
 **Lab.** Reproduce the cured-borrower hand calculation, extend the scratch implementation with utilisation slope and bureau enquiries, pass the point-in-time tests, promote the functions to the package, and compare characteristic tables for generated retail, UCI Taiwan card and a provider-controlled mortgage file where the reader has lawful access.
 
-> Part IV now produces an auditable analytic base table from lawful sources. It does not treat cleaning as silent value replacement or feature engineering as a one-line aggregation. Every feature has a formula, boundary, scratch implementation, test, promoted library function and business interpretation.
+> Part IV produces an auditable analytical base table from lawful sources. Cleaning is a documented decision about each exception, and feature engineering is a point-in-time statistical construction. Every feature has a formula, boundary, standalone implementation, test, reusable implementation and business interpretation.

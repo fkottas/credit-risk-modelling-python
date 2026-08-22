@@ -72,6 +72,8 @@ class IFRS9EngineTests(unittest.TestCase):
         self.assertGreater(account.loc["S2", "ecl"], account.loc["S1", "ecl"])
         self.assertTrue(np.allclose(result.reconciliation["amount"], result.account["ecl"].sum()))
         self.assertEqual(len(result.scenario), 6)
+        first_month = result.detail.loc[result.detail["period"].eq(1), "discount_factor"].iloc[0]
+        self.assertAlmostEqual(first_month, (1.0 + 0.06) ** (-1.0 / 12.0))
 
     def test_provision_matrix_applies_forward_multiplier(self) -> None:
         history = pd.DataFrame(

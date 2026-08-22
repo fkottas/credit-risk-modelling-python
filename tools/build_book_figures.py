@@ -17,9 +17,27 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "book" / "figures"
 NAVY, BLUE, TEAL, GOLD, GREY = "#203748", "#2E74B5", "#1C8C8C", "#B28A38", "#667788"
 
+plt.rcParams.update(
+    {
+        "font.family": "DejaVu Sans",
+        "font.size": 10.5,
+        "axes.titlesize": 13,
+        "axes.titleweight": "semibold",
+        "axes.labelsize": 10.5,
+        "axes.edgecolor": "#8B98A5",
+        "axes.linewidth": 0.8,
+        "xtick.labelsize": 9.5,
+        "ytick.labelsize": 9.5,
+        "legend.fontsize": 9.2,
+        "grid.color": "#D9E0E6",
+        "grid.linewidth": 0.7,
+        "figure.facecolor": "white",
+    }
+)
+
 
 def save(fig: plt.Figure, name: str) -> None:
-    fig.tight_layout()
+    fig.tight_layout(pad=1.15)
     fig.savefig(OUT / name, dpi=220, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -29,8 +47,14 @@ def line_figure(x, ys, labels, title, xlabel, ylabel, name):
     for y, label, color in zip(ys, labels, (BLUE, TEAL, GOLD, NAVY), strict=False):
         ax.plot(x, y, label=label, linewidth=2.2, color=color)
     ax.set(title=title, xlabel=xlabel, ylabel=ylabel)
-    ax.grid(alpha=0.2)
-    ax.legend(frameon=False)
+    ax.grid(alpha=0.65)
+    if len(labels) > 1:
+        ax.legend(
+            frameon=False,
+            ncol=min(3, len(labels)),
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.18),
+        )
     save(fig, name)
 
 
@@ -42,15 +66,21 @@ def main() -> None:
     ax.hist(loss[loss > 0], bins=45, color=BLUE, alpha=0.78)
     ax.axvline(loss.mean(), color=GOLD, linewidth=2.2, label="portfolio mean loss")
     ax.set(
-        title="Loss distribution: expected loss and tail", xlabel="account loss", ylabel="frequency"
+        title="Distribution of realised account loss",
+        xlabel="account loss (EUR)",
+        ylabel="accounts",
     )
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.17))
     save(fig, "part-01-loss-distribution.png")
 
     grouped = retail.groupby("product", observed=True)["default_12m"].mean().sort_values()
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
     grouped.plot.bar(ax=ax, color=[TEAL, BLUE, GOLD])
-    ax.set(title="Observed default rate by product", xlabel="product", ylabel="default rate")
+    ax.set(
+        title="Default rate by product in the synthetic portfolio",
+        xlabel="product",
+        ylabel="observed default rate",
+    )
     ax.tick_params(axis="x", rotation=0)
     save(fig, "part-02-product-risk.png")
 
@@ -58,7 +88,9 @@ def main() -> None:
     stage_counts = stages.drop_duplicates("account_id")["stage"].value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
     ax.bar(stage_counts.index.astype(str), stage_counts.values, color=[TEAL, GOLD, NAVY])
-    ax.set(title="Synthetic IFRS 9 stage distribution", xlabel="stage", ylabel="accounts")
+    ax.set(
+        title="Stage distribution in the synthetic IFRS 9 case", xlabel="stage", ylabel="accounts"
+    )
     save(fig, "part-03-stages.png")
 
     damaged = retail.copy(deep=True)
@@ -85,10 +117,10 @@ def main() -> None:
     ax.barh(y, invalid[variables], left=missing[variables], color=GOLD, label="rule breach")
     ax.set_yticks(y, variables)
     ax.set(
-        title="Deliberately damaged teaching copy: quality profile",
+        title="Missing and invalid observations after controlled defect injection",
         xlabel="share of records",
     )
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.17))
     save(fig, "part-04-data-quality.png")
 
     bins = np.quantile(retail["debt_to_income"], np.linspace(0, 1, 7))
@@ -98,7 +130,7 @@ def main() -> None:
         np.arange(1, 7),
         [rates],
         ["observed bad rate"],
-        "Characteristic curve",
+        "Observed default rate by ordered scorecard bin",
         "ordered bin",
         "bad rate",
         "part-05-characteristic.png",
@@ -106,11 +138,11 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 3, figsize=(8.0, 3.7), sharey=True)
     tree_panels = [
-        ("Parent", [6, 4], 0.48),
-        ("Split after 5", [5, 0, 1, 4], 0.32),
-        ("Split after 6", [6, 0, 0, 4], 0.48),
+        ("Parent", [6, 4], "Gini impurity", 0.48),
+        ("Split after 5", [5, 0, 1, 4], "Gini gain", 0.32),
+        ("Split after 6", [6, 0, 0, 4], "Gini gain", 0.48),
     ]
-    for axis, (title, counts, gain) in zip(axes, tree_panels, strict=True):
+    for axis, (title, counts, metric, value) in zip(axes, tree_panels, strict=True):
         if len(counts) == 2:
             positions = [0]
             goods, bads = [counts[0]], [counts[1]]
@@ -122,12 +154,14 @@ def main() -> None:
         axis.bar(positions, goods, color=TEAL, label="non-default")
         axis.bar(positions, bads, bottom=goods, color=GOLD, label="default")
         axis.set_xticks(positions, labels)
-        axis.set_title(f"{title}\nGini gain = {gain:.2f}", color=NAVY, weight="bold")
+        axis.set_title(f"{title}\n{metric} = {value:.2f}", color=NAVY, weight="bold")
         axis.set_ylim(0, 10)
         axis.grid(axis="y", alpha=0.18)
     axes[0].set_ylabel("observations")
-    axes[-1].legend(frameon=False, loc="upper right", fontsize=8)
-    fig.suptitle("Tree splitting compares weighted child impurity", color=NAVY, weight="bold")
+    handles, labels_tree = axes[-1].get_legend_handles_labels()
+    fig.legend(handles, labels_tree, frameon=False, ncol=2, loc="lower center")
+    fig.suptitle("Candidate tree splits and weighted Gini impurity", color=NAVY, weight="bold")
+    fig.subplots_adjust(bottom=0.18)
     save(fig, "tree-split-gain.png")
 
     score = np.asarray(1.0 / (1.0 + np.exp(4.0 - 4.0 * retail["utilisation"])))
@@ -139,7 +173,7 @@ def main() -> None:
     ax.plot([0, 1], [0, 1], linestyle="--", color=GREY)
     ax.plot(predicted, observed, marker="o", color=BLUE)
     ax.set(
-        title="Calibration is distinct from discrimination",
+        title="Calibration of predicted and observed default rates",
         xlabel="mean predicted PD",
         ylabel="observed default rate",
     )
@@ -151,7 +185,7 @@ def main() -> None:
         months,
         curves,
         ["1% 12m PD", "3% 12m PD", "8% 12m PD"],
-        "Lifetime cumulative PD",
+        "Lifetime cumulative probability of default",
         "month",
         "cumulative PD",
         "part-07-lifetime-pd.png",
@@ -161,7 +195,11 @@ def main() -> None:
     totals = [scenarios.base.sum() * m for m in (0.72, 1.0, 1.48)]
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
     ax.bar(["upside", "base", "downside"], totals, color=[TEAL, BLUE, GOLD])
-    ax.set(title="Scenario ECL before probability weighting", ylabel="undiscounted ECL")
+    ax.set(
+        title="Expected credit loss by scenario before probability weighting",
+        xlabel="scenario",
+        ylabel="undiscounted ECL (EUR)",
+    )
     save(fig, "part-08-scenario-ecl.png")
 
     pd_grid = np.geomspace(0.0005, 0.20, 80)
@@ -177,9 +215,9 @@ def main() -> None:
         pd_grid,
         [irb.rows["risk_weighted_assets"]],
         ["corporate IRB"],
-        "IRB risk-weight sensitivity",
-        "PD",
-        "risk weight",
+        "Corporate IRB risk-weight sensitivity to PD",
+        "probability of default",
+        "risk-weight ratio",
         "part-09-irb-sensitivity.png",
     )
 
@@ -191,19 +229,35 @@ def main() -> None:
         cutoffs,
         [profit],
         ["illustrative expected margin"],
-        "Cutoff economics",
-        "PD cutoff",
-        "value per applicant",
+        "Expected value by approval threshold in the synthetic case",
+        "approval threshold for predicted PD",
+        "expected value per applicant (EUR)",
         "part-10-cutoff-economics.png",
     )
 
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
-    labels = ["data", "prediction", "calibration", "outcome", "fairness"]
-    values = [0.05, 0.11, 0.08, 0.17, 0.06]
-    ax.bar(labels, values, color=[TEAL, BLUE, GOLD, NAVY, GREY])
-    ax.axhline(0.10, color="#B44", linestyle="--", label="illustrative alert line")
-    ax.set(title="Monitoring layers must be separated", ylabel="normalized movement")
-    ax.legend(frameon=False)
+    labels = [
+        "input data",
+        "score distribution",
+        "approval outcomes",
+        "12-month calibration",
+        "12-month group outcomes",
+    ]
+    availability_month = [0, 0, 0, 12, 12]
+    colours = [TEAL, BLUE, GREY, GOLD, NAVY]
+    y_position = np.arange(len(labels))
+    ax.barh(y_position, availability_month, color=colours, height=0.58)
+    ax.scatter(availability_month, y_position, color=colours, s=55, zorder=3)
+    ax.set_yticks(y_position, labels)
+    ax.invert_yaxis()
+    ax.set_xticks([0, 3, 6, 9, 12])
+    ax.set(
+        title="Availability of monitoring evidence for a 12-month PD model",
+        xlabel="months after a scoring date",
+        ylabel="",
+        xlim=(-0.5, 12.8),
+    )
+    ax.grid(axis="x", alpha=0.65)
     save(fig, "part-11-monitoring-layers.png")
 
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
@@ -211,7 +265,7 @@ def main() -> None:
     boxes = [
         (0.06, 0.66, "Evidence\nregistry"),
         (0.38, 0.66, "Specialist\nproposal"),
-        (0.70, 0.66, "Policy\ngate"),
+        (0.70, 0.66, "Authority\ncheck"),
         (0.38, 0.22, "Human\napproval"),
     ]
     for x, y, text in boxes:
@@ -227,9 +281,7 @@ def main() -> None:
         ax.annotate(
             "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
         )
-    ax.set_title(
-        "Governed agent: evidence, proposal, gate, and human authority", color=NAVY, weight="bold"
-    )
+    ax.set_title("Restricted-authority agent workflow", color=NAVY, weight="bold")
     save(fig, "part-12-agent-governance.png")
 
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
@@ -284,10 +336,10 @@ def main() -> None:
     ax.axis("off")
     architecture = [
         (0.06, 0.70, 0.24, 0.15, "Approved evidence\nscoped + versioned", TEAL),
-        (0.38, 0.70, 0.24, 0.15, "Bounded assistant\nextract + retrieve", BLUE),
-        (0.70, 0.70, 0.24, 0.15, "Action proposal\nno execution token", GOLD),
-        (0.38, 0.38, 0.24, 0.15, "Deterministic gate\nrole + scope + evidence", NAVY),
-        (0.38, 0.10, 0.24, 0.15, "Human authority\nreview + signed decision", TEAL),
+        (0.38, 0.70, 0.24, 0.15, "Document assistant\nextract + retrieve", BLUE),
+        (0.70, 0.70, 0.24, 0.15, "Recommendation only\nno execution access", GOLD),
+        (0.38, 0.38, 0.24, 0.15, "Authorisation rules\nrole + scope + evidence", NAVY),
+        (0.38, 0.10, 0.24, 0.15, "Authorised reviewer\nreview + signed decision", TEAL),
     ]
     for x, y, width, height, label, edge in architecture:
         ax.add_patch(
@@ -332,12 +384,17 @@ def main() -> None:
     ax.text(
         0.50,
         0.02,
-        "The model proposes. Deterministic policy and an authorised human control action.",
+        "The assistant proposes; deterministic rules and an authorised reviewer control execution.",
         ha="center",
         color=GREY,
         fontsize=9.2,
     )
-    ax.set_title("Governed document-agent architecture", color=NAVY, weight="bold", fontsize=14)
+    ax.set_title(
+        "Document-assistant architecture with separated authority",
+        color=NAVY,
+        weight="bold",
+        fontsize=14,
+    )
     save(fig, "nlp-governed-agent-architecture.png")
 
     behavioural = make_behavioral_credit_history(n_customers=300, months=18, seed=920)
@@ -362,9 +419,7 @@ def main() -> None:
         ax.annotate(
             "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 2}
         )
-    ax.set_title(
-        "Relational credit data: keys and units come before features", color=NAVY, weight="bold"
-    )
+    ax.set_title("Observation units and keys in relational credit data", color=NAVY, weight="bold")
     save(fig, "data-relational-architecture.png")
 
     selected = behavioural.applications.iloc[0]
@@ -386,11 +441,11 @@ def main() -> None:
     ax.axvline(reference, color=NAVY, linestyle="--", label="reference date")
     ax.axhline(30, color=GREY, linestyle=":", label="30 DPD threshold")
     ax.set(
-        title="DPD path becomes max, last, count and recency features",
+        title="Six-month delinquency history at the reference date",
         xlabel="snapshot date",
         ylabel="days past due",
     )
-    ax.legend(frameon=False, ncol=2)
+    ax.legend(frameon=False, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.18))
     save(fig, "behavioral-dpd-window.png")
 
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
@@ -399,7 +454,7 @@ def main() -> None:
         (0.03, "Preserve\nraw row"),
         (0.27, "Apply\nrule"),
         (0.51, "Record\nissue"),
-        (0.75, "Clean or\nquarantine"),
+        (0.75, "Accept or\nrecord exception"),
     ]
     for x, label in steps:
         ax.add_patch(
@@ -424,14 +479,12 @@ def main() -> None:
     ax.text(
         0.50,
         0.20,
-        "No silent imputation, capping or overwriting",
+        "Retain the source value and record every correction",
         ha="center",
         color="#A33",
         weight="bold",
     )
-    ax.set_title(
-        "Auditable cleaning is a controlled disposition process", color=NAVY, weight="bold"
-    )
+    ax.set_title("Traceable data cleaning and exception handling", color=NAVY, weight="bold")
     save(fig, "data-cleaning-quarantine-flow.png")
 
     contracts = behavioural.contracts.loc[
@@ -444,7 +497,7 @@ def main() -> None:
     ax.axvline(reference, color=NAVY, linestyle="--")
     ax.set_yticks(y, contracts["contract_id"].str[-2:])
     ax.set(
-        title="Contract openings inside the six-month lookback",
+        title="Contract openings in the six-month observation window",
         xlabel="open date",
         ylabel="contract suffix",
     )
@@ -467,20 +520,10 @@ def main() -> None:
     for month, value in zip(months_cf, discounted, strict=True):
         ax.text(month + 1.5 * width, value + 9, f"{value:.2f}", ha="center", fontsize=8)
     ax.set(
-        title="Cash-flow loss: shortfall first, discounting second",
+        title=f"Cash-flow loss components (present value = EUR {discounted.sum():.2f})",
         xlabel="month",
         ylabel="EUR",
         xticks=months_cf,
-    )
-    ax.text(
-        0.99,
-        0.94,
-        f"PV loss = EUR {discounted.sum():.2f}\nworkout costs enter with a positive sign",
-        transform=ax.transAxes,
-        ha="right",
-        va="top",
-        color=NAVY,
-        bbox={"boxstyle": "round,pad=0.35", "facecolor": "#EEF3F7", "edgecolor": BLUE},
     )
     ax.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.14))
     save(fig, "cash-flow-loss-decomposition.png")
@@ -516,13 +559,13 @@ def main() -> None:
         fontsize=9,
     )
     ax.set(
-        title="IFRS 9 changes horizon by stage; CECL starts with lifetime loss",
+        title="Loss-recognition horizons under IFRS 9 and CECL",
         xlabel="months from reporting / recognition date",
     )
     ax.grid(axis="x", alpha=0.18)
     save(fig, "ifrs9-cecl-horizon.png")
 
-    # Chapter 20: a conservative evidence gate for every candidate source.
+    # Chapter 20: licensing and analytical suitability for candidate data sources.
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -570,15 +613,15 @@ def main() -> None:
     ax.text(
         0.50,
         0.08,
-        "Public access is evidence of availability—not permission for every use.",
+        "The permitted treatment follows the source terms and the intended use.",
         ha="center",
         color="#A33",
         weight="bold",
     )
-    ax.set_title("Dataset licence and suitability gate", color=NAVY, weight="bold")
+    ax.set_title("Dataset licensing and analytical suitability", color=NAVY, weight="bold")
     save(fig, "dataset-licence-decision-gate.png")
 
-    # Chapter 22: make the information cut-off and outcome horizon visible.
+    # Chapter 22: show the information cut-off and outcome horizon.
     fig, ax = plt.subplots(figsize=(8.0, 3.8))
     ax.set_xlim(-1, 19)
     ax.set_ylim(0, 1)
@@ -614,7 +657,7 @@ def main() -> None:
     ax.set_xticks([0, 3, 6, 9, 12, 15, 18], ["-6", "-3", "0", "+3", "+6", "+9", "+12"])
     ax.set_yticks([])
     ax.set(
-        title="Leakage-safe sample design separates information from outcome",
+        title="Observation and performance windows for a 12-month target",
         xlabel="months relative to the reference date",
     )
     for spine in ("left", "right", "top"):
@@ -634,7 +677,7 @@ def main() -> None:
     ax.set(
         xlabel="ordered characteristic bin",
         ylabel="WOE = log(good share / bad share)",
-        title="WOE and observed bad rate tell related—but different—stories",
+        title="Weight of evidence and observed default rate by bin",
         xticks=bins_woe,
     )
     ax2 = ax.twinx()
@@ -642,7 +685,14 @@ def main() -> None:
     ax2.set_ylabel("observed bad rate")
     lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, frameon=False, loc="upper left")
+    ax2.legend(
+        lines + lines2,
+        labels + labels2,
+        frameon=False,
+        ncol=2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+    )
     save(fig, "woe-logodds-characteristic.png")
 
     # Chapter 29: show the objective actually used by the from-scratch IRLS estimator.
@@ -670,19 +720,13 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(8.0, 4.2))
     ax.plot(range(len(objectives)), objectives, marker="o", color=BLUE, linewidth=2.2)
     ax.set(
-        title="Penalised IRLS reduces the stated objective",
+        title="Convergence of penalised logistic regression by IRLS",
         xlabel="Newton iteration",
         ylabel="average penalised negative log-likelihood",
     )
     ax.grid(alpha=0.2)
     ax.text(
-        0.98,
-        0.92,
-        "intercept penalty = 0",
-        transform=ax.transAxes,
-        ha="right",
-        color=NAVY,
-        weight="bold",
+        0.98, 0.04, "The intercept is not penalised", transform=ax.transAxes, ha="right", color=NAVY
     )
     save(fig, "irls-objective-convergence.png")
 
@@ -710,7 +754,7 @@ def main() -> None:
         color=NAVY,
     )
     ax.set(
-        title="PDO scaling: doubling good-to-bad odds adds 20 points",
+        title="Score scaling with 20 points to double the odds",
         xlabel="probability of default (log scale)",
         ylabel="score",
         ylim=(505, 660),
@@ -729,13 +773,13 @@ def main() -> None:
     ax.plot(month_h, marginal_pd, color=TEAL, linewidth=2.1, label="marginal PD")
     ax.plot(month_h, cumulative_pd, color=BLUE, linewidth=2.4, label="cumulative PD")
     ax.set(
-        title="Lifetime PD reconciliation",
+        title="Relationship between hazard, marginal PD, and cumulative PD",
         xlabel="month",
         ylabel="probability",
         ylim=(0, max(cumulative_pd) * 1.12),
     )
     ax.grid(alpha=0.2)
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.18))
     save(fig, "hazard-marginal-cumulative-pd.png")
 
     print(f"Generated 24 original figures in {OUT}")

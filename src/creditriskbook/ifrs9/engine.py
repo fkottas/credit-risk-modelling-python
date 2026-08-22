@@ -121,8 +121,8 @@ def calculate_ecl(
                 item["ead"].to_numpy(float) * scenario.ead_multiplier, 0.0
             )
             item["discount_factor"] = np.power(
-                1.0 + eir / config.periods_per_year,
-                -period,
+                1.0 + eir,
+                -period / config.periods_per_year,
             )
             item["ecl"] = (
                 item["scenario_marginal_pd"]

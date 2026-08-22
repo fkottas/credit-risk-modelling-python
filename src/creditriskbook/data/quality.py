@@ -48,6 +48,12 @@ class QualityReport:
         }
 
 
+@dataclass(frozen=True)
+class DefectInjectionResult:
+    frame: pd.DataFrame
+    manifest: pd.DataFrame
+
+
 def _result(
     rule: str,
     dimension: str,
@@ -93,7 +99,7 @@ def assess_quality(
             "critical",
             duplicate_count,
             len(data),
-            "Application identifiers must be unique.",
+            "Record identifiers must be unique at the declared observation unit.",
         )
     )
 
@@ -105,7 +111,7 @@ def assess_quality(
             "critical",
             null_count,
             len(data),
-            "Baseline examples do not impute; incomplete rows are quarantined.",
+            "Baseline examples do not impute; incomplete rows are held out pending resolution.",
         )
     )
 
@@ -117,7 +123,7 @@ def assess_quality(
             "critical",
             invalid_target,
             len(data),
-            "Target must use 1=default and 0=non-default.",
+            "The bundle-defined binary outcome must use values 0 and 1.",
         )
     )
 
@@ -201,15 +207,57 @@ def inject_teaching_defects(
     seed: int = 2026,
     rate: float = 0.01,
 ) -> pd.DataFrame:
-    """Return a modified copy with documented, deterministic defects."""
+    """Return the defective frame; use the manifest variant for full provenance."""
+
+    return inject_teaching_defects_with_manifest(bundle, seed=seed, rate=rate).frame
+
+
+def inject_teaching_defects_with_manifest(
+    bundle: DatasetBundle,
+    *,
+    seed: int = 2026,
+    rate: float = 0.01,
+) -> DefectInjectionResult:
+    """Return a deterministic defective copy and a row/field change manifest."""
 
     if not 0 < rate <= 0.10:
         raise ValueError("rate must be in (0, 0.10]")
     data = bundle.frame.copy(deep=True)
     rng = np.random.default_rng(seed)
     count = max(1, int(len(data) * rate))
+    records: list[dict[str, str | int]] = []
+
+    def record(
+        row_index: object,
+        field: str,
+        defect_type: str,
+        source_value: object,
+        altered_value: object,
+        detection_rule: str,
+    ) -> None:
+        records.append(
+            {
+                "source_row_index": str(row_index),
+                "record_id": str(data.at[row_index, bundle.id_column]),
+                "field": field,
+                "defect_type": defect_type,
+                "source_value": repr(source_value),
+                "altered_value": repr(altered_value),
+                "detection_rule": detection_rule,
+                "seed": seed,
+            }
+        )
 
     missing_rows = rng.choice(data.index, size=count, replace=False)
+    for row_index in missing_rows:
+        record(
+            row_index,
+            bundle.model_features[0],
+            "missing_value",
+            data.at[row_index, bundle.model_features[0]],
+            np.nan,
+            "complete_model_fields",
+        )
     data.loc[missing_rows, bundle.model_features[0]] = np.nan
 
     if bundle.numeric_features:
@@ -220,6 +268,15 @@ def inject_teaching_defects(
         invalid_rows = rng.choice(data.index, size=count, replace=False)
         _, upper = bundle.quality_spec.ranges.get(range_column, (None, None))
         replacement = (upper + 100.0) if upper is not None else -1.0
+        for row_index in invalid_rows:
+            record(
+                row_index,
+                range_column,
+                "range_violation",
+                data.at[row_index, range_column],
+                replacement,
+                f"range_{range_column}",
+            )
         data.loc[invalid_rows, range_column] = replacement
 
     if bundle.categorical_features:
@@ -236,16 +293,60 @@ def inject_teaching_defects(
             replacement = float(data[category_column].max()) + 999.0
         else:
             replacement = "__INVALID__"
+        for row_index in invalid_rows:
+            record(
+                row_index,
+                category_column,
+                "domain_violation",
+                data.at[row_index, category_column],
+                replacement,
+                f"domain_{category_column}",
+            )
         data.loc[invalid_rows, category_column] = replacement
 
     if bundle.date_column:
         future_rows = rng.choice(data.index, size=count, replace=False)
+        for row_index in future_rows:
+            record(
+                row_index,
+                bundle.date_column,
+                "future_date",
+                data.at[row_index, bundle.date_column],
+                pd.Timestamp("2099-01-01"),
+                "valid_as_of_date",
+            )
         data.loc[future_rows, bundle.date_column] = pd.Timestamp("2099-01-01")
 
     data["target_derived_score"] = data[bundle.target].astype(float)
-    duplicates = data.sample(n=count, random_state=seed)
+    records.append(
+        {
+            "source_row_index": "*",
+            "record_id": "*",
+            "field": "target_derived_score",
+            "defect_type": "target_leakage_column",
+            "source_value": "<absent>",
+            "altered_value": f"copy of {bundle.target}",
+            "detection_rule": "flag_post_outcome_columns",
+            "seed": seed,
+        }
+    )
+    duplicates = data.sample(n=count, random_state=seed).copy()
+    for row_index in duplicates.index:
+        records.append(
+            {
+                "source_row_index": str(row_index),
+                "record_id": str(data.at[row_index, bundle.id_column]),
+                "field": bundle.id_column,
+                "defect_type": "duplicate_record",
+                "source_value": repr(data.at[row_index, bundle.id_column]),
+                "altered_value": "additional identical row",
+                "detection_rule": "unique_application_id",
+                "seed": seed,
+            }
+        )
     data = pd.concat([data, duplicates], ignore_index=True)
-    return data
+    manifest = pd.DataFrame(records)
+    return DefectInjectionResult(frame=data, manifest=manifest)
 
 
 def quarantine_invalid_rows(

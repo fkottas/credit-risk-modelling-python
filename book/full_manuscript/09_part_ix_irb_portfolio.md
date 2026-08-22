@@ -1,24 +1,46 @@
-# Chapter 49 — Corporate and SME IRB Risk-Weight Functions
+# Chapter 49 — Corporate and SME IRB Capital
 
 ## One-factor structure
 
-For corporate exposures, the Basel function transforms PD through a systematic asset-correlation model at high confidence. In simplified notation,
+For corporate exposures, the Basel asymptotic single-risk-factor function maps a one-year PD, downturn LGD, asset correlation and effective maturity to a capital requirement [R2]. The compact formula is easier to understand after its components are separated. For a non-SME corporate exposure, the prescribed correlation function is
 
 \[
-r=R^{1/2},\qquad s=(1-R)^{1/2}.
+R(PD)=0.12\frac{1-e^{-50PD}}{1-e^{-50}}
++0.24\left(1-\frac{1-e^{-50PD}}{1-e^{-50}}\right).
 \]
+
+The maturity parameter is
 
 \[
-z=\frac{G(PD)+rG(0.999)}{s}.
+b(PD)=\left[0.11852-0.05478\ln(PD)\right]^2,
 \]
+
+and the maturity adjustment for effective maturity $M$ is
 
 \[
-K=LGD[N(z)-PD]MA.
+MA(PD,M)=\frac{1+(M-2.5)b(PD)}{1-1.5b(PD)}.
 \]
 
-Here $r$ is the square root of asset correlation, $s$ scales the idiosyncratic component, $z$ is the stressed systematic-factor transform, $N$ is the normal CDF, $G$ its inverse, $R$ asset correlation and $MA$ maturity adjustment. RWA is $12.5\times K\times EAD$. Expected loss is separate. Writing the transformation in stages is mathematically equivalent to the compact regulatory expression and exposes an auditable intermediate value.
+Let $N$ denote the standard-normal distribution function and $G=N^{-1}$. The capital rate before any applicable scaling or output-floor treatment is
 
-Corporate correlation decreases between prescribed bounds as PD increases. Eligible SME corporate treatment includes a firm-size adjustment based on annual sales within defined bounds. The project formula accepts sales as an explicit input; it does not infer eligibility.
+\[
+K=\left[
+LGD\,N\!\left(
+\frac{G(PD)}{\sqrt{1-R}}+
+\sqrt{\frac{R}{1-R}}G(0.999)
+\right)-PD\times LGD
+\right]MA(PD,M).
+\]
+
+Risk-weighted assets are $RWA=12.5\times K\times EAD$. The subtraction of $PD\times LGD$ removes expected loss from the stressed conditional loss rate; the capital term therefore addresses unexpected loss under the regulatory construction. EAD converts the rate to currency and 12.5 is the reciprocal of the 8% minimum capital ratio. These interpretations do not replace the detailed eligibility, parameter and implementation requirements in the applicable Basel and national texts [R2, R4].
+
+Corporate correlation decreases between prescribed bounds as PD increases. This is a regulatory specification, not an empirical estimate from the teaching data. For an eligible SME corporate exposure with annual sales $S$ in EUR millions, the prescribed size adjustment is commonly written
+
+\[
+R_{SME}=R(PD)-0.04\left(1-\frac{\min(50,\max(5,S))-5}{45}\right).
+\]
+
+The clamping states the EUR 5–50 million range used by the formula; it does not make an obligor outside the applicable eligibility rules an SME. The implementation accepts sales as an explicit input and never infers legal eligibility from a product label [R2, R4].
 
 ```python
 import numpy as np
@@ -35,7 +57,7 @@ result = irb_capital(
 print(result.rows)
 ```
 
-The function exposes raw PD, floored PD, adjustment, correlation, conditional PD, maturity adjustment, capital, RWA and EL. This audit table is preferable to a single capital number.
+The function exposes raw PD, floored PD, adjustment, correlation, conditional PD, maturity adjustment, capital, RWA and expected loss. Keeping these intermediate values allows a student to reproduce one row with a calculator and allows an implementation reviewer to locate a discrepancy.
 
 ## Regulatory implementation
 
@@ -43,11 +65,29 @@ Apply the exact in-force jurisdictional text. Validate PD/LGD/EAD and maturity s
 
 **Lab.** Create a grid of PD, LGD, maturity and sales. Plot risk weight and explain nonlinearities. Reconcile one row manually.
 
-# Chapter 50 — Residential Mortgage, QRRE, and Other Retail IRB
+# Chapter 50 — Retail IRB Capital
 
 ## Retail functions differ by asset class
 
 Retail IRB uses prescribed correlations for residential mortgage, qualifying revolving retail exposure and other retail. The base functions do not apply the corporate maturity adjustment. In the project implementation, mortgage correlation is 0.15, QRRE is 0.04, and other-retail correlation declines from approximately 0.16 at very low PD toward 0.03 at high PD, following the prescribed functional form [R2].
+
+For other retail exposures, that function is
+
+\[
+R(PD)=0.03\frac{1-e^{-35PD}}{1-e^{-35}}
++0.16\left(1-\frac{1-e^{-35PD}}{1-e^{-35}}\right).
+\]
+
+The retail capital rate uses the same conditional-loss transformation as the corporate formula but omits the corporate maturity adjustment:
+
+\[
+K=LGD\,N\!\left(
+\frac{G(PD)}{\sqrt{1-R}}+
+\sqrt{\frac{R}{1-R}}G(0.999)
+\right)-PD\times LGD.
+\]
+
+Holding PD and LGD constant while changing asset class therefore isolates the effect of the prescribed correlation function. It does not show that one legal classification is preferable or available.
 
 These differences have substantial capital effects. They are not a menu. QRRE qualification requires regulatory criteria; a revolving product name is insufficient. Residential-mortgage treatment requires applicable exposure and collateral conditions.
 
@@ -73,13 +113,31 @@ Parameter floors vary by framework and collateral condition. This book requires 
 
 **Lab.** Compare mortgage, QRRE and other-retail outputs for identical numerical parameters. Write why the comparison is mathematical only and cannot justify reclassification.
 
-# Chapter 51 — IRB PD Estimation, Long-Run Average, Calibration, and MoC
+# Chapter 51 — IRB PD Calibration and Margin of Conservatism
 
 ## Estimation target
 
 IRB PD is a one-year probability of regulatory default for an obligor grade or pool. Development may rank risk with point-in-time information, while calibration targets a long-run average appropriate to the framework and rating philosophy. The estimation sample, historical observation period, default definition and representativeness require evidence.
 
-The long-run average can weight annual rates equally or weight obligor observations. The choice matters when portfolio size changes. Economic-cycle coverage and structural breaks must be assessed. A simple total-defaults divided by total-obligors calculation is transparent but not automatically sufficient.
+For year $y$, let $D_y$ be the number of defaults and $N_y$ the number of non-defaulted obligors at the relevant counting date. Two transparent summaries are
+
+\[
+\widehat{PD}_{year}=\frac{1}{Y}\sum_{y=1}^{Y}\frac{D_y}{N_y},
+\qquad
+\widehat{PD}_{obligor}=\frac{\sum_yD_y}{\sum_yN_y}.
+\]
+
+The first gives every year equal influence; the second gives greater influence to years with larger observed populations. If portfolio size changed sharply across the cycle, the estimates answer different questions. The selected estimator therefore requires a stated weighting rationale, assessment of economic-cycle coverage, consistent counting rules and treatment of structural breaks.
+
+A ranking model can be calibrated to a target central tendency by adding an intercept shift $c$ to the raw log-odds:
+
+\[
+p_i(c)=\operatorname{logit}^{-1}\!\left[\operatorname{logit}(p_i^{raw})+c\right],
+\qquad
+\frac{1}{n}\sum_{i=1}^{n}p_i(c)=\widehat{PD}_{target}.
+\]
+
+The scalar $c$ is solved numerically. This preserves rank but changes the probability level; it cannot correct missing risk differentiation within a grade.
 
 ```python
 import pandas as pd
@@ -100,7 +158,13 @@ final_pd, audit = add_margin_of_conservatism(
 )
 ```
 
-MoC addresses identified deficiencies and estimation uncertainty. Separate categories, prevent double counting, and define review/removal criteria. The final estimate must respect applicable floors.
+Margin of conservatism (MoC) addresses identified data or methodological deficiencies and relevant estimation uncertainty. Its form must match the parameter scale. For an additive PD approach,
+
+\[
+PD_i^{final}=\max\left(PD_{floor},\ PD_i^{cal}+MoC_{data}+MoC_{method}+MoC_{other}\right).
+\]
+
+An odds multiplier or grade-level adjustment would produce a different result and must not be mixed silently with this formula. Separate categories, quantify overlap, and define review and removal criteria; conservatism is not a substitute for correcting a remediable error.
 
 ## Validation
 
@@ -108,13 +172,28 @@ Backtest central tendency and grades with confidence intervals, migration and cy
 
 **Lab.** Calculate LRA under year and obligor weighting, calibrate a score, add named MoC and show every movement from raw to final PD.
 
-# Chapter 52 — IRB LGD, EAD, Downturn, Floors, and Defaulted Assets
+# Chapter 52 — IRB LGD and EAD Calibration
 
 ## Purpose-specific parameters
 
 IRB LGD estimates economic loss conditional on default under required conditions, including downturn considerations where applicable. EAD estimates exposure at default, including conversion of off-balance-sheet amounts. Best estimate of expected loss and LGD in default address defaulted exposures under applicable rules. These parameters are not interchangeable with IFRS 9 scenario LGD or accounting cash shortfall.
 
-Workout data require recovery cash flows, costs, EAD, discounting, cure and closure. EAD needs reference dates, limits, drawn balances, cancellations and default exposure. Floors and conservatism belong after a traceable raw estimate.
+For a defaulted facility with exposure $EAD_i$ at default, recoveries $Rec_{i,t}$, direct workout costs $Cost_{i,t}$ and annual discount rate $r_i$, a transparent workout estimate is
+
+\[
+LGD_i^{raw}=1-
+\frac{\sum_t(Rec_{i,t}-Cost_{i,t})(1+r_i)^{-u_{i,t}}}{EAD_i},
+\]
+
+where $u_{i,t}$ is the year fraction from default to cash flow. The definition must state whether cures, collateral proceeds, post-default interest and indirect costs are included. Open workouts are censored; treating their observed-to-date recoveries as final systematically overstates loss when later recoveries remain possible.
+
+For a revolving facility with balance $B_0$, limit $L_0$ and balance at default $B_D$, a realised conversion factor is
+
+\[
+CCF_i=\frac{B_D-B_0}{L_0-B_0},\qquad L_0>B_0,
+\]
+
+and $EAD_i=B_0+CCF_i(L_0-B_0)$. Small undrawn amounts make the ratio unstable, so validation must also report monetary drawdown error. Floors and conservatism belong after a traceable raw estimate, not inside undocumented data preparation.
 
 ```python
 from creditriskbook.data import load_case_dataset
@@ -135,19 +214,31 @@ Identify adverse periods through relevant economic and portfolio evidence. Apply
 
 **Lab.** Produce parameter waterfalls for long-run LGD, downturn adjustment, MoC and floor; and for raw CCF, model calibration, MoC and floor.
 
-# Chapter 53 — Portfolio Concentration, Vasicek, Credit VaR, and Monte Carlo
+# Chapter 53 — Portfolio Credit Risk and Concentration
 
 ## Granularity and dependence
 
 IRB capital functions assume a highly granular portfolio where idiosyncratic risk diversifies. Real portfolios contain name, sector, geography and collateral concentration. The Herfindahl index $HHI=\sum_{i=1}^{n} w_i^2$ summarises exposure concentration but not default correlation or tail severity.
 
-The Vasicek conditional default probability at confidence (q) is
+In a one-factor latent-variable simulation, obligor $i$ defaults when
+
+\[
+\sqrt{R_i}Y+\sqrt{1-R_i}\varepsilon_i<G(PD_i),
+\]
+
+where the systematic factor $Y$ and idiosyncratic terms $\varepsilon_i$ are independent standard-normal variables. Conditional on an adverse factor realisation corresponding to confidence $q$, the homogeneous-portfolio default probability is
 
 \[
 PD_q=N\left(\frac{G(PD)+\sqrt{R}G(q)}{\sqrt{1-R}}\right).
 \]
 
-Multiplying by LGD gives a limiting portfolio-loss quantile under strong assumptions. Monte Carlo can add heterogeneous exposures, correlated factors, stochastic LGD and EAD, but results depend on calibration and simulation design.
+Multiplying by LGD gives a limiting homogeneous-portfolio loss quantile under strong assumptions. For a finite portfolio, simulated loss in run $m$ is
+
+\[
+L^{(m)}=\sum_{i=1}^{n}EAD_i\,LGD_i\,\mathbf{1}\{i\text{ defaults in run }m\}.
+\]
+
+Monte Carlo can add heterogeneous exposures, correlated factors, stochastic LGD and EAD, but simulation volume only reduces numerical error; it does not remove uncertainty in PD, correlation or dependence assumptions. The concentration measure $HHI=\sum_iw_i^2$ has an intuitive reciprocal, $1/HHI$, often called the effective number of equal-sized exposures, but neither statistic measures tail dependence.
 
 ```python
 import numpy as np
@@ -169,13 +260,27 @@ Validate factor correlations, tail dependence, recovery dependence, concentratio
 
 **Lab.** Simulate independent and one-factor correlated defaults for equal exposures. Compare mean and 99.9% loss. Then introduce one large name.
 
-# Chapter 54 — Counterparty Exposure, Netting, Collateral, CVA, and SA-CCR
+# Chapter 54 — Counterparty Credit Risk and CVA
 
 ## Exposure is future and market-dependent
 
 Counterparty credit risk arises when replacement value depends on market movements and the counterparty may default before settlement. Current exposure, expected exposure, expected positive exposure and potential future exposure describe different aspects. Netting reduces exposure only under enforceable agreements. Collateral reduces it subject to timing, disputes, thresholds, haircuts and wrong-way risk.
 
-CVA is the market value of expected loss from counterparty default, often conceptualised as discounted marginal default probability times LGD and expected exposure under relevant valuation measures. DVA reflects the entity’s own credit in valuation and has distinct interpretation. SA-CCR is a prescribed exposure method with replacement cost, potential future exposure and multipliers; this chapter does not implement the full standard.
+For future exposure $V_t$, expected exposure and potential future exposure at quantile $q$ are
+
+\[
+EE_t=E[\max(V_t,0)],\qquad
+PFE_{q,t}=Q_q[\max(V_t,0)].
+\]
+
+They answer different questions: $EE_t$ is a mean used in expected-loss constructions, whereas $PFE_{q,t}$ is a tail exposure measure. Under a simplified unilateral, independence approximation, credit valuation adjustment can be written
+
+\[
+CVA\approx LGD\sum_{t=1}^{T}DF_t\,EE_t\,
+\bigl(PD^{cum}_t-PD^{cum}_{t-1}\bigr).
+\]
+
+Actual valuation depends on the relevant pricing measure, close-out, netting, collateral and dependence between exposure and credit quality. DVA reflects the entity's own credit and has a different interpretation. SA-CCR is a prescribed exposure method based on replacement cost and potential future exposure; the book introduces its data structure but does not claim to implement the complete standard [R2].
 
 ```python
 from creditriskbook.data import load_case_dataset
@@ -198,4 +303,4 @@ Store legal entity, netting set, agreement, collateral, trade and market scenari
 
 **Lab.** Compute a stylised unilateral CVA from marginal PD, LGD, expected exposure and discount factors. Compare with and without collateral, then discuss why enforceability matters.
 
-> Part IX makes regulatory functions inspectable while keeping classification, eligibility, floors and national implementation outside the mathematical helper where they can be governed explicitly.
+> Part IX makes each regulatory calculation reproducible while keeping legal classification, eligibility, parameter approval, floors and national implementation separate from the numerical helper. A correct formula cannot compensate for an ineligible exposure class or an unsupported parameter.

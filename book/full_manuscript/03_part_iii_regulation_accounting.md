@@ -1,4 +1,4 @@
-# Chapter 13 — Basel Credit Risk Architecture: Standardised and IRB Approaches
+# Chapter 13 — The Basel Credit Risk Framework
 
 ## Purpose and structure
 
@@ -8,7 +8,7 @@ Under IRB, PD, LGD, EAD and effective maturity enter prescribed functions. “In
 
 The standardised approach uses exposure classes, external ratings where permitted, loan-to-value and other prescribed risk drivers. It remains model-dependent operationally: exposure classification, collateral eligibility, due diligence and data quality require controlled systems.
 
-The laboratory starts with the standardised identity $RWA=Exposure\times RiskWeight$ and implements it as a six-line function with boundary checks. Four risk weights make the exposure, RWA and 8% minimum-capital relationship visible. The IRB normal-distribution function is not imported here: it is derived term by term in Part IX, where asset class, correlation and maturity can be audited.
+The worked example starts with the standardised identity $RWA=Exposure\times RiskWeight$ and implements it as a six-line function with boundary checks. Four risk weights make the exposure, RWA and 8% minimum-capital relationship visible. The IRB normal-distribution function is not imported here: it is derived term by term in Part IX, where asset class, correlation and maturity can be audited.
 
 The output is a base teaching calculation. A regulatory engine must identify the exact framework version, jurisdiction, exposure class, applicable floors, supporting factors, expected-loss treatment, output-floor effects, transition rules and supervisory decisions.
 
@@ -18,7 +18,7 @@ Maintain a regulatory interpretation inventory linking every rule to code, owner
 
 **Lab.** Build a requirements-to-code matrix for CRE30, CRE31, CRE32 and CRE36. Mark which requirements are formulas, data definitions, governance or supervisory eligibility.
 
-# Chapter 14 — Regulatory Default and IRB Asset-Class Definitions
+# Chapter 14 — Regulatory Default and IRB Classification
 
 ## Definition precedes estimation
 
@@ -28,7 +28,7 @@ Default data construction needs an obligor or facility identifier, reference dat
 
 Asset-class assignment affects risk-weight functions and parameter rules. Corporate, sovereign, bank, residential mortgage, qualifying revolving retail, other retail and specialised-lending treatments are not interchangeable. Retail treatment requires portfolio management characteristics; size alone is insufficient.
 
-The laboratory implements the default definition as a transparent decision function returning both flag and trigger list. Past due, unlikeliness to pay and distressed restructuring remain separate evidence. Readers add materiality, contagion, probation, cure and correction cases as test fixtures before any default-definition component is reused.
+The worked example implements the default definition as a transparent decision function returning both flag and trigger list. Past due, unlikeliness to pay and distressed restructuring remain separate evidence. Readers add materiality, contagion, probation, cure and correction cases as test fixtures before any default-definition component is reused.
 
 Different correlations demonstrate why asset class cannot be chosen to optimise capital. Classification is a regulatory fact determined under approved rules.
 
@@ -38,7 +38,7 @@ Run daily default-identification controls, compare trigger sources and reconcile
 
 **Lab.** Create ten ambiguous cases involving arrears, bankruptcy filing, restructuring, distressed sale, deceased borrower and technical payment error. Apply a written decision tree and record evidence plus escalation.
 
-# Chapter 15 — IRB Use Test, Rating Systems, and Governance
+# Chapter 15 — IRB Rating Systems and the Use Test
 
 ## The rating system must be used
 
@@ -46,7 +46,7 @@ IRB is not a capital-only calculation detached from management. The use test ask
 
 A rating system includes methods, processes, controls, data collection and IT systems supporting assessment, grade assignment and parameter quantification. Governance must cover model ownership, independent validation, internal audit, senior management and board oversight proportionate to materiality. Documentation should explain judgement, not merely reproduce code.
 
-The laboratory writes the grade backtest from a `groupby`: observations, predicted PD, observed rate, defaults and observed-to-expected ratio. Students calculate both grades by hand, then add exact intervals and a traffic-light policy as a separate layer. The mathematics remains visible and the policy cannot silently redefine the statistical result.
+The worked example writes the grade backtest from a `groupby`: observations, predicted PD, observed rate, defaults and observed-to-expected ratio. Students calculate both grades by hand, then add exact intervals and a traffic-light policy as a separate layer. The mathematics remains visible and the policy cannot silently redefine the statistical result.
 
 The exact interval is evidence, not an automatic pass/fail rule. Small grades have wide uncertainty; pooling may hide heterogeneity. Backtesting must consider overlapping horizons, multiple observations per obligor and economic conditions.
 
@@ -56,7 +56,7 @@ Track grade migrations, overrides, stale ratings, concentration and time since r
 
 **Lab.** Design a use-test dashboard with approval, pricing, limit, watchlist and override evidence. Define a trigger when operational behaviour diverges from the rating system.
 
-# Chapter 16 — IFRS 9 Impairment, Staging, and Significant Increase in Credit Risk
+# Chapter 16 — IFRS 9 Expected Credit Loss
 
 ## Accounting objective
 
@@ -64,7 +64,7 @@ IFRS 9 recognises expected credit losses using a three-stage general approach. S
 
 SICR is assessed relative to credit risk at initial recognition using reasonable and supportable information. A PD ratio can be one indicator, but no universal doubling rule defines SICR. Delinquency backstops, watchlists, forbearance, qualitative information, low-credit-risk simplification and rebuttals require approved accounting policy.
 
-The laboratory builds `assign_ifrs9_stage` directly. Its ordered conditions expose Stage 3 precedence, the DPD/watchlist/relative-PD Stage 2 indicators and the Stage 1 remainder. The output contains both stage and reason. Students then change one trigger at a time and design cure/probation state, rather than receiving a stage from a class whose rules are still unknown.
+The worked example builds `assign_ifrs9_stage` directly. Its ordered conditions expose Stage 3 precedence, the DPD/watchlist/relative-PD Stage 2 indicators and the Stage 1 remainder. The output contains both stage and reason. Students then change one trigger at a time and design cure/probation state, rather than receiving a stage from a class whose rules are still unknown.
 
 The function exposes every trigger and one primary reason. A real engine also needs cure and probation, modification, POCI, revolving-life, collateral and write-off policies.
 
@@ -76,7 +76,7 @@ Reconcile stage counts and balances to the ledger. Monitor transfers, cures and 
 
 **Lab.** Compare absolute PD, relative PD, DPD and watchlist SICR rules. Show how each affects stage distribution and ECL, then write the policy rationale rather than selecting the lowest provision.
 
-# Chapter 17 — CECL and Its Relationship to IFRS 9
+# Chapter 17 — CECL and Its Distinction from IFRS 9
 
 ## Similar objective, different architecture
 
@@ -98,7 +98,7 @@ FASB's post-implementation work continues to generate targeted amendments. ASU 2
 
 For trade receivables under IFRS 9’s simplified approach, a provision matrix can estimate lifetime ECL by aging bucket, adjusted for forward-looking information. It is not a shortcut to avoid data validation.
 
-The laboratory computes a CECL lifetime loss-rate example directly from exposure, historical rate and an explicitly named qualitative adjustment. It validates bounds and reconciles pool totals. The exercise then contrasts this lifetime-from-initial-recognition logic with the Stage 1/Stage 2 horizon switch under IFRS 9 before either accounting engine is constructed.
+The worked example computes a CECL lifetime loss-rate example directly from exposure, historical rate and an explicitly named qualitative adjustment. It validates bounds and reconciles pool totals. The exercise then contrasts this lifetime-from-initial-recognition logic with the Stage 1/Stage 2 horizon switch under IFRS 9 before either accounting engine is constructed.
 
 ## Method governance
 
@@ -106,7 +106,7 @@ Document why a method fits product behaviour, data and forecast. Reconcile chang
 
 **Lab.** Calculate lifetime loss using a provision matrix and a PD×LGD×EAD schedule. Reconcile differences to timing, segmentation, exposure and discounting.
 
-# Chapter 18 — Consumer Protection, Fair Lending, Privacy, and High-Risk AI
+# Chapter 18 — Consumer Protection and AI Regulation
 
 ## Predictive value is not sufficient permission
 
@@ -121,13 +121,13 @@ The **date is part of the legal statement**. As checked on 22 August 2026, the c
 | binding classification | Annex III 5(b) covers specified natural-person creditworthiness and credit-score uses, with the fraud-detection exception | classify the intended use, not merely the algorithm |
 | binding application date | Annex III high-risk rules in Chapter III Sections 1–3 apply from 2 December 2027 under the consolidated text | maintain a dated implementation plan and legal review |
 | future applicable requirements | Articles 9–15 cover risk management, data governance, technical documentation, automatic logs, deployer information, human oversight, accuracy, robustness and cybersecurity | build evidence, logs and authority boundaries before go-live |
-| author implementation choice | the course agent cannot approve, decline, price, change a limit or deploy a model | a deterministic gate and authorised human retain action authority |
+| author implementation choice | the course agent cannot approve, decline, price, change a limit or deploy a model | a deterministic authorisation check and authorised human retain action authority |
 
 GDPR Article 22 is a separate, already applicable control. It concerns decisions based solely on automated processing, including profiling, that produce legal or similarly significant effects, subject to stated exceptions and safeguards [R34]. In the *SCHUFA* judgment, the Court of Justice held that creation of a probability score can fall within automated individual decision-making where a third party draws strongly on that score to establish, perform or terminate a contractual relationship [R66]. A token human click is not necessarily meaningful intervention. A real workflow needs legal analysis of whether processing is solely automated, which exception or legal basis applies, the information and safeguards supplied, and how a person can obtain review and contest the result.
 
 US and other jurisdictions may require specific adverse-action reasons. CFPB Circulars 2022-03 and 2023-03 state that creditors using complex algorithms remain responsible for specific and accurate principal reasons; opacity or a closest sample-form checklist is not a substitute [R44–R45]. Generic feature importance is not automatically an adequate reason. For nonlinear models, the repository labels sensitivity-based reason codes honestly instead of presenting them as logistic bin points.
 
-The laboratory calculates approval rate, true-positive rate and false-positive rate by group from an explicit twelve-row decision table. Every denominator can be inspected. These diagnostics do not decide discrimination or approve model use; they trigger legal, policy and data review. Agent permission enforcement appears only in the final part, after the reader has built the decisions and evidence objects it must protect.
+The worked example calculates approval rate, true-positive rate and false-positive rate by group from an explicit twelve-row decision table. Every denominator can be inspected. These diagnostics do not decide discrimination or approve model use; they trigger legal, policy and data review. Agent permission enforcement appears only in the final part, after the reader has built the decisions and evidence objects it must protect.
 
 ## Responsible-model policy
 

@@ -1,4 +1,4 @@
-# Chapter 31 — Train, Validation, Test, Out-of-Time, and Cross-Validation Design
+# Chapter 31 — Validation Sample Design
 
 ## Validation begins with partition design
 
@@ -20,17 +20,24 @@ Cross-validation estimates variation but ordinary random folds can be invalid un
 
 ## Partition policy
 
-Freeze IDs, dates, event rates and hashes for every partition. Set a maturation cutoff. Report excluded incomplete outcomes. Prevent feature-store backfills from changing historical training values without versioning.
+Record IDs, dates, event rates and hashes for every partition. Set a maturation cutoff and report excluded incomplete outcomes. Feature-store backfills may correct history, but the change requires a new data version so that an earlier model can still be reproduced.
 
 **Lab.** Compare random, group and out-of-time splits. Measure event rate, population drift and performance. Explain which split best represents the intended deployment.
 
-# Chapter 32 — AUC, CAP, Accuracy Ratio, KS, Lift, and Cost
+# Chapter 32 — Discrimination and Decision Performance
 
 ## Discrimination is only one dimension
 
-ROC AUC is the probability that a randomly selected default receives higher predicted risk than a randomly selected non-default, under tie handling. It is insensitive to probability scale and therefore cannot establish calibration. The cumulative accuracy profile orders cases by risk and plots cumulative defaults captured against population. Accuracy ratio compares the model CAP with random and perfect ordering and is closely related to Gini (2AUC-1) under standard binary settings.
+ROC AUC is the probability that a randomly selected default receives higher predicted risk than a randomly selected non-default, with half credit for ties. If there are $n_1$ defaults and $n_0$ non-defaults,
 
-KS is the maximum difference between score distributions for defaults and non-defaults. Lift at a fraction compares default capture or bad rate in a selected high-risk group with the portfolio average. All depend on the sample and may shift with selection or prevalence.
+\[
+\widehat{AUC}=\frac{1}{n_1n_0}\sum_{i:y_i=1}\sum_{j:y_j=0}
+\left[\mathbb{1}(s_i>s_j)+\tfrac12\mathbb{1}(s_i=s_j)\right].
+\]
+
+This pairwise interpretation explains both its usefulness and its limitation: any strictly increasing transformation of scores leaves AUC unchanged, so AUC cannot establish calibration. The cumulative accuracy profile orders cases by risk and plots cumulative defaults captured against population. Accuracy ratio compares the model CAP with random and perfect ordering and is closely related to Gini, $2AUC-1$, under standard binary settings [R78, R80].
+
+KS is $\sup_s|\widehat F_0(s)-\widehat F_1(s)|$, the maximum difference between empirical score distributions for non-defaults and defaults. Lift at a fraction compares default capture or bad rate in a selected high-risk group with the portfolio average. These measures describe ranking in the evaluated sample and can shift with selection, product mix or economic period.
 
 ```python
 from creditriskbook.models import evaluate_pd, fit_pd_model, score_pd
@@ -49,11 +56,17 @@ Report confidence intervals and paired comparisons on the same observations. Seg
 
 **Lab.** Calculate AUC, KS, top-decile lift, Brier score and expected value for logistic and XGBoost. Select a champion using a predeclared hierarchy of criteria.
 
-# Chapter 33 — Calibration, Master Scales, Grades, and Migration
+# Chapter 33 — Calibration, Ratings, and Migration
 
 ## From rank to probability
 
-Calibration asks whether predicted probabilities agree with observed frequency for a defined horizon and population. Calibration-in-the-large compares mean PD with default rate; slope identifies over- or under-dispersion. Reliability plots group predictions, but bin choice and small counts matter. Brier and log loss assess probability accuracy, while AUC does not.
+Calibration asks whether predicted probabilities agree with observed frequency for a defined horizon and population. A common diagnostic fits
+
+\[
+\operatorname{logit}\Pr(Y_i=1)=\alpha+\gamma\operatorname{logit}(p_i).
+\]
+
+Ideal calibration has intercept $\alpha=0$ and slope $\gamma=1$. A non-zero intercept indicates a central-tendency shift; a slope below one often indicates predictions that are too dispersed. Reliability plots group predictions, but bin choice and small counts matter. Brier score and log loss assess probability accuracy, while AUC does not [R24, R69].
 
 For a partition of predictions into $K$ calibration groups, Murphy's sample decomposition makes the distinction explicit [R69]. Let $n_k$ be group size, $\bar p_k$ its mean prediction, $\bar y_k$ its event rate and $\bar y$ the portfolio event rate. Then
 
@@ -72,7 +85,7 @@ UNC=\bar y(1-\bar y).
 
 Lower reliability error is better; greater resolution is better because groups separate different observed risks; uncertainty belongs to the outcome population. The finite-sample values depend on the grouping scheme. There is no universal identity that replaces resolution with $(1-AUC)$ times a constant: AUC is a rank statistic and does not appear in the Brier decomposition.
 
-IRB PD calibration may target a long-run average rather than the current sample rate. The repository applies an intercept shift on odds so ordering is preserved and weighted mean PD matches a target central tendency, subject to a floor.
+IRB PD calibration may target a long-run average rather than the current sample rate. The implementation applies an intercept shift on odds so ordering is preserved and weighted mean PD matches a target central tendency, subject to the applicable floor.
 
 ```python
 import numpy as np
@@ -89,7 +102,7 @@ A master scale maps risk to grades with defined PD ranges and naming. Migration 
 
 **Lab.** Define eight grades with minimum observations and monotonic observed default. Compare point-in-time and through-the-cycle calibration objectives. Document which is appropriate for pricing, IFRS 9 and IRB.
 
-# Chapter 34 — Trees, Random Forests, Gradient Boosting, and XGBoost
+# Chapter 34 — Tree Ensembles in Credit Risk
 
 ## Nonlinear challengers
 
@@ -153,7 +166,7 @@ challenger = XGBClassifier(
 
 `ModelScoreMapper` converts any `predict_proba` output to the same PDO score scale. This makes business comparisons easier but does not make the nonlinear model an additive scorecard.
 
-![Figure 34.1 — Original impurity calculation for two candidate tree splits on the same ordered sample.](book/figures/tree-split-gain.png)
+![Figure 34.1 — Candidate tree splits compared by weighted Gini impurity on the same ordered sample.](book/figures/tree-split-gain.png)
 
 ## Linear, multiclass, ordinal, neural, Bayesian, and self-organising challengers
 
@@ -205,7 +218,7 @@ Require a material, stable benefit over logistic regression. Compare calibration
 
 **Lab.** Tune a depth-limited XGBoost challenger against the scorecard. Evaluate out-of-time metrics and create a common score scale. Write a complexity justification or reject the challenger.
 
-# Chapter 35 — Explainability, Nonlinear Reason Codes, and Fairness Diagnostics
+# Chapter 35 — Explainability and Fairness
 
 ## Different explanation questions
 
@@ -213,7 +226,7 @@ Global explanation asks which features influence predictions across a population
 
 Coefficients and scorecard points are additive and directly auditable. Tree feature importance may be biased toward variables with many split opportunities. Permutation importance measures performance loss after shuffling but is affected by correlation. SHAP allocates prediction differences under a chosen background and dependence assumption; values are not causal.
 
-The repository’s nonlinear reason method replaces one feature at a time with a reference value and observes score improvement. It labels the result sensitivity-based and validates actionability separately.
+The companion implementation's nonlinear reason method replaces one feature at a time with a reference value and observes the change in score. It labels the result as sensitivity-based and validates actionability separately.
 
 ```python
 from creditriskbook.scorecard import ModelScoreMapper
@@ -241,7 +254,7 @@ Maintain an approved feature-to-reason dictionary, suppress non-actionable or se
 
 **Lab.** Compare scorecard bin reasons, SHAP-style contributions and sensitivity reasons for the same twenty cases. Assess fidelity, stability, actionability and legal review needs.
 
-# Chapter 36 — Reject Inference and Champion-Challenger Strategy
+# Chapter 36 — Selection Bias and Champion–Challenger Design
 
 ## The missing-outcome problem
 
@@ -259,7 +272,7 @@ print("Scope limitation:", approval.limitations)
 
 Randomised exploration can identify outcomes more credibly but creates customer, capital and ethical risk and requires strict policy. Quasi-experimental cutoff designs may help locally when assumptions hold. Any reject-inference result should be sensitivity analysis, not hidden truth.
 
-A champion-challenger framework keeps the approved production model as champion while evaluating challengers in shadow. Predefine data, metrics, duration, materiality and promotion gates. Avoid selecting a challenger on the same period used to invent it.
+A champion-challenger framework keeps the approved production model as champion while evaluating challengers in shadow. Predefine data, metrics, duration, materiality and promotion criteria. Avoid selecting a challenger on the same period used to develop it.
 
 **Lab.** Create optimistic, neutral and pessimistic reject scenarios. Recalibrate and compare cutoff economics. Report the range rather than a single inferred AUC.
 

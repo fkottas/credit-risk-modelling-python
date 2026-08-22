@@ -12,6 +12,33 @@ from creditriskbook.data.datasets import load_dataset
     "Set RUN_LIVE_DATA_TESTS=1 to access and verify authoritative publisher files.",
 )
 class LiveDatasetTests(unittest.TestCase):
+    def test_statlog_german_download_checksum_schema_and_target(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = load_dataset("uci_statlog_german", cache_dir=directory)
+        self.assertEqual(bundle.frame.shape, (1_000, 22))
+        self.assertEqual(
+            bundle.frame[bundle.target].value_counts().sort_index().to_dict(), {0: 700, 1: 300}
+        )
+        self.assertEqual(
+            bundle.source_sha256,
+            "b21f3d81db8071257d5ff1deaeba1fd4303b62712e6fcc9715c7a86202cb5871",
+        )
+
+    def test_bank_marketing_download_checksum_schema_and_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = load_dataset("uci_bank_marketing", cache_dir=directory)
+        self.assertEqual(bundle.frame.shape, (41_188, 22))
+        self.assertEqual(bundle.target, "subscribed")
+        self.assertEqual(
+            bundle.frame[bundle.target].value_counts().sort_index().to_dict(),
+            {0: 36_548, 1: 4_640},
+        )
+        self.assertNotIn("duration", bundle.model_features)
+        self.assertEqual(
+            bundle.source_sha256,
+            "74adfc578bf77a7ff4bb1ba4a9f8709d9e3c6907342959c2c8416847e0afb4d8",
+        )
+
     def test_south_german_download_checksum_schema_and_target(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = load_dataset("uci_south_german", cache_dir=directory)

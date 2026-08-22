@@ -1,85 +1,54 @@
-## Mathematics-to-code laboratory — construction and controlled promotion
+## Worked calculation — How is corporate or SME IRB capital calculated from PD, LGD, EAD, and maturity?
 
-### 1. Start with the decision, observation unit, and estimand
+The formula converts long-run parameters and systematic dependence into a stressed conditional loss measure.
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Corporate and SME IRB Risk-Weight Functions** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with `synthetic_corporate_irb`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `synthetic_corporate_irb`. **Implementation level:** Reference implementation: the code evaluates the displayed expression directly and provides expected intermediate values for later library tests.
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \[
 K=LGD[N(z)-PD]MA
 \]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-### 2. Derive before implementing
+![Figure 49.1 — Corporate IRB risk weight increases nonlinearly with PD under fixed LGD and maturity.](book/figures/part-09-irb-sensitivity.png)
 
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
-
-![Figure 49.1 — Original teaching visual generated from repository data.](book/figures/part-09-irb-sensitivity.png)
-
-### 3. Implement the first transparent component
-
-The chapter keeps the estimator visible. Reusable data access may now be imported, while the method being taught is derived, implemented, tested, and reviewed before promotion. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
-from __future__ import annotations
-
 import numpy as np
-import pandas as pd
-
-from creditriskbook.data import load_case_dataset
+from scipy.stats import norm
 
 
-def chapter_49_audit_table(seed: int = 849) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = load_case_dataset("synthetic_corporate_irb", n_rows=500, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        })
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_49_audit_table()
-print(audit.to_string(index=False))
+pd, lgd, ead, maturity = 0.02, 0.45, 1_000_000.0, 2.5
+correlation = 0.12 * (1 - np.exp(-50 * pd)) / (1 - np.exp(-50)) + 0.24 * (
+    1 - (1 - np.exp(-50 * pd)) / (1 - np.exp(-50))
+)
+b = (0.11852 - 0.05478 * np.log(pd)) ** 2
+maturity_adjustment = (1 + (maturity - 2.5) * b) / (1 - 1.5 * b)
+conditional_pd = norm.cdf((norm.ppf(pd) + np.sqrt(correlation) * norm.ppf(0.999)) /
+                          np.sqrt(1 - correlation))
+capital_rate = lgd * (conditional_pd - pd) * maturity_adjustment
+print({"correlation": round(float(correlation), 6), "conditional_PD": round(float(conditional_pd), 6),
+       "capital_rate": round(float(capital_rate), 6), "RWA": round(12.5 * capital_rate * ead, 2)})
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
-variable   n  missing         mean          std           p05          p50          p95
-                       pd 500        0 1.966291e-02 2.221738e-02      0.002517 1.276650e-02 6.160895e-02
-                      lgd 500        0 4.195740e-01 1.723008e-01      0.156317 4.061695e-01 7.082473e-01
-                      ead 500        0 4.301526e+06 8.321652e+06 284462.033500 1.957416e+06 1.475942e+07
-           maturity_years 500        0 3.113621e+00 1.148248e+00      1.255915 3.216350e+00 4.812450e+00
-annual_sales_eur_millions 500        0 5.965287e+01 6.678630e+01      6.808650 3.746250e+01 2.049957e+02
+{'correlation': 0.164146, 'conditional_PD': 0.190259, 'capital_rate': 0.091883, 'RWA': np.float64(1148542.29)}
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+For the stated inputs, correlation is 0.164146 and the stressed conditional PD is 0.190259, producing a 9.1883% capital rate before any additional jurisdictional treatment.
 
-### 6. Extend, compare datasets, and document
+**Validation:** Reproduce correlation, stressed PD, maturity adjustment, capital rate, and RWA independently.
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **the synthetic corporate IRB portfolio and Basel reference inputs** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.

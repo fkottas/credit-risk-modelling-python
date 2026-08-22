@@ -1,84 +1,57 @@
-## Mathematics-to-code laboratory — construction and controlled promotion
+## Worked calculation — When are provision matrices or CECL methods appropriate, and how are overlays separated?
 
-### 1. Start with the decision, observation unit, and estimand
+Method choice follows data and portfolio behaviour; management adjustments address specified gaps outside the base estimate.
 
-This laboratory does not begin by importing a finished modelling function. The class first states what **Provision Matrices, CECL Methods, and Management Overlays** must estimate, which record is one observation, when information becomes available, and which decision or control will consume the result. We begin with `synthetic_ifrs9_schedule`. Before calculating anything, inspect the unit of observation, time index, target or outcome field, currency and percentage conventions, licence statement, generator seed or publisher checksum, and limitations. A mathematically correct formula applied to the wrong horizon or population is still a wrong model.
+**Companion case:** `synthetic_ifrs9_schedule`. **Implementation level:** Reference implementation: the code evaluates the displayed expression directly and provides expected intermediate values for later library tests.
 
-The chapter's principal mathematical object is
+### Method
+
+The calculation follows
 
 \[
 LossRate_b=\frac{historical\ credit\ losses_b}{exposure_b}
 \]
 
-Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
 
-### 2. Derive before implementing
-
-Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
-
-For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
-
-### 3. Implement the first transparent component
-
-The chapter keeps the estimator visible. Reusable data access may now be imported, while the method being taught is derived, implemented, tested, and reviewed before promotion. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.
+### Python implementation
 
 ```python
-from __future__ import annotations
-
-import numpy as np
 import pandas as pd
 
-from creditriskbook.data import load_case_dataset
 
-
-def chapter_47_audit_table(seed: int = 847) -> pd.DataFrame:
-    """Return hand-auditable summaries; never impute or winsorise silently."""
-    bundle = load_case_dataset("synthetic_ifrs9_schedule", n_rows=500, seed=seed)
-    frame = bundle.frame.copy(deep=True)
-    numeric = frame.select_dtypes(include="number")
-    if numeric.empty:
-        raise ValueError("The chapter requires at least one numeric field")
-    rows = []
-    for column in numeric.columns[:8]:
-        observed = numeric[column].dropna()
-        rows.append({
-            "variable": column,
-            "n": int(observed.size),
-            "missing": int(numeric[column].isna().sum()),
-            "mean": float(observed.mean()),
-            "std": float(observed.std(ddof=1)),
-            "p05": float(observed.quantile(0.05)),
-            "p50": float(observed.quantile(0.50)),
-            "p95": float(observed.quantile(0.95)),
-        })
-    result = pd.DataFrame(rows)
-    assert result["n"].gt(0).all()
-    assert result[["mean", "p05", "p50", "p95"]].notna().all().all()
-    return result
-
-
-audit = chapter_47_audit_table()
-print(audit.to_string(index=False))
+matrix = pd.DataFrame({
+    "age_band": ["current", "1-30", "31-60", "61-90"],
+    "exposure": [800000, 120000, 50000, 30000],
+    "historical_loss_rate": [0.005, 0.025, 0.12, 0.35],
+    "forward_factor": [1.10, 1.15, 1.20, 1.25],
+})
+matrix["adjusted_loss_rate"] = matrix.historical_loss_rate * matrix.forward_factor
+matrix["model_ecl"] = matrix.exposure * matrix.adjusted_loss_rate
+overlay = 15000.0
+print(matrix.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+print("Model ECL:", round(matrix.model_ecl.sum(), 2), "Overlay:", overlay,
+      "Reported allowance:", round(matrix.model_ecl.sum() + overlay, 2))
 ```
 
-### 4. Inspect the executed output
-
-The output below is produced by the displayed code during the book build. Recalculate at least one row manually before accepting it. A student submission must retain both code and output; an unexplained screenshot is not reproducible evidence.
+### Executed result
 
 ```output
-variable     n  missing         mean          std         p05          p50          p95
-                 period 18000        0    18.500000    10.388583    2.000000    18.500000    35.000000
-                  stage 18000        0     1.266000     0.550691    1.000000     1.000000     3.000000
-            marginal_pd 18000        0     0.004527     0.020467    0.000402     0.002241     0.009433
-                    lgd 18000        0     0.422632     0.167794    0.156750     0.413505     0.702555
-                    ead 18000        0 15670.222196 14856.054424 2545.157000 11292.015000 43653.929500
-effective_interest_rate 18000        0     0.064160     0.019652    0.032434     0.064789     0.094415
+age_band  exposure  historical_loss_rate  forward_factor  adjusted_loss_rate  model_ecl
+ current    800000                 0.005           1.100               0.006   4400.000
+    1-30    120000                 0.025           1.150               0.029   3450.000
+   31-60     50000                 0.120           1.200               0.144   7200.000
+   61-90     30000                 0.350           1.250               0.438  13125.000
+Model ECL: 28175.0 Overlay: 15000.0 Reported allowance: 43175.0
 ```
 
-### 5. Test mathematics, data, and policy separately
+### Interpretation
 
-Add three kinds of tests. A mathematical invariant checks an identity, bound or reconciliation implied by the formula. A data test checks schema, units, missingness, dates, duplicates, permitted categories and source identity. A policy test checks that the calculation is not silently converted into authority it does not possess. Use at least one ordinary case, one boundary case, one missing-value case, one temporally invalid case and one deliberately corrupted case. Record expected outputs before running the implementation so that the test is not merely a copy of the code.
+Each provision-matrix amount reconciles exposure, historical loss rate, forward factor and adjusted loss rate. The calculation makes the forward adjustment observable instead of embedding it in the history.
 
-### 6. Extend, compare datasets, and document
+**Validation:** Reconcile historical rates, forward adjustments, model ECL, overlay, and final allowance.
 
-After the simple component is understood, replace the audit statistic with the full chapter method, retaining the same input contract and evidence fields. Compare the result across at least two compatible datasets or across synthetic segments. Explain differences using population, product, horizon and data-generation mechanisms rather than only performance metrics. The student deliverable is a source module, tests, a notebook, a characteristic or parameter table, a short validation note and an explicit statement of what the component is not allowed to decide. This staged build is how the final scorecard, IFRS 9, IRB and governed-agent libraries emerge during the book.
+### Exercises
+
+1. Repeat the calculation with **a synthetic trade-receivables matrix and a synthetic CECL loan schedule** and document any difference in population, observation unit, outcome, information date, horizon, or permitted use.
+2. Change one assumption that appears in the equation. Predict the direction of the result before execution, then explain the observed sensitivity.
+3. Complete the stated validation and identify one conclusion that the available evidence does not support.
