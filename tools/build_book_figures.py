@@ -450,7 +450,295 @@ def main() -> None:
     )
     save(fig, "behavioral-contract-window.png")
 
-    print(f"Generated 16 original figures in {OUT}")
+    # Chapter 1: distinguish scheduled payments, recoveries, costs and discounted loss.
+    months_cf = np.array([1, 2, 3])
+    contractual = np.array([350.0, 350.0, 350.0])
+    payments = np.array([350.0, 200.0, 0.0])
+    recoveries = np.array([0.0, 0.0, 120.0])
+    costs = np.array([0.0, 5.0, 15.0])
+    shortfall = contractual - payments - recoveries + costs
+    discounted = shortfall * (1.12 ** (-months_cf / 12.0))
+    fig, ax = plt.subplots(figsize=(8.0, 4.4))
+    width = 0.17
+    ax.bar(months_cf - 1.5 * width, contractual, width, color=BLUE, label="contractual")
+    ax.bar(months_cf - 0.5 * width, payments, width, color=TEAL, label="payment")
+    ax.bar(months_cf + 0.5 * width, recoveries, width, color=GOLD, label="recovery")
+    ax.bar(months_cf + 1.5 * width, discounted, width, color=NAVY, label="discounted loss")
+    for month, value in zip(months_cf, discounted, strict=True):
+        ax.text(month + 1.5 * width, value + 9, f"{value:.2f}", ha="center", fontsize=8)
+    ax.set(
+        title="Cash-flow loss: shortfall first, discounting second",
+        xlabel="month",
+        ylabel="EUR",
+        xticks=months_cf,
+    )
+    ax.text(
+        0.99,
+        0.94,
+        f"PV loss = EUR {discounted.sum():.2f}\nworkout costs enter with a positive sign",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        color=NAVY,
+        bbox={"boxstyle": "round,pad=0.35", "facecolor": "#EEF3F7", "edgecolor": BLUE},
+    )
+    ax.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.14))
+    save(fig, "cash-flow-loss-decomposition.png")
+
+    # Chapter 17: the horizon distinction is architectural, not a naming change.
+    fig, ax = plt.subplots(figsize=(8.0, 4.5))
+    ax.set_xlim(0, 36)
+    ax.set_ylim(0, 4)
+    ax.set_yticks([3.2, 2.2, 1.2], ["IFRS 9 Stage 1", "IFRS 9 Stage 2", "CECL"])
+    ax.axvspan(0, 12, ymin=0.69, ymax=0.88, color=BLUE, alpha=0.82)
+    ax.axvspan(0, 36, ymin=0.44, ymax=0.63, color=GOLD, alpha=0.75)
+    ax.axvspan(0, 36, ymin=0.19, ymax=0.38, color=TEAL, alpha=0.78)
+    ax.axvline(12, color=GREY, linestyle="--", linewidth=1.3)
+    ax.text(
+        6,
+        3.2,
+        "12-month default-event\nhorizon",
+        ha="center",
+        va="center",
+        color="white",
+        weight="bold",
+        fontsize=8.5,
+    )
+    ax.text(18, 2.2, "lifetime ECL after SICR", ha="center", va="center", color=NAVY, weight="bold")
+    ax.text(
+        18,
+        1.2,
+        "expected lifetime loss from initial recognition",
+        ha="center",
+        va="center",
+        color="white",
+        weight="bold",
+        fontsize=9,
+    )
+    ax.set(
+        title="IFRS 9 changes horizon by stage; CECL starts with lifetime loss",
+        xlabel="months from reporting / recognition date",
+    )
+    ax.grid(axis="x", alpha=0.18)
+    save(fig, "ifrs9-cecl-horizon.png")
+
+    # Chapter 20: a conservative evidence gate for every candidate source.
+    fig, ax = plt.subplots(figsize=(8.0, 5.0))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+    licence_boxes = [
+        (0.05, 0.72, "Original publisher\nand exact file"),
+        (0.38, 0.72, "Explicit current\nterms and attribution"),
+        (0.71, 0.72, "Purpose, privacy\nand target fit"),
+        (0.08, 0.25, "Bundle\nwith notice"),
+        (0.40, 0.25, "Download locally\nby code"),
+        (0.72, 0.25, "Exclude or seek\nwritten permission"),
+    ]
+    for x, y_box, label in licence_boxes:
+        ax.add_patch(
+            FancyBboxPatch(
+                (x, y_box),
+                0.22,
+                0.15,
+                boxstyle="round,pad=0.018",
+                facecolor="#EEF3F7" if y_box > 0.5 else "white",
+                edgecolor=BLUE if y_box > 0.5 else GOLD,
+                linewidth=1.7,
+            )
+        )
+        ax.text(
+            x + 0.11,
+            y_box + 0.075,
+            label,
+            ha="center",
+            va="center",
+            color=NAVY,
+            weight="bold",
+            fontsize=9,
+        )
+    for start, end in [
+        ((0.27, 0.795), (0.38, 0.795)),
+        ((0.60, 0.795), (0.71, 0.795)),
+        ((0.82, 0.72), (0.19, 0.40)),
+        ((0.82, 0.72), (0.51, 0.40)),
+        ((0.82, 0.72), (0.83, 0.40)),
+    ]:
+        ax.annotate(
+            "", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "color": GOLD, "lw": 1.8}
+        )
+    ax.text(
+        0.50,
+        0.08,
+        "Public access is evidence of availability—not permission for every use.",
+        ha="center",
+        color="#A33",
+        weight="bold",
+    )
+    ax.set_title("Dataset licence and suitability gate", color=NAVY, weight="bold")
+    save(fig, "dataset-licence-decision-gate.png")
+
+    # Chapter 22: make the information cut-off and outcome horizon visible.
+    fig, ax = plt.subplots(figsize=(8.0, 3.8))
+    ax.set_xlim(-1, 19)
+    ax.set_ylim(0, 1)
+    ax.axvspan(0, 6, color=BLUE, alpha=0.20)
+    ax.axvspan(6, 18, color=GOLD, alpha=0.20)
+    ax.axvline(6, color=NAVY, linewidth=2.1)
+    ax.annotate(
+        "observation window\nfeatures available",
+        xy=(3, 0.64),
+        ha="center",
+        va="center",
+        color=NAVY,
+        weight="bold",
+    )
+    ax.annotate(
+        "performance window\ndefault is observed",
+        xy=(12, 0.64),
+        ha="center",
+        va="center",
+        color=NAVY,
+        weight="bold",
+    )
+    ax.annotate(
+        "reference / decision date",
+        xy=(6, 0.30),
+        xytext=(9.2, 0.18),
+        arrowprops={"arrowstyle": "->", "color": NAVY},
+        color=NAVY,
+        weight="bold",
+    )
+    ax.scatter([14], [0.48], s=80, color="#A33", zorder=4)
+    ax.text(14, 0.36, "default", ha="center", color="#A33", weight="bold")
+    ax.set_xticks([0, 3, 6, 9, 12, 15, 18], ["-6", "-3", "0", "+3", "+6", "+9", "+12"])
+    ax.set_yticks([])
+    ax.set(
+        title="Leakage-safe sample design separates information from outcome",
+        xlabel="months relative to the reference date",
+    )
+    for spine in ("left", "right", "top"):
+        ax.spines[spine].set_visible(False)
+    save(fig, "observation-performance-windows.png")
+
+    # Chapter 28: WOE is a distribution log-ratio; bad rate is a different quantity.
+    goods = np.array([180.0, 130.0, 70.0, 30.0])
+    bads = np.array([20.0, 40.0, 60.0, 70.0])
+    woe = np.log((goods / goods.sum()) / (bads / bads.sum()))
+    bad_rate = bads / (goods + bads)
+    bins_woe = np.arange(1, 5)
+    fig, ax = plt.subplots(figsize=(8.0, 4.4))
+    colors = [TEAL if value >= 0 else GOLD for value in woe]
+    ax.bar(bins_woe, woe, color=colors, alpha=0.88, label="WOE")
+    ax.axhline(0, color=GREY, linewidth=1)
+    ax.set(
+        xlabel="ordered characteristic bin",
+        ylabel="WOE = log(good share / bad share)",
+        title="WOE and observed bad rate tell related—but different—stories",
+        xticks=bins_woe,
+    )
+    ax2 = ax.twinx()
+    ax2.plot(bins_woe, bad_rate, color=NAVY, marker="o", linewidth=2.1, label="bad rate")
+    ax2.set_ylabel("observed bad rate")
+    lines, labels = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(lines + lines2, labels + labels2, frameon=False, loc="upper left")
+    save(fig, "woe-logodds-characteristic.png")
+
+    # Chapter 29: show the objective actually used by the from-scratch IRLS estimator.
+    x_irls = np.array([-2.0, -1.0, 0.5, 1.0, 2.0])
+    y_irls = np.array([0.0, 0.0, 0.0, 1.0, 1.0])
+    design = np.column_stack([np.ones(len(x_irls)), x_irls])
+    beta = np.zeros(2)
+    l2 = 0.02
+    penalty = np.diag([0.0, l2])
+    objectives = []
+    for _ in range(9):
+        eta = design @ beta
+        p_hat = np.where(eta >= 0, 1.0 / (1.0 + np.exp(-eta)), np.exp(eta) / (1.0 + np.exp(eta)))
+        p_safe = np.clip(p_hat, 1e-12, 1 - 1e-12)
+        objectives.append(
+            float(
+                -np.mean(y_irls * np.log(p_safe) + (1 - y_irls) * np.log(1 - p_safe))
+                + 0.5 * beta @ penalty @ beta
+            )
+        )
+        weights = np.clip(p_hat * (1 - p_hat), 1e-9, 0.25)
+        gradient = -(design.T @ (y_irls - p_hat)) / len(y_irls) + penalty @ beta
+        hessian = (design.T * weights) @ design / len(y_irls) + penalty
+        beta = beta - np.linalg.solve(hessian, gradient)
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.plot(range(len(objectives)), objectives, marker="o", color=BLUE, linewidth=2.2)
+    ax.set(
+        title="Penalised IRLS reduces the stated objective",
+        xlabel="Newton iteration",
+        ylabel="average penalised negative log-likelihood",
+    )
+    ax.grid(alpha=0.2)
+    ax.text(
+        0.98,
+        0.92,
+        "intercept penalty = 0",
+        transform=ax.transAxes,
+        ha="right",
+        color=NAVY,
+        weight="bold",
+    )
+    save(fig, "irls-objective-convergence.png")
+
+    # Chapter 30: points-to-double-the-odds has a precise log-odds geometry.
+    pd_grid_score = np.geomspace(0.005, 0.30, 180)
+    odds = (1 - pd_grid_score) / pd_grid_score
+    factor = 20.0 / np.log(2.0)
+    scaled_score = 600.0 + factor * np.log(odds / 50.0)
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    ax.semilogx(pd_grid_score, scaled_score, color=BLUE, linewidth=2.3)
+    p_50, p_100 = 1 / 51, 1 / 101
+    ax.scatter([p_50, p_100], [600, 620], color=[GOLD, TEAL], s=70, zorder=4)
+    ax.annotate(
+        "50:1 odds\nscore 600",
+        (p_50, 600),
+        xytext=(0.035, 575),
+        arrowprops={"arrowstyle": "->", "color": GOLD},
+        color=NAVY,
+    )
+    ax.annotate(
+        "100:1 odds\nscore 620",
+        (p_100, 620),
+        xytext=(0.006, 642),
+        arrowprops={"arrowstyle": "->", "color": TEAL},
+        color=NAVY,
+    )
+    ax.set(
+        title="PDO scaling: doubling good-to-bad odds adds 20 points",
+        xlabel="probability of default (log scale)",
+        ylabel="score",
+        ylim=(505, 660),
+    )
+    ax.grid(alpha=0.2)
+    save(fig, "pdo-score-scale.png")
+
+    # Chapter 38: hazard, marginal PD and cumulative PD must reconcile by construction.
+    month_h = np.arange(1, 25)
+    hazard = 0.006 + 0.0012 * month_h + 0.008 * np.exp(-(((month_h - 9) / 4.0) ** 2))
+    survival_start = np.concatenate([[1.0], np.cumprod(1.0 - hazard[:-1])])
+    marginal_pd = survival_start * hazard
+    cumulative_pd = np.cumsum(marginal_pd)
+    fig, ax = plt.subplots(figsize=(8.0, 4.3))
+    ax.plot(month_h, hazard, color=GOLD, linewidth=2.1, label="conditional hazard")
+    ax.plot(month_h, marginal_pd, color=TEAL, linewidth=2.1, label="marginal PD")
+    ax.plot(month_h, cumulative_pd, color=BLUE, linewidth=2.4, label="cumulative PD")
+    ax.set(
+        title="Lifetime PD reconciliation",
+        xlabel="month",
+        ylabel="probability",
+        ylim=(0, max(cumulative_pd) * 1.12),
+    )
+    ax.grid(alpha=0.2)
+    ax.legend(frameon=False)
+    save(fig, "hazard-marginal-cumulative-pd.png")
+
+    print(f"Generated 24 original figures in {OUT}")
 
 
 if __name__ == "__main__":

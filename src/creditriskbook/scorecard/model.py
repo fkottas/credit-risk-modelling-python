@@ -25,6 +25,8 @@ class IRLSLogisticRegression:
     covariance_: np.ndarray | None = field(default=None, init=False)
     n_iter_: int = field(default=0, init=False)
     converged_: bool = field(default=False, init=False)
+    objective_history_: tuple[float, ...] = field(default=(), init=False)
+    gradient_norm_: float = field(default=float("nan"), init=False)
 
     def fit(
         self,
@@ -36,29 +38,64 @@ class IRLSLogisticRegression:
         target = np.asarray(y, dtype=float)
         if matrix.ndim != 2 or target.shape != (len(matrix),):
             raise ValueError("X must be two-dimensional and y must match its rows")
+        if not np.isfinite(matrix).all() or not np.isfinite(target).all():
+            raise ValueError("X and y must contain only finite values")
         if not np.isin(target, [0, 1]).all() or np.unique(target).size != 2:
             raise ValueError("Logistic regression requires a binary target with both classes")
+        if not np.isfinite(self.l2) or self.l2 < 0:
+            raise ValueError("l2 must be a finite non-negative value")
         design = np.column_stack([np.ones(len(matrix)), matrix]) if self.fit_intercept else matrix
         weights = (
             np.ones(len(matrix))
             if sample_weight is None
             else np.asarray(sample_weight, dtype=float)
         )
+        if weights.shape != (len(matrix),) or not np.isfinite(weights).all():
+            raise ValueError("sample weights must be a finite vector matching the rows of X")
         if np.any(weights <= 0):
             raise ValueError("sample weights must be positive")
+        normalizer = float(weights.sum())
         beta = np.zeros(design.shape[1])
         penalty = np.eye(design.shape[1]) * self.l2
         if self.fit_intercept:
             penalty[0, 0] = 0.0
+
+        def objective(parameters: np.ndarray) -> float:
+            probability = np.clip(
+                1.0 / (1.0 + np.exp(-np.clip(design @ parameters, -35, 35))),
+                1e-15,
+                1.0 - 1e-15,
+            )
+            negative_log_likelihood = (
+                -np.sum(
+                    weights
+                    * (target * np.log(probability) + (1.0 - target) * np.log(1.0 - probability))
+                )
+                / normalizer
+            )
+            return float(negative_log_likelihood + 0.5 * parameters @ penalty @ parameters)
+
+        objective_values = [objective(beta)]
         for iteration in range(1, self.max_iter + 1):
             linear = np.clip(design @ beta, -35, 35)
             probability = 1.0 / (1.0 + np.exp(-linear))
-            variance_weight = np.maximum(probability * (1 - probability) * weights, 1e-10)
-            gradient = design.T @ ((target - probability) * weights) - penalty @ beta
-            information = (design.T * variance_weight) @ design + penalty
-            step = np.linalg.solve(information, gradient)
+            variance_weight = np.maximum(probability * (1 - probability), 1e-10) * weights
+            score = design.T @ ((target - probability) * weights) / normalizer - penalty @ beta
+            information = (design.T * variance_weight) @ design / normalizer + penalty
+            step = np.linalg.solve(information, score)
             beta_new = beta + step
-            if np.max(np.abs(step)) < self.tolerance:
+            candidate_objective = objective(beta_new)
+            backtracks = 0
+            while candidate_objective > objective_values[-1] and backtracks < 25:
+                step *= 0.5
+                beta_new = beta + step
+                candidate_objective = objective(beta_new)
+                backtracks += 1
+            objective_values.append(candidate_objective)
+            if (
+                np.max(np.abs(step)) < self.tolerance
+                or abs(objective_values[-2] - objective_values[-1]) < self.tolerance
+            ):
                 beta = beta_new
                 self.converged_ = True
                 self.n_iter_ = iteration
@@ -68,7 +105,15 @@ class IRLSLogisticRegression:
             self.n_iter_ = self.max_iter
         self.intercept_ = float(beta[0]) if self.fit_intercept else 0.0
         self.coef_ = beta[1:].copy() if self.fit_intercept else beta.copy()
-        self.covariance_ = np.linalg.pinv(information)
+        final_probability = 1.0 / (1.0 + np.exp(-np.clip(design @ beta, -35, 35)))
+        final_variance = np.maximum(final_probability * (1.0 - final_probability), 1e-10) * weights
+        final_score = (
+            design.T @ ((target - final_probability) * weights) / normalizer - penalty @ beta
+        )
+        total_information = (design.T * final_variance) @ design + penalty * normalizer
+        self.covariance_ = np.linalg.pinv(total_information)
+        self.objective_history_ = tuple(objective_values)
+        self.gradient_norm_ = float(np.max(np.abs(final_score)))
         return self
 
     def decision_function(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:

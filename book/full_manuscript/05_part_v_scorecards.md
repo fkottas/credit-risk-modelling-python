@@ -250,60 +250,142 @@ For WOE vector $x_i$, logistic regression assumes
 p_i=\frac{1}{1+\exp[-(\beta_0+x_i'\beta)]}.
 \]
 
-The Bernoulli log-likelihood is
+The unpenalised Bernoulli log-likelihood is
 
 \[
-\ell(\beta)=\sum_{i=1}^{n}\{y_i\log p_i+(1-y_i)\log(1-p_i)\}.
+\ell(\beta)=\sum_{i=1}^{n}\left[y_i\log p_i+(1-y_i)\log(1-p_i)\right].
 \]
 
-Iteratively reweighted least squares is Newton’s method applied to this likelihood. At each iteration, calculate probabilities, variance weights $p_i(1-p_i)$, gradient and information matrix, then update coefficients. We first write the full estimator below. The promoted repository class later adds input contracts, stored feature names, covariance, serialisation and richer diagnostics.
+To make the regularisation parameter comparable when the training sample is duplicated or enlarged, this book minimises the **average** negative log-likelihood plus an L2 penalty:
+
+\[
+\mathcal{J}(\beta)=
+-\frac{1}{n}\sum_{i=1}^{n}
+\left[y_i\log p_i+(1-y_i)\log(1-p_i)\right]
++\frac{1}{2}\beta^{\top}\Lambda\beta,
+\]
+
+\[
+\Lambda=\operatorname{diag}(0,\lambda,\ldots,\lambda).
+\]
+
+The zero in $\Lambda_{00}$ is deliberate: the intercept is not regularised. Let $Z$ be the design matrix after adding the intercept column, let $p$ be the vector of current probabilities and define
+
+\[
+W^{(k)}=\operatorname{diag}\left(p_i^{(k)}[1-p_i^{(k)}]\right).
+\]
+
+Differentiating the objective gives
+
+\[
+g(\beta)=\nabla\mathcal{J}(\beta)
+=-\frac{1}{n}Z^{\top}(y-p)+\Lambda\beta,
+\]
+
+\[
+H(\beta)=\nabla^2\mathcal{J}(\beta)
+=\frac{1}{n}Z^{\top}WZ+\Lambda.
+\]
+
+Newton's method uses $\beta^{(k+1)}=\beta^{(k)}-H^{-1}g$. Substitution produces the penalised IRLS update
+
+\[
+\beta^{(k+1)}=\beta^{(k)}+
+\left(\frac{1}{n}Z^{\top}W^{(k)}Z+\Lambda\right)^{-1}
+\left[\frac{1}{n}Z^{\top}(y-p^{(k)})-\Lambda\beta^{(k)}\right].
+\]
+
+The inverse is mathematical notation, not an implementation instruction. Code solves the linear system. With observation weights $a_i$, replace $n$ by $\sum_i a_i$ and insert those weights in the score and information calculations.
+
+| Symbol | Meaning | Shape or domain |
+|---|---|---|
+| $n,p$ | observations and non-intercept features | positive integers |
+| $Z$ | design matrix, including a leading column of ones | $\mathbb{R}^{n\times(p+1)}$ |
+| $y$ | default indicator, where one is the event | $\{0,1\}^n$ |
+| $\beta$ | intercept and slope coefficients | $\mathbb{R}^{p+1}$ |
+| $p_i$ | modelled event probability | mathematically in $(0,1)$ |
+| $W$ | diagonal Bernoulli variance matrix | $W_{ii}=p_i(1-p_i)\in(0,0.25]$ |
+| $\lambda$ | L2 penalty strength on slopes | $\lambda\ge0$ |
+| $\Lambda$ | penalty matrix with unpenalised intercept | positive semidefinite |
+
+For a hand-worked first iteration, take feature values $[-1,1]$, outcomes $[0,1]$ and $\lambda=0.1$. At $\beta^{(0)}=(0,0)^{\top}$, both probabilities equal $0.5$. Then
+
+\[
+Z=\begin{bmatrix}1&-1\\1&1\end{bmatrix},\qquad
+g(\beta^{(0)})=\begin{bmatrix}0\\-0.5\end{bmatrix},\qquad
+H(\beta^{(0)})=\begin{bmatrix}0.25&0\\0&0.35\end{bmatrix}.
+\]
+
+Thus $-H^{-1}g=(0,1.428571)^{\top}$ and
+
+\[
+\beta^{(1)}=(0,1.428571)^{\top}.
+\]
+
+The following standalone implementation exposes that exact update before the estimator is promoted into the course library [R63].
 
 ```python
 import numpy as np
 
 
-def sigmoid(logit):
-    logit = np.clip(logit, -35, 35)
-    return 1.0 / (1.0 + np.exp(-logit))
+def stable_sigmoid(logit):
+    logit = np.asarray(logit, dtype=float)
+    probability = np.empty_like(logit)
+    positive = logit >= 0
+    probability[positive] = 1.0 / (1.0 + np.exp(-logit[positive]))
+    exp_value = np.exp(logit[~positive])
+    probability[~positive] = exp_value / (1.0 + exp_value)
+    epsilon = np.finfo(float).eps
+    return np.clip(probability, epsilon, 1.0 - epsilon)
+
+
+def irls_step(design, y, beta, l2):
+    n = len(design)
+    probability = stable_sigmoid(design @ beta)
+    variance = np.maximum(probability * (1.0 - probability), 1e-12)
+    penalty = np.diag([0.0] + [l2] * (design.shape[1] - 1))
+    score = design.T @ (y - probability) / n - penalty @ beta
+    information = (design.T * variance) @ design / n + penalty
+    return beta + np.linalg.solve(information, score)
 
 
 def fit_logistic_irls(X, y, l2=1e-3, max_iter=100, tolerance=1e-9):
     X = np.asarray(X, dtype=float)
     y = np.asarray(y, dtype=float)
+    if X.ndim != 2 or y.shape != (len(X),):
+        raise ValueError("X must be two-dimensional and y must match its rows")
+    if l2 < 0 or not np.isin(y, [0.0, 1.0]).all() or np.unique(y).size != 2:
+        raise ValueError("Require l2 >= 0 and a binary target containing both classes")
     design = np.column_stack([np.ones(len(X)), X])
     beta = np.zeros(design.shape[1])
-    penalty = np.diag([0.0] + [l2] * X.shape[1])
     for iteration in range(1, max_iter + 1):
-        probability = sigmoid(design @ beta)
-        weights = np.clip(probability * (1.0 - probability), 1e-9, None)
-        gradient = design.T @ (y - probability) - penalty @ beta
-        information = (design.T * weights) @ design + penalty
-        step = np.linalg.solve(information, gradient)
-        beta_next = beta + step
-        if np.max(np.abs(step)) < tolerance:
+        beta_next = irls_step(design, y, beta, l2)
+        if np.max(np.abs(beta_next - beta)) < tolerance:
             return beta_next, iteration
         beta = beta_next
     raise RuntimeError("IRLS did not converge")
 
 
-X = np.array([[-1.5], [-1.0], [-0.5], [0.0], [0.5], [1.0], [1.5]])
-y = np.array([0, 0, 0, 0, 1, 1, 1])
-beta, iterations = fit_logistic_irls(X, y, l2=0.2)
-print(
-    {
-        "intercept": float(round(beta[0], 6)),
-        "coefficient": float(round(beta[1], 6)),
-        "iterations": iterations,
-        "pd_at_zero": float(round(sigmoid(beta[0]), 6)),
-    }
-)
+X_demo = np.array([[-1.0], [1.0]])
+y_demo = np.array([0.0, 1.0])
+Z_demo = np.column_stack([np.ones(len(X_demo)), X_demo])
+beta_one = irls_step(Z_demo, y_demo, np.zeros(2), l2=0.1)
+print("Beta after one update:", beta_one)
+
+X_fit = np.array([[-1.5], [-1.0], [-0.5], [0.0], [0.5], [1.0], [1.5]])
+y_fit = np.array([0, 0, 0, 0, 1, 1, 1])
+beta, iterations = fit_logistic_irls(X_fit, y_fit, l2=0.02)
+print({"beta": np.round(beta, 6).tolist(), "iterations": iterations})
 ```
 
 ```output
-{'intercept': -0.641179, 'coefficient': 2.500836, 'iterations': 7, 'pd_at_zero': 0.34498}
+Beta after one update: [0.         1.42857143]
+{'beta': [-0.725133, 2.861941], 'iterations': 7}
 ```
 
-L2 regularisation reduces unstable magnitudes but changes inference. Approximate standard errors rely on model assumptions and do not account for bin search, repeated observations or temporal dependence. Use bootstrap or clustered methods where appropriate.
+Changing from a summed likelihood to an average likelihood changes the numerical meaning of $\lambda$ unless the penalty is rescaled. State the convention in every model artefact. L2 regularisation reduces unstable magnitudes and produces finite estimates under many separation cases, but it changes inference. Full column rank is needed for the ordinary unpenalised inverse; a strictly positive ridge term can stabilise penalised slope directions, although an unidentified intercept or malformed design can still fail. Approximate standard errors rely on model assumptions and do not account for bin search, repeated observations or temporal dependence. Use bootstrap or clustered methods where appropriate.
+
+Implementation invariants include an unpenalised intercept, probabilities within numerical bounds, a non-increasing objective under an accepted Newton step and nearly zero final score. A convergence flag proves only numerical optimisation. It does not prove correct labels, linear log odds, stable coefficients, calibration or fitness for use.
 
 ## Variable selection
 

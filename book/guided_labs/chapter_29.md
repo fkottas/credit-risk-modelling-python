@@ -7,7 +7,7 @@ This laboratory does not begin by importing a finished modelling function. The c
 The chapter's principal mathematical object is
 
 \[
-p_i=\frac{1}{1+e^{-x_i^\top\beta}},\quad \beta^{k+1}=\beta^k+(X^\top W X)^{-1}X^\top(y-p)
+\beta^{(k+1)}=\beta^{(k)}+\left(\frac{X^\top W^{(k)}X}{n}+\Lambda\right)^{-1}\left[\frac{X^\top(y-p^{(k)})}{n}-\Lambda\beta^{(k)}\right]
 \]
 
 Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
@@ -17,6 +17,8 @@ Write every symbol next to its business definition and unit. Conditional probabi
 Reconstruct the expression from elementary operations. Identify the random variable, conditioning information, aggregation rule and any approximation. Then separate estimand, estimator and implementation. The estimand is the population quantity the institution needs. The estimator is the statistical rule learned from available observations. The implementation is a versioned algorithm with finite precision, boundary handling and controls. For every transformation, state which assumptions make it valid and how the result changes if those assumptions fail. This step prevents students from treating a library call as a definition.
 
 For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
+
+![Figure 29.1 — Original teaching visual generated from repository data.](book/figures/irls-objective-convergence.png)
 
 ### 3. Implement the first transparent component
 

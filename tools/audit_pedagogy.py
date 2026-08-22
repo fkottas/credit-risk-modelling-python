@@ -68,7 +68,20 @@ def main() -> None:
         assert completed.stdout.strip(), f"{path} must show an inspectable output"
 
     registry = yaml.safe_load((ROOT / "data" / "dataset_registry.yml").read_text(encoding="utf-8"))
-    assert len(registry["datasets"]) >= 30, "The exercise catalogue requires at least 30 sources"
+    assert registry["registry_version"] >= 3
+    assert str(registry["last_reviewed"]) == "2026-08-22"
+    records = registry["datasets"]
+    assert len(records) >= 41, "The exercise catalogue requires at least 41 sources"
+    required_fields = {"title", "publisher", "licence", "redistribution", "status", "limitations"}
+    for key, record in records.items():
+        missing = sorted(field for field in required_fields if not record.get(field))
+        assert not missing, f"Dataset registry record {key} is missing {missing}"
+        is_project_generated = str(record.get("type", "")).startswith("independently generated")
+        is_excluded = str(record["status"]).startswith("excluded")
+        if not is_project_generated and not is_excluded:
+            assert record.get("official_url"), f"Dataset registry record {key} has no official URL"
+        if str(record["licence"]).upper() == "CC BY 4.0":
+            assert record.get("attribution"), f"CC BY dataset {key} has no attribution"
 
     titles = " ".join(chapter["title"].lower() for chapter in chapters[-6:])
     for term in ("nlp", "document", "llm", "agent", "retrieval", "evaluation"):
@@ -76,7 +89,7 @@ def main() -> None:
 
     print(
         f"Pedagogy audit passed: {len(chapters)} chapters, 24 standalone scripts, "
-        f"{len(registry['datasets'])} dataset records."
+        f"{len(records)} dataset records."
     )
 
 

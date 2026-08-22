@@ -11,6 +11,7 @@ from creditriskbook.data.datasets import load_dataset
 from creditriskbook.models import evaluate_pd, split_dataset
 from creditriskbook.scorecard import (
     BinningProcess,
+    IRLSLogisticRegression,
     LogisticScorecard,
     ModelScoreMapper,
     ScoreScale,
@@ -121,6 +122,34 @@ class ScorecardTests(unittest.TestCase):
         self.assertEqual(stronger - score, 50)
         recovered = scale.score_to_probability(np.array([score]))[0]
         self.assertAlmostEqual(recovered, base_pd, places=8)
+
+    def test_penalised_irls_uses_average_objective_and_unpenalised_intercept(self) -> None:
+        X = np.array([[-1.5], [-1.0], [-0.5], [0.0], [0.5], [1.0], [1.5]])
+        y = np.array([0, 0, 0, 0, 1, 1, 1])
+        fitted = IRLSLogisticRegression(l2=0.02).fit(X, y)
+        duplicated = IRLSLogisticRegression(l2=0.02).fit(np.tile(X, (4, 1)), np.tile(y, 4))
+
+        np.testing.assert_allclose(fitted.coef_, duplicated.coef_, atol=1e-9)
+        self.assertAlmostEqual(fitted.intercept_, duplicated.intercept_, places=9)
+        self.assertTrue(fitted.converged_)
+        self.assertLess(fitted.gradient_norm_, 1e-7)
+        self.assertTrue(
+            all(
+                later <= earlier + 1e-12
+                for earlier, later in zip(
+                    fitted.objective_history_, fitted.objective_history_[1:], strict=False
+                )
+            )
+        )
+
+        balanced = IRLSLogisticRegression(l2=0.1).fit(np.array([[-1.0], [1.0]]), np.array([0, 1]))
+        self.assertAlmostEqual(balanced.intercept_, 0.0, places=10)
+
+    def test_penalised_irls_rejects_invalid_contracts(self) -> None:
+        with self.assertRaises(ValueError):
+            IRLSLogisticRegression(l2=-0.1).fit(np.array([[-1.0], [1.0]]), np.array([0, 1]))
+        with self.assertRaises(ValueError):
+            IRLSLogisticRegression().fit(np.array([[-1.0], [np.nan]]), np.array([0, 1]))
 
     def test_model_agnostic_mapping_accepts_any_predict_proba_model(self) -> None:
         class ProbabilityModel:

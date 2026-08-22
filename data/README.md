@@ -12,10 +12,11 @@ The repository's earlier synthetic generators for BNPL/microloans and fraud rema
 | `synthetic_behavioral_history` | Generated locally as four relational tables | Cleaning, point-in-time joins, DPD/utilisation/payment/bureau features |
 | `uci_south_german` | UCI downloader | Small PD, scorecard, cost-sensitive classification, fairness discussion |
 | `uci_taiwan_credit_card` | UCI downloader | Behavioural PD, calibration, ML comparison |
+| `uci_australian_credit_approval` | UCI downloader | Mixed-type application screening; target is approval, never PD |
 | `kaggle_credit_risk` | Student downloads `credit_risk_dataset.csv` | Dataset switching, missing data, model benchmarking |
 | `synthetic_credit_documents` | Generated locally as applications, documents, expected facts and policy text | NLP extraction, BM25 retrieval, structured memoranda, prompt-injection and agent controls |
 
-The 36-record registry also records official or conditional sources from HMDA/CFPB, SBA, SEC EDGAR, the Federal Reserve, EBA, FHFA, Fannie Mae, Freddie Mac, World Bank and FRED, plus scope-limited or non-bundled Kaggle cases. Readers obtain provider-controlled files under the current official terms; the repository does not republish them. Public access is not treated as permission for every purpose, and every source retains an explicit modelling limitation.
+The 41-record registry also records official or conditional sources from HMDA/CFPB, SBA, SEC EDGAR, the Federal Reserve, EBA, FHFA, Fannie Mae, Freddie Mac, BLS Consumer Expenditure PUMD, World Bank, Eurostat, ECB and FRED, plus scope-limited or non-bundled Kaggle cases. Readers obtain provider-controlled files under the current official terms; the repository does not republish them. Public access is not treated as permission for every purpose, and every source retains an explicit modelling limitation.
 
 South German Credit uses only the core dependencies. Install optional Excel support for the Taiwan dataset with `python -m pip install -e '.[datasets]'`.
 

@@ -26,7 +26,7 @@ The expanded edition has 72 analytical chapters in twelve parts. Each chapter co
 ## Applied material after the chapters
 
 - original scorecard, IFRS 9, IRB and agent API guides;
-- lawful 36-record dataset catalogue and 62-source reference ledger;
+- lawful 41-record dataset catalogue and 76-source reference ledger;
 - 72-case practice book;
 - twelve end-to-end technical workshops;
 - twelve hand-auditable numerical examples;

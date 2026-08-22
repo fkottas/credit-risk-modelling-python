@@ -31,11 +31,17 @@ Public datasets are teaching and infrastructure assets, not automatic evidence f
 | UCI South German Credit, CC BY 4.0 | application; manual scorecard and cost-sensitive PD | current population validity or out-of-time stability |
 | UCI Taiwan credit card, CC BY 4.0 | customer; repayment-status features and ML comparison | current policy, geography or prospective time split |
 | UCI Credit Approval, CC BY 4.0 | application; missing and mixed data types | default probability, because the outcome is approval |
+| UCI Australian Credit Approval, CC BY 4.0 | application; screening-model comparison and decision-bias discussion | default probability, because the outcome is an application decision |
 | UCI Polish/Taiwan bankruptcy, CC BY 4.0 | firm; failure and low-event exercises | Basel default without a mapped default definition |
 | HMDA public files | mortgage application; access, decision and pricing analysis | subsequent loan default |
 | Fannie Mae/Freddie Mac performance files | mortgage-month; vintage, delinquency and prepayment | universal mortgage behaviour; raw redistribution rights |
+| BLS Consumer Expenditure PUMD | consumer unit; affordability, household budgets and survey-weight exercises | loan approval, default, LGD or EAD |
+| World Bank, Eurostat, ECB and FRED series | country/period or market/period; macro paths and satellite-model inputs | borrower-level causality or ready-made IFRS 9 scenario probabilities |
+| Federal Reserve stress scenarios | macro-variable/quarter; severity, consistency and stress-transmission exercises | a forecast or occurrence probability |
 | Project synthetic behavioural history | application, contract, facility-month and enquiry | empirical claims about any institution |
 | Project recovery, IFRS 9, IRB and counterparty cases | specialist ledgers unavailable in a single open source | regulatory approval or accounting policy evidence |
+
+The UCI Australian case and the macro, household and supervisory-scenario sources are governed by their official records and reuse notices [R23, R70–R74]. Each adapter must preserve the selected series or release identifier, access date and analytical limitation; inclusion in this table is not permission to merge unlike outcomes into a single benchmark.
 
 ## Synthetic data with an explicit mechanism
 
@@ -101,6 +107,8 @@ For revised macro data, store the release vintage when the provider permits it. 
 ## Privacy minimisation
 
 Use the least detailed lawful field needed for the stated purpose. Keep secrets, credentials and personal data out of notebooks, logs, prompts, embeddings, model artefacts and screenshots. Tokenisation or hashing does not automatically anonymise data when linkage remains possible. Synthetic teaching data should be labelled synthetic and should not imitate named individuals.
+
+There is an important copyright and provenance distinction between two kinds of classroom data. Rows generated independently from a documented stochastic mechanism are original project output. A deliberately corrupted, resampled or transformed version of a UCI or other licensed dataset remains a derivative of that source: it must retain the source citation, licence notice and a clear description of every injected defect. Calling a file “synthetic” does not erase upstream obligations or make an identifiable record anonymous.
 
 **Applied investigation.** Compare UCI South German, a conditional Kaggle competition and Freddie Mac performance data. Decide separately whether analysis, download-by-code, local retention and redistribution are allowed. Record the evidence and the date of the decision.
 

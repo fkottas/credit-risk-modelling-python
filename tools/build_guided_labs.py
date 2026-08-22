@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "book" / "guided_labs"
 
 FORMULAS = [
-    r"L=\sum_{t=1}^{T}d_t(C_t-R_t+K_t)",
+    r"L=\sum_{t=1}^{T}(1+r)^{-t/12}\left[(C_t-P_t)-Rec_t+K_t\right]",
     r"EL=\mathbb{E}[L],\quad UL_\alpha=Q_\alpha(L)-EL",
     r"\operatorname{Var}(L)=\sum_{i=1}^{n}\operatorname{Var}(L_i)+2\sum_{i=1}^{n-1}\sum_{j=i+1}^{n}\operatorname{Cov}(L_i,L_j)",
     r"P_{ij}(h)=\Pr(S_{t+h}=j\mid S_t=i)",
@@ -24,7 +24,7 @@ FORMULAS = [
     r"PD_i=\Pr(D_i=1\mid x_i,\mathcal{I}_t)",
     r"EL_i=PD_i\,LGD_i\,EAD_i",
     r"PD_s=\Pr(D=1\mid S=s)",
-    r"L_i=\sum_{t=1}^{T} d_t(C_{it}-R_{it}+K_{it})",
+    r"L_i=\sum_{t=1}^{T} d_t\left[(C_{it}-P_{it})-Rec_{it}+K_{it}\right]",
     r"\max_c\;\mathbb{E}[\Pi(c)]\quad\text{s.t. affordability and risk constraints}",
     r"RWA=12.5\,K\,EAD",
     r"D_i=\mathbf{1}\{\text{default criteria hold}\}",
@@ -42,7 +42,7 @@ FORMULAS = [
     r"b(x)=\sum_{j=1}^{J}j\,\mathbf{1}\{c_{j-1}<x\le c_j\}",
     r"\chi^2=\sum_{r=1}^{R}\sum_{c=1}^{C}\frac{(O_{rc}-E_{rc})^2}{E_{rc}}",
     r"WOE_j=\log\frac{p_j^G}{p_j^B},\quad IV=\sum_{j=1}^{J}(p_j^G-p_j^B)WOE_j",
-    r"p_i=\frac{1}{1+e^{-x_i^\top\beta}},\quad \beta^{k+1}=\beta^k+(X^\top W X)^{-1}X^\top(y-p)",
+    r"\beta^{(k+1)}=\beta^{(k)}+\left(\frac{X^\top W^{(k)}X}{n}+\Lambda\right)^{-1}\left[\frac{X^\top(y-p^{(k)})}{n}-\Lambda\beta^{(k)}\right]",
     r"Score=Offset+Factor\log\frac{1-p}{p},\quad Factor=\frac{PDO}{\log2}",
     r"\widehat{R}_{OOT}=\frac{1}{n_{OOT}}\sum_{i\in OOT}\ell(y_i,\widehat p_i)",
     r"AUC=\Pr(\widehat p_D>\widehat p_N),\quad KS=\max_c|F_D(c)-F_N(c)|",
@@ -89,13 +89,21 @@ FORMULAS = [
 ]
 
 FIGURES = {
-    1: "part-01-loss-distribution.png",
+    1: "cash-flow-loss-decomposition.png",
+    2: "part-01-loss-distribution.png",
     7: "part-02-product-risk.png",
     13: "part-03-stages.png",
+    17: "ifrs9-cecl-horizon.png",
     19: "part-04-data-quality.png",
+    20: "dataset-licence-decision-gate.png",
+    22: "observation-performance-windows.png",
     25: "part-05-characteristic.png",
+    28: "woe-logodds-characteristic.png",
+    29: "irls-objective-convergence.png",
+    30: "pdo-score-scale.png",
     31: "part-06-calibration.png",
     37: "part-07-lifetime-pd.png",
+    38: "hazard-marginal-cumulative-pd.png",
     43: "part-08-scenario-ecl.png",
     49: "part-09-irb-sensitivity.png",
     55: "part-10-cutoff-economics.png",

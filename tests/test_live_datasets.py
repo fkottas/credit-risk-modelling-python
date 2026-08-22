@@ -48,6 +48,19 @@ class LiveDatasetTests(unittest.TestCase):
             bundle.source_sha256, "fff49bc186cbddb3ace7371d40d9fbbb3af4f126019c13ff3f562249b1454f4d"
         )
 
+    def test_australian_approval_download_schema_and_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = load_dataset("uci_australian_credit_approval", cache_dir=directory)
+        self.assertEqual(bundle.frame.shape, (690, 16))
+        self.assertEqual(bundle.target, "approved")
+        self.assertEqual(
+            bundle.frame[bundle.target].value_counts().sort_index().to_dict(), {0: 383, 1: 307}
+        )
+        self.assertEqual(
+            bundle.source_sha256, "3abe5af151afa50b999a9ba21cbc884e80d80a4050b716cf88b34a2e6ecb731c"
+        )
+        self.assertIn("not default", bundle.limitations.lower())
+
     def test_polish_bankruptcy_download_schema_and_hash(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = load_dataset("uci_polish_bankruptcy", cache_dir=directory)

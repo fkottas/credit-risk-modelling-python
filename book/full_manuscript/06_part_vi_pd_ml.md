@@ -55,6 +55,23 @@ Report confidence intervals and paired comparisons on the same observations. Seg
 
 Calibration asks whether predicted probabilities agree with observed frequency for a defined horizon and population. Calibration-in-the-large compares mean PD with default rate; slope identifies over- or under-dispersion. Reliability plots group predictions, but bin choice and small counts matter. Brier and log loss assess probability accuracy, while AUC does not.
 
+For a partition of predictions into $K$ calibration groups, Murphy's sample decomposition makes the distinction explicit [R69]. Let $n_k$ be group size, $\bar p_k$ its mean prediction, $\bar y_k$ its event rate and $\bar y$ the portfolio event rate. Then
+
+\[
+BS=\frac{1}{n}\sum_{i=1}^{n}(p_i-y_i)^2
+=REL-RES+UNC,
+\]
+
+\[
+REL=\sum_{k=1}^{K}\frac{n_k}{n}(\bar p_k-\bar y_k)^2,
+\qquad
+RES=\sum_{k=1}^{K}\frac{n_k}{n}(\bar y_k-\bar y)^2,
+\qquad
+UNC=\bar y(1-\bar y).
+\]
+
+Lower reliability error is better; greater resolution is better because groups separate different observed risks; uncertainty belongs to the outcome population. The finite-sample values depend on the grouping scheme. There is no universal identity that replaces resolution with $(1-AUC)$ times a constant: AUC is a rank statistic and does not appear in the Brier decomposition.
+
 IRB PD calibration may target a long-run average rather than the current sample rate. The repository applies an intercept shift on odds so ordering is preserved and weighted mean PD matches a target central tendency, subject to a floor.
 
 ```python
@@ -207,6 +224,14 @@ from creditriskbook.scorecard import ModelScoreMapper
 ```
 
 Fairness diagnostics include group approval, error, calibration and outcome measures. Conflicting criteria are common when base rates differ. Protected attributes may be needed for auditing even when excluded from prediction, subject to lawful handling. Small intersectional groups require uncertainty. Kozodoi, Jacob and Lessmann analyse fairness criteria and implementation in credit scoring [R49], while Fuster et al. show why flexible prediction can have distributional effects in credit markets [R51]. These studies inform investigation; they do not replace jurisdiction-specific protected-class, adverse-impact, business-necessity and customer-remedy analysis. Supervisory practice also requires specific adverse-action reasons and management of model risk, not only parity metrics [R9, R44–R45].
+
+The mathematical trade-off must be stated precisely. Let $A$ denote group, $Y=1$ default and $S\in[0,1]$ a risk score. Calibration within groups requires
+
+\[
+\mathbb{E}[Y\mid S=s,A=a]=s.
+\]
+
+Balance for the positive and negative classes would additionally require $\mathbb{E}[S\mid Y=1,A=a]$ and $\mathbb{E}[S\mid Y=0,A=a]$ to be equal across groups. When base rates $\Pr(Y=1\mid A=a)$ differ, these conditions cannot generally all hold unless prediction is perfect or the problem is otherwise degenerate [R67–R68]. This theorem concerns those score conditions; it is not a blanket proof that every named group metric conflicts in every dataset. Thresholded false-positive and false-negative rates introduce the cutoff and must be analysed separately.
 
 Explainability literature likewise distinguishes a technically plausible attribution from an operationally valid reason. Bussmann et al. discuss explainable machine learning in credit-risk management [R50], and the EBA's follow-up report on machine learning for IRB models emphasises governance, interpretability and prudent model use [R43]. The book therefore tests fidelity, stability and actionability separately.
 

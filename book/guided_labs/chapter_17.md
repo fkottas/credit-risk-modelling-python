@@ -18,6 +18,8 @@ Reconstruct the expression from elementary operations. Identify the random varia
 
 For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
 
+![Figure 17.1 — Original teaching visual generated from repository data.](book/figures/ifrs9-cecl-horizon.png)
+
 ### 3. Implement the first transparent component
 
 The complete calculation is written in the chapter. It may import Python, NumPy, or pandas, but it must not import `creditriskbook`. This is enforced by the pedagogy audit. Students preserve the source values, expose intermediate quantities, validate boundaries, and print an auditable result. The code below is a construction step, not an illustration of a library that appeared before the course.

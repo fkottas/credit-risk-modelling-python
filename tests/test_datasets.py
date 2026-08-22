@@ -53,6 +53,7 @@ class DatasetTests(unittest.TestCase):
                 "uci_south_german",
                 "uci_taiwan_credit_card",
                 "uci_credit_approval",
+                "uci_australian_credit_approval",
                 "uci_polish_bankruptcy",
                 "uci_taiwan_bankruptcy",
                 "kaggle_credit_risk",

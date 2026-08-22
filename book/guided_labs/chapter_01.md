@@ -7,7 +7,7 @@ This laboratory does not begin by importing a finished modelling function. The c
 The chapter's principal mathematical object is
 
 \[
-L=\sum_{t=1}^{T}d_t(C_t-R_t+K_t)
+L=\sum_{t=1}^{T}(1+r)^{-t/12}\left[(C_t-P_t)-Rec_t+K_t\right]
 \]
 
 Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.
@@ -18,7 +18,7 @@ Reconstruct the expression from elementary operations. Identify the random varia
 
 For a hand audit, select five records, retain the raw values, and calculate every intermediate column. Reconcile the individual rows to the reported total. Repeat after changing one input while holding the others fixed. The direction need not always be monotonic, but any non-monotonic response must be explained by the mathematics rather than accepted because software returned it. Missing, impossible or temporally unavailable values are reported and quarantined; they are not silently imputed or winsorised.
 
-![Figure 1.1 — Original teaching visual generated from repository data.](book/figures/part-01-loss-distribution.png)
+![Figure 1.1 — Original teaching visual generated from repository data.](book/figures/cash-flow-loss-decomposition.png)
 
 ### 3. Implement the first transparent component
 

@@ -346,9 +346,9 @@ References were checked for this edition in August 2026. Links point to the publ
 
 [R1] Basel Committee on Banking Supervision. “Calculation of RWA for credit risk: Introduction.” Basel Framework, CRE30. https://www.bis.org/basel_framework/chapter/CRE/30.htm
 
-[R2] Basel Committee on Banking Supervision. “IRB approach: Risk components for each exposure class.” Basel Framework, CRE31. https://www.bis.org/basel_framework/chapter/CRE/31.htm
+[R2] Basel Committee on Banking Supervision. “IRB approach: Risk-weight functions.” Basel Framework, CRE31. https://www.bis.org/basel_framework/chapter/CRE/31.htm
 
-[R3] Basel Committee on Banking Supervision. “IRB approach: Risk-weighted assets for credit risk.” Basel Framework, CRE32. https://www.bis.org/basel_framework/chapter/CRE/32.htm
+[R3] Basel Committee on Banking Supervision. “IRB approach: Risk components.” Basel Framework, CRE32. https://www.bis.org/basel_framework/chapter/CRE/32.htm
 
 [R4] Basel Committee on Banking Supervision. “Minimum requirements to use IRB approach.” Basel Framework, CRE36. https://www.bis.org/basel_framework/chapter/CRE/36.htm
 
@@ -468,6 +468,34 @@ References were checked for this edition in August 2026. Links point to the publ
 
 [R62] OWASP Foundation. “OWASP Top 10 for Large Language Model Applications.” Official project documentation. https://genai.owasp.org/llm-top-10/
 
+[R63] Green, Peter J. “Iteratively Reweighted Least Squares for Maximum Likelihood Estimation, and Some Robust and Resistant Alternatives.” *Journal of the Royal Statistical Society: Series B* 46(2), 1984, pp. 149–192. https://doi.org/10.1111/j.2517-6161.1984.tb01288.x
+
+[R64] European Union. Consolidated text of Regulation (EU) 2024/1689, incorporating Regulation (EU) 2026/1744, version of 27 July 2026. EUR-Lex. https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02024R1689-20260727
+
+[R65] European Commission. “Navigating the AI Act: the European AI Office and the enforcement framework.” Official policy page. https://digital-strategy.ec.europa.eu/en/policies/enforcement-ai-act
+
+[R66] Court of Justice of the European Union. Judgment of 7 December 2023, *SCHUFA Holding (Scoring)*, Case C-634/21, ECLI:EU:C:2023:957. https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:62021CJ0634
+
+[R67] Chouldechova, Alexandra. “Fair Prediction with Disparate Impact: A Study of Bias in Recidivism Prediction Instruments.” *Big Data* 5(2), 2017, pp. 153–163. https://doi.org/10.1089/big.2016.0047
+
+[R68] Kleinberg, Jon; Mullainathan, Sendhil; and Raghavan, Manish. “Inherent Trade-Offs in the Fair Determination of Risk Scores.” *Proceedings of the 8th Innovations in Theoretical Computer Science Conference*, 2017, Article 43. https://doi.org/10.4230/LIPIcs.ITCS.2017.43
+
+[R69] Murphy, Allan H. “A New Vector Partition of the Probability Score.” *Journal of Applied Meteorology* 12(4), 1973, pp. 595–600. https://doi.org/10.1175/1520-0450(1973)012%3C0595:ANVPOT%3E2.0.CO;2
+
+[R70] World Bank. “Dataset Licensing.” World Bank Data Help Desk. https://datahelpdesk.worldbank.org/knowledgebase/articles/1886700-dataset-licensing
+
+[R71] European Central Bank. “Policy regarding the reuse of ESCB statistics.” https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html
+
+[R72] Eurostat. “Copyright notice and free re-use of data.” https://ec.europa.eu/eurostat/help/copyright-notice
+
+[R73] U.S. Bureau of Labor Statistics. “Consumer Expenditure Surveys Public Use Microdata.” https://www.bls.gov/cex/pumd.htm
+
+[R74] Board of Governors of the Federal Reserve System. “2026 Stress Test Scenarios.” https://www.federalreserve.gov/publications/2026-stress-test-scenarios.htm
+
+[R75] Office of the Comptroller of the Currency. “Revised Guidance on Model Risk Management,” OCC Bulletin 2026-13, 17 April 2026. https://www.occ.treas.gov/news-issuances/bulletins/2026/bulletin-2026-13.html
+
+[R76] Federal Deposit Insurance Corporation. “Revised Guidance on Model Risk Management,” FIL-15-2026, 17 April 2026. https://www.fdic.gov/news/financial-institution-letters/2026/revised-guidance-model-risk-management
+
 ## Appendix K — Master-topic coverage and extension map
 
 The 72-chapter structure uses fewer, larger parts while retaining the specialist topics in the original master outline. The map below prevents an important method from disappearing merely because it is not a chapter title.
@@ -478,7 +506,7 @@ The 72-chapter structure uses fewer, larger parts while retaining the specialist
 | products, fintech, BNPL, embedded finance, ESG and segments | 7–12 | decision economics in 59; safe adaptive limits in 60 |
 | expert rules, ratios, ratings and shadow ratings | 8, 10, 12, 15 | master scales and migration in 33 |
 | Basel, IRB, IFRS 9 and CECL | 13–17, 43–54 | post-implementation review, latest guidance, calibration, MoC and reconciliation |
-| internal, bureau, alternative, API, scraped, public and synthetic data | 19–24 | 36-record source registry; legal gate before any adapter or download |
+| internal, bureau, alternative, API, scraped, public and synthetic data | 19–24 | 41-record source registry; legal gate before any adapter or download |
 | missingness, outliers, cleaning and quarantine | 23 | MCAR/MAR/MNAR mechanisms, raw-value preservation, no silent imputation or winsorisation |
 | cohorts, roll rates, stages, cure, prepayment and recovery | 4, 11, 24, 37–48 | monthly panels, transition matrices and component reconciliation |
 | behavioural and bureau features | 21–24 | max/last DPD, threshold counts, persistence, RFM, trends, utilisation and `CountContractsLast6Months` |

@@ -7,7 +7,7 @@ This laboratory does not begin by importing a finished modelling function. The c
 The chapter's principal mathematical object is
 
 \[
-L_i=\sum_{t=1}^{T} d_t(C_{it}-R_{it}+K_{it})
+L_i=\sum_{t=1}^{T} d_t\left[(C_{it}-P_{it})-Rec_{it}+K_{it}\right]
 \]
 
 Write every symbol next to its business definition and unit. Conditional probabilities must identify the information set; monetary quantities must identify currency and reference date; rates must distinguish proportions from percentages; and time must identify whether it is calendar, contractual, behavioural or default-workout time. This notation contract becomes the first object in the library rather than an undocumented convention hidden in code.

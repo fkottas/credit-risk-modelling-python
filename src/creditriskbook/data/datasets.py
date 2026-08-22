@@ -53,6 +53,10 @@ TAIWAN_URL = "https://archive.ics.uci.edu/static/public/350/default+of+credit+ca
 TAIWAN_ZIP_SHA256 = "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
 CREDIT_APPROVAL_URL = "https://archive.ics.uci.edu/static/public/27/credit+approval.zip"
 CREDIT_APPROVAL_ZIP_SHA256 = "e3adfa0387815e3a9d8aaaf7b1cd7365424c83298bca6358bc48e451b4a26dd3"
+AUSTRALIAN_APPROVAL_URL = (
+    "https://archive.ics.uci.edu/static/public/143/statlog+australian+credit+approval.zip"
+)
+AUSTRALIAN_APPROVAL_ZIP_SHA256 = "f0bd9cd9b1d133cb20456b8953e1f8139fd30ed2b3f66da540db75136f1e9e0b"
 POLISH_BANKRUPTCY_URL = (
     "https://archive.ics.uci.edu/static/public/365/polish+companies+bankruptcy+data.zip"
 )
@@ -379,6 +383,53 @@ def _credit_approval_bundle(cache_dir: Path) -> DatasetBundle:
     )
 
 
+def _australian_approval_bundle(cache_dir: Path) -> DatasetBundle:
+    archive = _download_checked(
+        AUSTRALIAN_APPROVAL_URL,
+        AUSTRALIAN_APPROVAL_ZIP_SHA256,
+        cache_dir / "uci_australian_credit_approval" / "australian_credit_approval.zip",
+    )
+    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
+        raw = zipped.read("australian.dat")
+    columns = [f"a{i}" for i in range(1, 16)]
+    frame = pd.read_csv(io.BytesIO(raw), sep=r"\s+", names=columns)
+    frame.insert(0, "application_id", [f"AUS-{i:04d}" for i in range(len(frame))])
+    frame["approved"] = frame.pop("a15").astype(int)
+    numeric = tuple(f"a{i}" for i in (2, 3, 7, 10, 13, 14))
+    categorical = tuple(f"a{i}" for i in (1, 4, 5, 6, 8, 9, 11, 12))
+    for feature in categorical:
+        frame[feature] = frame[feature].astype("category")
+    return DatasetBundle(
+        key="uci_australian_credit_approval",
+        frame=frame,
+        target="approved",
+        numeric_features=numeric,
+        categorical_features=categorical,
+        protected_attributes=(),
+        id_column="application_id",
+        date_column=None,
+        split_strategy="stratified_random_no_time_available",
+        source_url=("https://archive.ics.uci.edu/dataset/143/statlog+australian+credit+approval"),
+        licence="CC BY 4.0",
+        attribution=(
+            "Quinlan, J. (1987), Statlog Australian Credit Approval, "
+            "UCI ML Repository, DOI 10.24432/C59012."
+        ),
+        source_sha256=_sha256_bytes(raw),
+        limitations=(
+            "The target is application approval, not default. Attribute meanings are anonymised, "
+            "there are no dates or economics, and the published data file already contains the "
+            "source's mean/mode replacements for originally missing values."
+        ),
+        quality_spec=QualitySpec(
+            allowed_values={
+                feature: frozenset(frame[feature].dropna().unique()) for feature in categorical
+            },
+            forbidden_model_columns=frozenset(),
+        ),
+    )
+
+
 def _polish_bankruptcy_bundle(cache_dir: Path) -> DatasetBundle:
     archive = _download_checked(
         POLISH_BANKRUPTCY_URL,
@@ -459,6 +510,7 @@ def available_datasets() -> tuple[str, ...]:
         "uci_south_german",
         "uci_taiwan_credit_card",
         "uci_credit_approval",
+        "uci_australian_credit_approval",
         "uci_polish_bankruptcy",
         "uci_taiwan_bankruptcy",
         "kaggle_credit_risk",
@@ -483,6 +535,8 @@ def load_dataset(
         return _taiwan_bundle(Path(cache_dir))
     if key == "uci_credit_approval":
         return _credit_approval_bundle(Path(cache_dir))
+    if key == "uci_australian_credit_approval":
+        return _australian_approval_bundle(Path(cache_dir))
     if key == "uci_polish_bankruptcy":
         return _polish_bankruptcy_bundle(Path(cache_dir))
     if key == "uci_taiwan_bankruptcy":

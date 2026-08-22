@@ -1,5 +1,5 @@
-registry_version: 2
-last_reviewed: 2026-08-21
+registry_version: 3
+last_reviewed: 2026-08-22
 policy: >-
   A dataset may be used only after provenance, licence, access conditions,
   redistribution, attribution, and material limitations have been recorded.
@@ -160,6 +160,23 @@ datasets:
       there are no dates, economics, or protected-attribute definitions. It is not a PD dataset.
     attribution: Quinlan, J. (1987), Credit Approval, UCI ML Repository, DOI 10.24432/C5FS30.
 
+  uci_australian_credit_approval:
+    title: Statlog (Australian Credit Approval)
+    publisher: UCI Machine Learning Repository
+    official_url: https://archive.ics.uci.edu/dataset/143/statlog+australian+credit+approval
+    doi: 10.24432/C59012
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    redistribution: permitted with attribution; repository uses download-by-code by default
+    status: approved_with_scope_limit
+    cases: [mixed_types, application_screening, model_comparison, decision_bias_discussion]
+    limitations: >-
+      The binary outcome describes an application-screening decision, not subsequent default.
+      Attribute names and values are anonymised, and there are no dates, loss outcomes or
+      portfolio economics. The published file already contains the source's mean/mode
+      replacements for originally missing fields. It must not be presented as a PD dataset.
+    attribution: Quinlan, J. (1987), Statlog Australian Credit Approval, UCI ML Repository, DOI 10.24432/C59012.
+
   uci_polish_bankruptcy:
     title: Polish Companies Bankruptcy
     publisher: UCI Machine Learning Repository
@@ -229,6 +246,59 @@ datasets:
     status: conditional_per_indicator
     cases: [ifrs9_forward_looking, stress_testing, macroeconomic_scenarios]
     limitations: Country-level macro data require release-vintage and revision controls.
+
+  eurostat_statistics:
+    title: Eurostat Statistics Database
+    publisher: Eurostat / European Commission
+    official_url: https://ec.europa.eu/eurostat/data/database
+    terms_url: https://ec.europa.eu/eurostat/help/copyright-notice
+    licence: free reuse with source acknowledgement and disclosure of modifications; third-party rights may differ
+    redistribution: download reviewed series from Eurostat; quote the source and identify project transformations
+    status: approved_after_series_review
+    cases: [ifrs9_forward_looking, stress_testing, labour_market, household_conditions, macroeconomic_scenarios]
+    limitations: >-
+      Series definitions, seasonal adjustment, revisions, geography and frequency must be
+      controlled. Third-party content and unusually restricted items require separate clearance.
+
+  ecb_escb_statistics:
+    title: Publicly released ESCB statistics
+    publisher: European Central Bank / European System of Central Banks
+    official_url: https://data.ecb.europa.eu/
+    terms_url: https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html
+    licence: free reuse of publicly released statistics with source quotation and no modification of source statistics or metadata; third-party data excluded
+    redistribution: download reviewed series; retain source values and label all project calculations as transformations
+    status: approved_after_series_review
+    cases: [ifrs9_forward_looking, stress_testing, rates, credit_conditions, macroeconomic_scenarios]
+    limitations: >-
+      Statistics can be revised or discontinued. Record the series key, observation status,
+      release vintage and any transformation; the reuse policy does not grant confidential data.
+
+  bls_consumer_expenditure_pumd:
+    title: Consumer Expenditure Surveys Public Use Microdata
+    publisher: U.S. Bureau of Labor Statistics
+    official_url: https://www.bls.gov/cex/pumd.htm
+    documentation_url: https://www.bls.gov/cex/pumd_doc.htm
+    licence: official public-use microdata; review the release page and federal site notices before redistribution
+    redistribution: not bundled; downloader retrieves the selected official annual release into a local ignored cache
+    status: approved_for_affordability_not_credit_outcome
+    cases: [affordability, household_budget, resilience, survey_weights, missing_data]
+    limitations: >-
+      The data cover expenditure, income and demographics, not loan approval or default.
+      Confidentiality adjustments, imputation, survey design, weights and release errata must be
+      respected. The project does not label these files CC0 without separate source-level evidence.
+
+  federal_reserve_stress_scenarios:
+    title: Federal Reserve Supervisory Stress Test Scenarios
+    publisher: Board of Governors of the Federal Reserve System
+    official_url: https://www.federalreserve.gov/supervisionreg/dfa-stress-tests-2026.htm
+    scenario_url: https://www.federalreserve.gov/publications/2026-stress-test-scenarios.htm
+    licence: official United States government publication; verify the current release notice
+    redistribution: store download code, release identifier and checksum; do not freeze a scenario as if it were a forecast
+    status: approved_for_scenario_design
+    cases: [stress_testing, satellite_models, scenario_severity, macroeconomic_paths]
+    limitations: >-
+      The paths are hypothetical supervisory scenarios, not forecasts, occurrence probabilities,
+      bank-specific IFRS 9 scenarios or probability weights. The annual release and variable set can change.
 
   cfpb_hmda:
     title: Home Mortgage Disclosure Act modified loan/application register
@@ -433,6 +503,7 @@ datasets:
   openml_mirrors:
     title: Credit datasets mirrored on OpenML
     publisher: OpenML and original dataset owners
+    official_url: https://www.openml.org/search?type=data
     licence: dataset-specific
     redistribution: follow the original dataset licence, not only the aggregator metadata
     status: conditional

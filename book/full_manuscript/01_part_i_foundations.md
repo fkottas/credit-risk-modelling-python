@@ -4,11 +4,44 @@
 
 Credit risk is the possibility that contractual cash flows are not received in the amount or at the time expected. That definition is broader than binary default. A borrower may pay late, prepay, cure after delinquency, enter forbearance, draw an unused line shortly before default, or repay only after expensive recovery work. The economic loss depends on the path of cash flows and not merely on the final label.
 
-For a single exposure, let $C_t$ denote the contractual cash flow at time $t$, $R_t$ the cash actually received, $K_t$ direct recovery cost, and $d_t$ an appropriate discount factor. A cash-flow loss is
+For a single exposure, separate normal payments from post-default recovery proceeds. Let $C_t$ be the contractual cash flow due at month $t$, $P_t$ the regular payment received, $Rec_t$ eligible recovery proceeds, $K_t$ direct workout cost and $r$ the annual effective discount rate. With month-end timing, the discounted cash-flow loss is
 
 \[
-L=\sum_{t=1}^{T} d_t(C_t-R_t+K_t).
+L=\sum_{t=1}^{T}(1+r)^{-t/12}
+\left[(C_t-P_t)-Rec_t+K_t\right].
 \]
+
+The bracketed term is the period shortfall,
+
+\[
+\Delta C_t=(C_t-P_t)-Rec_t+K_t,
+\qquad
+d_t=(1+r)^{-t/12},
+\qquad
+L=\sum_{t=1}^{T}d_t\Delta C_t.
+\]
+
+This notation prevents a common sign error: recovery proceeds reduce loss, while eligible workout costs increase it. A system may instead define one signed receipt field, but it must not then subtract a separate recovery field a second time. The period convention also matters. If $t$ is measured in days, replace $t/12$ by the approved day-count year fraction; if the rate is monthly, do not divide the exponent by twelve again.
+
+| Symbol | Business meaning | Unit and domain |
+|---|---|---|
+| $t,T$ | month and maximum contractual/workout horizon | integer; $1\le t\le T$ |
+| $C_t$ | contractual amount due during month $t$ | currency; normally $C_t\ge0$ |
+| $P_t$ | regular contractual payment received | currency; normally $P_t\ge0$ |
+| $Rec_t$ | eligible post-default recovery proceeds | currency; $Rec_t\ge0$ |
+| $K_t$ | eligible direct collection or workout cost | currency; $K_t\ge0$ |
+| $r$ | annual effective discount rate | decimal; mathematically $r>-1$ |
+| $d_t$ | present-value factor at the reference date | dimensionless; $d_0=1$ |
+| $L$ | discounted raw cash-flow loss | currency; can be negative before policy treatment |
+
+For the visible three-month fixture used in the Chapter 1 Python window, $r=12\%$. Month 1 has no shortfall. Month 2 has $350-200-0+5=155$ and month 3 has $350-0-120+15=245$. Therefore
+
+\[
+L=0(1.12)^{-1/12}+155(1.12)^{-2/12}+245(1.12)^{-3/12}
+=390.26\text{ EUR}.
+\]
+
+The hand calculation supplies three invariants for the code: a fully paid schedule with no cost has zero loss; increasing an eligible recovery while holding everything else fixed cannot increase loss; and, for $r>0$, a later otherwise identical shortfall has a smaller present value. Input validation must reject impossible periods, $r\le-1$, negative receipts or costs under this unsigned convention, and non-finite values rather than silently repairing them.
 
 The familiar product $PD\times LGD\times EAD$ is a useful conditional expectation of this loss only when its three components share a compatible definition, horizon, population, reference date and economic basis. Combining a twelve-month PD, lifetime EAD and workout LGD from another segment does not create a meaningful expected loss.
 

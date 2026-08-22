@@ -25,18 +25,20 @@ Chapters 1–6 use only scalar arithmetic, lists, loops, and the Python standard
 
 ## Dataset switching
 
-Students are not locked into one dataset. The legal and technical registry contains 36 source records. The common executable interface supports these principal PD/public modes:
+Students are not locked into one dataset. The legal and technical registry contains 41 source records. The common executable interface supports these principal PD/public modes:
 
 1. `synthetic_retail` - generated entirely by this repository and safe for unrestricted exercises;
 2. `uci_south_german` - a corrected, small CC BY 4.0 benchmark;
 3. `uci_taiwan_credit_card` - a larger CC BY 4.0 behavioural-credit benchmark;
 4. `uci_credit_approval` - an anonymised CC BY 4.0 approval case used only for missing-data and decision-pipeline labs;
-5. `uci_polish_bankruptcy` - a CC BY 4.0 low-event corporate-failure case;
-6. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
-7. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
+5. `uci_australian_credit_approval` - a second CC BY 4.0 application-screening case, never relabelled as PD;
+6. `uci_polish_bankruptcy` - a CC BY 4.0 low-event corporate-failure case;
+7. `uci_taiwan_bankruptcy` - a second CC BY 4.0 corporate-failure benchmark;
+8. `kaggle_credit_risk` - a conditional Kaggle teaching case downloaded by the student and never bundled here; current dataset-specific terms must be checked.
 
-Eight original deterministic case generators provide lifecycle tables that public classification datasets rarely contain:
+Nine original deterministic generators provide lifecycle tables that public classification datasets rarely contain:
 
+- `synthetic_retail` for application PD, decision economics and introductory component calculations;
 - `synthetic_behavioral_history` for applications, contracts, monthly DPD/payment histories and bureau enquiries;
 
 - `synthetic_revolving` for CCF and EAD;
@@ -45,8 +47,9 @@ Eight original deterministic case generators provide lifecycle tables that publi
 - `synthetic_corporate_irb` for grades, calibration and RWA;
 - `synthetic_counterparty_profiles` for exposure profiles and introductory CVA.
 - `synthetic_credit_documents` for field extraction, BM25 retrieval, structured evidence memoranda and agent red teams.
+- `synthetic_fraud_transactions` for separate fraud, anomaly, imbalance and monitoring exercises.
 
-The registry also covers official HMDA, CFPB complaint, SBA 7(a)/504, SEC EDGAR, Federal Reserve SCF, EBA Pillar 3, FHFA, World Bank and FRED sources; provider-controlled mortgage data; and conditional Kaggle competition cases. A registry entry is not blanket approval: each exercise applies its recorded scope, current notice, access method and redistribution decision.
+The registry also covers official HMDA, CFPB complaint, SBA 7(a)/504, SEC EDGAR, Federal Reserve SCF and 2026 stress scenarios, EBA Pillar 3, FHFA, BLS Consumer Expenditure PUMD, World Bank, Eurostat, ECB and FRED sources; provider-controlled mortgage data; and conditional Kaggle competition cases. A registry entry is not blanket approval: each exercise applies its recorded scope, current notice, access method and redistribution decision.
 
 Additional datasets will be added only after their provenance, licence, permitted use, attribution, and redistribution terms are recorded in [`data/dataset_registry.yml`](data/dataset_registry.yml). A Kaggle mirror never replaces the original publisher's licence.
 
@@ -118,8 +121,10 @@ See [`book/BOOK_PLAN.md`](book/BOOK_PLAN.md) and [`book/structure.json`](book/st
 - Every empirical table must identify its dataset version, access date, transformation, sample filters, and code entry point.
 - Sources with unclear chronology, data, methods, or provenance are labelled as conceptual or excluded from evidentiary claims.
 
-See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), [`COPYRIGHT.md`](COPYRIGHT.md), and [`DISCLAIMER.md`](DISCLAIMER.md).
+See [`references/SOURCE_POLICY.md`](references/SOURCE_POLICY.md), the dated
+[`references/VERIFIED_2026_EVIDENCE.md`](references/VERIFIED_2026_EVIDENCE.md) claim matrix,
+[`COPYRIGHT.md`](COPYRIGHT.md), and [`DISCLAIMER.md`](DISCLAIMER.md).
 
 ## Current status
 
-The expanded teaching edition contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 24 standalone early-chapter scripts, 16 executed notebooks, a 350+ page Word manuscript with editable native equations and labelled Python/output panels, original teaching figures, a 36-record lawful-use dataset registry, and original scorecard, IFRS 9, IRB, NLP and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.
+The expanded teaching edition contains 72 analytical chapters, 72 worked cases, 72 mathematics-to-code laboratories, 24 standalone early-chapter scripts, 16 executed notebooks, a 390+ page Word manuscript with editable native equations and labelled Python/output panels, 24 original teaching figures, a 41-record lawful-use dataset registry, a 76-source reference ledger, and original scorecard, IFRS 9, IRB, NLP and governed-agent packages. The manuscript remains subject to technical, regulatory, legal, accounting, copy-editing, and independent model review before publication or real use.
